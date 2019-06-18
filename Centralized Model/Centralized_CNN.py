@@ -24,6 +24,18 @@ CENTRALIZED_MODEL = os.path.join(MODELS, "centralized_model.h5")
 
 
 def load_MNIST_data():
+    """
+    Loads the MNIST Data Set and reshapes it for further model training
+
+    :param:
+
+    :return:
+        train_images    - numpy array of shape (60000, 28, 28, 1)
+        train_labels    - numpy array of shape (60000, )
+        test_images     - numpy array of shape (10000, 28, 28, 1)
+        test_labels     - numpy array of shape (10000, )
+    """
+
     (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data()
 
     train_images = train_images.reshape((60000, 28, 28, 1))
@@ -36,7 +48,15 @@ def load_MNIST_data():
 
 
 def create_checkpoint_callback():
-    # Create checkpoint callback
+    """
+    Creates a checkpoint callback at specified file location, to be passed into the model.fit() function
+
+    :param:
+
+    :return:
+        cp_callback     - tensorflow callback function object
+    """
+
     cp_callback = tf.keras.callbacks.ModelCheckpoint(CENTRALIZED_CHECK_POINT,
                                                      save_weights_only=True,
                                                      verbose=1)
@@ -50,12 +70,32 @@ def create_checkpoint_callback():
 # ------------------------------------------------------------------------------------------------------------------ #
 # ----------------------------------------------- Model Configuration ---------------------------------------------- #
 
-def build_cnn():
+def build_cnn(input_shape):
+    """
+    Compile and return a simple CNN model for image recognition.
+
+    Configuration:
+    Layer 1: Convolution Layer | Filters: 32 | Kernel Size: 3x3 | Activation: Relu
+    Layer 2: Max Pooling Layer | Filter: 2x2
+    Layer 3: Dense Layer       | Neurons: 32 | Activation: Relu
+    Layer 4: Dense Layer       | Neurons: 10 | Activation: Softmax
+
+    Optimizer:      Adam
+    Loss function:  Sparse Categorical Cross Entropy
+    Loss metric:    Accuracy
+
+
+    :param input_shape:     image input shape (tuple), e.g. (28, 28, 1)
+
+    :return:
+        model               compiled tensorflow model
+    """
+
     # Set up model type
     model = models.Sequential()
 
     # Add layers, inspired by https://www.tensorflow.org/beta/tutorials/images/intro_to_cnns
-    model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)))
+    model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape))
     model.add(layers.MaxPooling2D((2, 2)))
     model.add(layers.Flatten())
     model.add(layers.Dense(32, activation='relu'))
@@ -69,13 +109,37 @@ def build_cnn():
     return model
 
 
-def train_cnn(model, train_images, train_labels, callbacks):
-    model.fit(train_images, train_labels, epochs=2, batch_size=32, validation_split=0.25, callbacks=callbacks)
+def train_cnn(model, train_data, train_labels, callbacks):
+    """
+    Train and return a simple CNN model for image recognition
+
+    :param model:           compiled tensorflow model
+    :param train_data:      numpy array
+    :param train_labels:    numpy array
+    :param callbacks:       array of callback functions
+
+    :return:
+         model              trained tensorflow model
+    """
+
+    model.fit(train_data, train_labels, epochs=2, batch_size=32, validation_split=0.25, callbacks=callbacks)
     return model
 
 
-def evaluate_cnn(model, test_images, test_labels):
-    test_loss, test_acc = model.evaluate(test_images, test_labels)
+def evaluate_cnn(model, test_data, test_labels):
+    """
+    Evaluate and return a simple CNN model for image recognition
+
+    :param model:           compiled tensorflow model
+    :param test_data:       numpy array
+    :param test_labels:     numpy array
+
+    :return:
+        test_loss           float
+        test_acc            float (TP / All Observations)
+    """
+
+    test_loss, test_acc = model.evaluate(test_data, test_labels)
     return test_loss, test_acc
 
 
@@ -88,7 +152,15 @@ def evaluate_cnn(model, test_images, test_labels):
 
 
 def plot_accuracy(model):
-    # Plot training & validation accuracy values
+    """
+    Plot training & validation accuracy values over epochs
+
+    :param model:           trained tensorflow model holding a 'History' objects
+
+    :return:
+
+    """
+
     try:  # Depending on the TF version, these are labeled differently
         plt.plot(model.history.history['accuracy'])  # 'accuracy'
         plt.plot(model.history.history['val_accuracy'])
@@ -103,7 +175,15 @@ def plot_accuracy(model):
 
 
 def plot_loss(model):
-    # Plot training & validation loss values
+    """
+    Plot training & validation loss values over epochs
+
+    :param model:           trained tensorflow model holding a 'History' objects
+
+    :return:
+
+    """
+
     plt.plot(model.history.history['loss'])
     plt.plot(model.history.history['val_loss'])
     plt.title('Model loss')
@@ -114,6 +194,16 @@ def plot_loss(model):
 
 
 def display_images(train_data, train_labels):
+    """
+    Display first 9 MNIST images
+
+    :param train_data:      numpy array of shape (60000, 28, 28, 1)
+    :param train_labels:    numpy array of shape (60000, )
+
+    :return:
+
+    """
+
     train_data = tf.reshape(train_data, [60000, 28, 28])
     # Display Digits
     fig = plt.figure()
@@ -130,12 +220,19 @@ def display_images(train_data, train_labels):
 # --------------------------------------------- End Plotting and Display ------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
-# Main function including a number of flags that can be set
-def main(plotting=False,
-         training=True,
-         loading=False,
-         evaluating=True,
-         max_samples=None):
+def main(plotting=False, training=True, loading=False, evaluating=True, max_samples=None):
+    """
+    Main function including a number of flags that can be set
+
+    :param plotting:            bool
+    :param training:            bool
+    :param loading:             bool
+    :param evaluating:          bool
+    :param max_samples:         int
+
+    :return:
+
+    """
     # Load data
     train_images, train_labels, test_images, test_labels = load_MNIST_data()
 
@@ -151,7 +248,7 @@ def main(plotting=False,
     cp_callback = create_checkpoint_callback()
 
     # Build model
-    model = build_cnn()
+    model = build_cnn(input_shape=(28, 28, 1))
     if loading:
         model.load_weights(CENTRALIZED_CHECK_POINT)
 
