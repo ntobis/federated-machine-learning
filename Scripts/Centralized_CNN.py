@@ -13,8 +13,8 @@ layers = tf.keras.layers  # like 'from tensorflow.keras import layers' (PyCharm 
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
 ROOT = os.path.dirname(os.path.dirname(__file__))
 MODELS = os.path.join(ROOT, 'Models')
-CENTRALIZED_CHECK_POINT = os.path.join(MODELS, "centralized_cp.ckpt")
-CENTRALIZED_MODEL = os.path.join(MODELS, "centralized_model.h5")
+CENTRALIZED_CHECK_POINT = os.path.join(MODELS, "Centralized Model", "centralized_cp.ckpt")
+CENTRALIZED_MODEL = os.path.join(MODELS, "Centralized Model", "centralized_model.h5")
 
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
@@ -109,20 +109,21 @@ def build_cnn(input_shape):
     return model
 
 
-def train_cnn(model, train_data, train_labels, callbacks):
+def train_cnn(model, train_data, train_labels, epochs=2, callbacks=None):
     """
     Train and return a simple CNN model for image recognition
 
     :param model:           compiled tensorflow model
     :param train_data:      numpy array
     :param train_labels:    numpy array
+    :param epochs:          number of training epochs (i.e. iterations over train_data)
     :param callbacks:       array of callback functions
 
     :return:
          model              trained tensorflow model
     """
 
-    model.fit(train_data, train_labels, epochs=2, batch_size=32, validation_split=0.25, callbacks=callbacks)
+    model.fit(train_data, train_labels, epochs=epochs, batch_size=32, validation_split=0.25, callbacks=callbacks)
     return model
 
 
