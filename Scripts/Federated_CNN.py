@@ -235,18 +235,18 @@ def main(clients, rounds=2, data="MNIST", training=True, evaluating=True, plotti
 
     # Load data
     if data == "MNIST":
-        train_images, train_labels, test_images, test_labels = cNN.load_mnist_data()
+        train_data, train_labels, test_data, test_labels = cNN.load_mnist_data()
     else:
         Output.eprint("No data-set named {}. Loading MNIST instead.".format(data))
-        train_images, train_labels, test_images, test_labels = cNN.load_mnist_data()
+        train_data, train_labels, test_data, test_labels = cNN.load_mnist_data()
         data = "MNIST"
 
     if max_samples:
-        train_images = train_images[:max_samples]
+        train_data = train_data[:max_samples]
         train_labels = train_labels[:max_samples]
 
     # Split training data
-    train_data, train_labels = split_data_into_clients(clients, train_images, train_labels)
+    train_data, train_labels = split_data_into_clients(clients, train_data, train_labels)
 
     # Build initial model
     if training:
@@ -262,7 +262,7 @@ def main(clients, rounds=2, data="MNIST", training=True, evaluating=True, plotti
                                      num_of_clients=clients,
                                      train_data=train_data,
                                      train_labels=train_labels,
-                                     test_data=test_images,
+                                     test_data=test_data,
                                      test_labels=test_labels)
 
         # Save history for plotting
@@ -271,7 +271,7 @@ def main(clients, rounds=2, data="MNIST", training=True, evaluating=True, plotti
 
     # Evaluate model
     if evaluating:
-        evaluate_federated_cnn(test_images, test_labels)
+        evaluate_federated_cnn(test_data, test_labels)
 
     # Plot Accuracy and Loss
     if plotting:
@@ -285,8 +285,8 @@ def main(clients, rounds=2, data="MNIST", training=True, evaluating=True, plotti
         # Plot the data
         Output.plot_federated_accuracy(history)
         Output.plot_federated_loss(history)
-        Output.display_images(train_images, train_labels)
+        # Output.display_images(train_data, train_labels)
 
 
 if __name__ == '__main__':
-    main(clients=10, rounds=2, training=False, plotting=True, evaluating=True)
+    main(clients=10, rounds=2, training=True, plotting=True, evaluating=True)

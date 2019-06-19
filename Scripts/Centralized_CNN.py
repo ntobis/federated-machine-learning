@@ -14,8 +14,9 @@ layers = tf.keras.layers  # like 'from tensorflow.keras import layers' (PyCharm 
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
 ROOT = os.path.dirname(os.path.dirname(__file__))
 MODELS = os.path.join(ROOT, 'Models')
-CENTRALIZED_CHECK_POINT = os.path.join(MODELS, "Centralized Model", "centralized_cp.ckpt")
-CENTRALIZED_MODEL = os.path.join(MODELS, "Centralized Model", "centralized_model.h5")
+CENTRALIZED_MODEL_PATH = os.path.join(MODELS, "Centralized Model")
+CENTRALIZED_CHECK_POINT = os.path.join(CENTRALIZED_MODEL_PATH, "centralized_cp.ckpt")
+CENTRALIZED_MODEL = os.path.join(CENTRALIZED_MODEL_PATH, "centralized_model.h5")
 
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
