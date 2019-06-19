@@ -3,8 +3,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os
 
-import matplotlib.pyplot as plt
 import tensorflow as tf
+
+import Scripts.Print_Functions as Output
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 layers = tf.keras.layers  # like 'from tensorflow.keras import layers' (PyCharm import issue workaround)
@@ -144,73 +145,6 @@ def evaluate_cnn(model, test_data, test_labels):
 # ------------------------------------------------------------------------------------------------------------------ #
 
 
-# ------------------------------------------------------------------------------------------------------------------ #
-# ----------------------------------------------- Plotting and Display --------------------------------------------- #
-
-
-def plot_accuracy(model):
-    """
-    Plot training & validation accuracy values over epochs
-
-    :param model:           trained tensorflow model holding a 'History' objects
-
-    """
-
-    try:  # Depending on the TF version, these are labeled differently
-        plt.plot(model.history.history['accuracy'])  # 'accuracy'
-        plt.plot(model.history.history['val_accuracy'])
-    except KeyError:
-        plt.plot(model.history.history['acc'])  # 'acc'
-        plt.plot(model.history.history['val_acc'])
-    plt.title('Model accuracy')
-    plt.ylabel('Accuracy')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Validation'], loc='upper left')
-    plt.show()
-
-
-def plot_loss(model):
-    """
-    Plot training & validation loss values over epochs
-
-    :param model:           trained tensorflow model holding a 'History' objects
-
-    """
-
-    plt.plot(model.history.history['loss'])
-    plt.plot(model.history.history['val_loss'])
-    plt.title('Model loss')
-    plt.ylabel('Loss')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Validation'], loc='upper left')
-    plt.show()
-
-
-def display_images(train_data, train_labels):
-    """
-    Display first 9 MNIST images
-
-    :param train_data:      numpy array of shape (60000, 28, 28, 1)
-    :param train_labels:    numpy array of shape (60000, )
-
-    """
-
-    train_data = tf.reshape(train_data, [60000, 28, 28])
-    # Display Digits
-    plt.figure()
-    for i in range(9):
-        plt.subplot(3, 3, i + 1)
-        plt.tight_layout()
-        plt.imshow(train_data[i], cmap='gray', interpolation='none')
-        plt.title("Digit: {}".format(train_labels[i]))
-        plt.xticks([])
-        plt.yticks([])
-    plt.show()
-
-
-# --------------------------------------------- End Plotting and Display ------------------------------------------- #
-# ------------------------------------------------------------------------------------------------------------------ #
-
 def main(plotting=False, training=True, loading=False, evaluating=True, max_samples=None):
     """
     Main function including a number of flags that can be set
@@ -231,7 +165,7 @@ def main(plotting=False, training=True, loading=False, evaluating=True, max_samp
 
     # Display data
     if plotting:
-        display_images(train_images, train_labels)
+        Output.display_images(train_images, train_labels)
 
     # Enable check-pointing
     cp_callback = create_checkpoint_callback()
@@ -255,8 +189,8 @@ def main(plotting=False, training=True, loading=False, evaluating=True, max_samp
 
     # Plot Accuracy and Loss
     if plotting:
-        plot_accuracy(model)
-        plot_loss(model)
+        Output.plot_accuracy(model)
+        Output.plot_loss(model)
 
 
 if __name__ == '__main__':

@@ -1,10 +1,12 @@
 import os
+import time
 
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 
 import Scripts.Centralized_CNN as cNN
-import Scripts.Print_Functions as Print
+import Scripts.Print_Functions as Output
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 
@@ -15,6 +17,7 @@ FEDERATED_GLOBAL_MODEL = os.path.join(cNN.MODELS, "federated_global_model.json")
 FEDERATED_GLOBAL_WEIGHTS = os.path.join(cNN.MODELS, "federated_global_weights.npy")
 FEDERATED_LOCAL_WEIGHTS_PATH = os.path.join(cNN.MODELS, "Federated Weights")
 FEDERATED_LOCAL_WEIGHTS = os.path.join(FEDERATED_LOCAL_WEIGHTS_PATH, "federated_local_weights_client_{}")
+RESULTS = os.path.join(cNN.ROOT, 'Results')
 
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
@@ -88,6 +91,20 @@ def init_global_model():
     return model
 
 
+def build_global_model():
+    """
+    Utility function building a global model (initializing the structure and loading the latest set of weights)
+
+    :return:
+        model                       tensorflow-graph with specified weights
+    """
+
+    model = init_global_model()
+    weights = np.load(FEDERATED_GLOBAL_WEIGHTS, allow_pickle=True)
+    model.set_weights(weights)
+    return model
+
+
 def average_local_weights():
     """
     Heart of the federated learning algorithm.
@@ -115,6 +132,10 @@ def average_local_weights():
 # ------------------------------------------------------------------------------------------------------------------ #
 
 
+# ------------------------------------------------------------------------------------------------------------------ #
+# ------------------------------------------------ Federated Learning ---------------------------------------------- #
+
+
 def communication_round(num_of_clients, train_data, train_labels, num_participating_clients=None):
     """
     One round of communication between a 'server' and the 'clients'. Each client 'downloads' a global model and trains
@@ -132,12 +153,10 @@ def communication_round(num_of_clients, train_data, train_labels, num_participat
     clients = create_client_index_array(num_of_clients, num_participating_clients)
 
     for client in clients:
-        Print.print_client_id(client)
+        Output.print_client_id(client)
 
         # Initialize model structure and load weights
-        model = init_global_model()
-        weights = np.load(FEDERATED_GLOBAL_WEIGHTS, allow_pickle=True)
-        model.set_weights(weights)
+        model = build_global_model()
 
         # Train local model and store weights to folder
         model = cNN.train_cnn(model, train_data[client], train_labels[client], epochs=5)
@@ -158,13 +177,21 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
     :param train_labels:                    numpy array
     :param test_data:                       numpy array
     :param test_labels:                     numpy array
+
     :return:
+        history                             pandas data-frame, contains the history of loss & accuracy values off all
+                                            communication rounds
     """
 
+    # Create empty data-frame
+    history = pd.DataFrame(columns=['Loss', 'Accuracy'])
     for _ in range(communication_rounds):
-        Print.print_communication_round(_ + 1)
+        Output.print_communication_round(_ + 1)
         communication_round(num_of_clients, train_data, train_labels)
-        evaluate_federated_cnn(test_data, test_labels)
+        test_loss, test_acc = evaluate_federated_cnn(test_data, test_labels)
+
+        history = history.append(pd.Series([test_loss, test_acc], index=['Loss', 'Accuracy']), ignore_index=True)
+    return history
 
 
 def evaluate_federated_cnn(test_data, test_labels):
@@ -173,6 +200,7 @@ def evaluate_federated_cnn(test_data, test_labels):
 
     :param test_data:                       numpy array
     :param test_labels:                     numpy array
+
     :return:
         test_loss                           float
         test_acc                            float
@@ -182,25 +210,36 @@ def evaluate_federated_cnn(test_data, test_labels):
     weights = np.load(FEDERATED_GLOBAL_WEIGHTS, allow_pickle=True)
     model.set_weights(weights)
     test_loss, test_acc = cNN.evaluate_cnn(model, test_data, test_labels)
-    Print.print_loss_accuracy(test_acc, test_loss)
+    Output.print_loss_accuracy(test_acc, test_loss)
     return test_loss, test_acc
 
 
-def main(clients, plotting=False, evaluating=True, max_samples=None):
+# ---------------------------------------------- End Federated Learning -------------------------------------------- #
+# ------------------------------------------------------------------------------------------------------------------ #
+
+
+def main(clients, rounds=2, data="MNIST", training=True, evaluating=True, plotting=False, max_samples=None):
     """
     Main function including a number of flags that can be set
 
     :param clients:             int (specifying number of participating clients)
+    :param rounds:              int (number of communication rounds)
+    :param data:                string (selecting the data set to be used, default is MNIST)
+    :param training:            bool
     :param plotting:            bool
     :param evaluating:          bool
     :param max_samples:         int
 
     :return:
-
     """
 
     # Load data
-    train_images, train_labels, test_images, test_labels = cNN.load_mnist_data()
+    if data == "MNIST":
+        train_images, train_labels, test_images, test_labels = cNN.load_mnist_data()
+    else:
+        Output.eprint("No data-set named {}. Loading MNIST instead.".format(data))
+        train_images, train_labels, test_images, test_labels = cNN.load_mnist_data()
+        data = "MNIST"
 
     if max_samples:
         train_images = train_images[:max_samples]
@@ -209,30 +248,45 @@ def main(clients, plotting=False, evaluating=True, max_samples=None):
     # Split training data
     train_data, train_labels = split_data_into_clients(clients, train_images, train_labels)
 
-    # Display data
-    if plotting:
-        cNN.display_images(train_images, train_labels)
-
     # Build initial model
-    model = cNN.build_cnn(input_shape=(28, 28, 1))
+    if training:
+        model = cNN.build_cnn(input_shape=(28, 28, 1))
 
-    # Save initial model
-    json_config = model.to_json()
-    with open(FEDERATED_GLOBAL_MODEL, 'w') as json_file:
-        json_file.write(json_config)
+        # Save initial model
+        json_config = model.to_json()
+        with open(FEDERATED_GLOBAL_MODEL, 'w') as json_file:
+            json_file.write(json_config)
 
-    # Train Model
-    federated_learning(10, clients, train_data, train_labels, test_images, test_labels)
+        # Train Model
+        history = federated_learning(communication_rounds=rounds,
+                                     num_of_clients=clients,
+                                     train_data=train_data,
+                                     train_labels=train_labels,
+                                     test_data=test_images,
+                                     test_labels=test_labels)
+
+        # Save history for plotting
+        file = time.strftime("%Y-%m-%d-%H%M%S") + r"_{}_rounds_{}_clients_{}.csv".format(data, rounds, clients)
+        history.to_csv(os.path.join(RESULTS, file))
 
     # Evaluate model
     if evaluating:
         evaluate_federated_cnn(test_images, test_labels)
 
-    # # Plot Accuracy and Loss
-    # if plotting:
-    #     plot_accuracy(model)
-    #     plot_loss(model)
+    # Plot Accuracy and Loss
+    if plotting:
+
+        # Open most recent history file
+        files = os.listdir(RESULTS)
+        files = [os.path.join(RESULTS, file) for file in files]
+        latest_file = max(files, key=os.path.getctime)
+        history = pd.read_csv(latest_file)
+
+        # Plot the data
+        Output.plot_federated_accuracy(history)
+        Output.plot_federated_loss(history)
+        Output.display_images(train_images, train_labels)
 
 
 if __name__ == '__main__':
-    main(clients=10)
+    main(clients=10, rounds=2, training=False, plotting=True, evaluating=True)
