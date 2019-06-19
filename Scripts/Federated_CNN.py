@@ -20,6 +20,7 @@ FEDERATED_LOCAL_WEIGHTS_PATH = os.path.join(cNN.MODELS, "Federated Weights")
 FEDERATED_LOCAL_WEIGHTS = os.path.join(FEDERATED_LOCAL_WEIGHTS_PATH, "federated_local_weights_client_{}")
 RESULTS = os.path.join(cNN.ROOT, 'Results')
 
+
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
@@ -201,24 +202,30 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
     """
 
     # Create empty data-frame
-    history = pd.DataFrame(columns=['Loss', 'Accuracy'])
+    history = pd.DataFrame(columns=['Train Loss', 'Train Accuracy', 'Test Loss', 'Test Accuracy'])
 
     # Start communication rounds and save the results of each round to the data frame
     for _ in range(communication_rounds):
         Output.print_communication_round(_ + 1)
         communication_round(num_of_clients, train_data, train_labels, num_participating_clients)
-        test_loss, test_acc = evaluate_federated_cnn(test_data, test_labels)
+        test_loss, test_acc, train_loss, train_acc = evaluate_federated_cnn(test_data, test_labels, train_data,
+                                                                            train_labels)
 
-        history = history.append(pd.Series([test_loss, test_acc], index=['Loss', 'Accuracy']), ignore_index=True)
+        history = history.append(pd.Series([test_loss, test_acc, train_loss, train_acc],
+                                           index=['Train Loss', 'Train Accuracy', 'Test Loss', 'Test Accuracy']),
+                                 ignore_index=True)
+
     return history
 
 
-def evaluate_federated_cnn(test_data, test_labels):
+def evaluate_federated_cnn(test_data, test_labels, train_data=None, train_labels=None):
     """
     Evaluate the global CNN.
 
     :param test_data:                       numpy array
     :param test_labels:                     numpy array
+    :param train_labels:                    numpy array, optional
+    :param train_data:                      numpy array, optional
 
     :return:
         test_loss                           float
@@ -228,21 +235,34 @@ def evaluate_federated_cnn(test_data, test_labels):
     model = init_global_model()
     weights = np.load(FEDERATED_GLOBAL_WEIGHTS, allow_pickle=True)
     model.set_weights(weights)
-    test_loss, test_acc = cNN.evaluate_cnn(model, test_data, test_labels)
-    Output.print_loss_accuracy(test_acc, test_loss)
-    return test_loss, test_acc
+
+    results = cNN.evaluate_cnn(model, test_data, test_labels, train_data, train_labels)
+
+    if train_data is not None and train_labels is not None:
+        test_loss, test_acc, train_loss, train_acc = results[0], results[1], results[2], results[3]
+
+        Output.print_loss_accuracy(train_acc, train_loss, "Train")
+        Output.print_loss_accuracy(test_acc, test_loss, "Test")
+        return test_loss, test_acc, train_loss, train_acc
+
+    else:
+        test_loss, test_acc = results[0], results[1]
+        Output.print_loss_accuracy(test_acc, test_loss, "Test")
+        return test_loss, test_acc
 
 
 # ---------------------------------------------- End Federated Learning -------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
 
-def main(clients, rounds=2, data="MNIST", training=True, evaluating=True, plotting=False, max_samples=None):
+def main(clients, rounds=2, participants=5, data="MNIST", training=True, evaluating=True, plotting=False,
+         max_samples=None):
     """
     Main function including a number of flags that can be set
 
-    :param clients:             int (specifying number of participating clients)
-    :param rounds:              int (number of communication rounds)
+    :param clients:             int, specifying number of participating clients
+    :param rounds:              int, number of communication rounds
+    :param participants:        int, number of clients participating in a given round
     :param data:                string (selecting the data set to be used, default is MNIST)
     :param training:            bool
     :param plotting:            bool
@@ -285,7 +305,7 @@ def main(clients, rounds=2, data="MNIST", training=True, evaluating=True, plotti
                                      train_labels=train_labels,
                                      test_data=test_data,
                                      test_labels=test_labels,
-                                     num_participating_clients=5)
+                                     num_participating_clients=participants)
 
         # Save history for plotting
         file = time.strftime("%Y-%m-%d-%H%M%S") + r"_{}_rounds_{}_clients_{}.csv".format(data, rounds, clients)
@@ -297,7 +317,6 @@ def main(clients, rounds=2, data="MNIST", training=True, evaluating=True, plotti
 
     # Plot Accuracy and Loss
     if plotting:
-
         # Open most recent history file
         files = os.listdir(RESULTS)
         files = [os.path.join(RESULTS, file) for file in files]
@@ -311,4 +330,4 @@ def main(clients, rounds=2, data="MNIST", training=True, evaluating=True, plotti
 
 
 if __name__ == '__main__':
-    main(clients=10, rounds=2, training=False, plotting=True, evaluating=True)
+    main(clients=10, rounds=4, training=False, plotting=True, evaluating=False, participants=2)

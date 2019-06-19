@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os
 
 import tensorflow as tf
+import numpy as np
 
 import Scripts.Print_Functions as Output
 
@@ -121,17 +122,19 @@ def train_cnn(model, train_data, train_labels, epochs=2, callbacks=None):
          model              trained tensorflow model
     """
 
-    model.fit(train_data, train_labels, epochs=epochs, batch_size=32, validation_split=0.25, callbacks=callbacks)
+    model.fit(train_data, train_labels, epochs=epochs, batch_size=32, validation_split=0, callbacks=callbacks)
     return model
 
 
-def evaluate_cnn(model, test_data, test_labels):
+def evaluate_cnn(model, test_data, test_labels, train_data=None, train_labels=None):
     """
     Evaluate and return a simple CNN model for image recognition
 
     :param model:           compiled tensorflow model
     :param test_data:       numpy array
     :param test_labels:     numpy array
+    :param train_labels:    numpy array, optional
+    :param train_data:      numpy array, optional
 
     :return:
         test_loss           float
@@ -139,6 +142,11 @@ def evaluate_cnn(model, test_data, test_labels):
     """
 
     test_loss, test_acc = model.evaluate(test_data, test_labels)
+
+    if train_data is not None and train_labels is not None:
+        train_loss, train_acc = model.evaluate(np.concatenate(train_data), np.concatenate(train_labels))
+        return test_loss, test_acc, train_loss, train_acc
+
     return test_loss, test_acc
 
 

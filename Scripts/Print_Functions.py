@@ -4,6 +4,7 @@ import sys
 
 import tensorflow as tf
 from matplotlib import pyplot as plt
+import numpy as np
 
 
 def print_communication_round(com_round):
@@ -18,10 +19,10 @@ def print_client_id(id):
     print("--------------------------------------------------------------- Client {} --------------------------------------------------------------".format(id))
 
 
-def print_loss_accuracy(test_acc, test_loss):
+def print_loss_accuracy(accuracy, loss, data_type="Test"):
     print("-----------------------")
-    print("Test Loss: {:5.2f}".format(test_loss))
-    print("Test Accuracy: {:5.2f}%".format(100 * test_acc))
+    print("{} Loss: {:5.2f}".format(data_type, loss))
+    print("{} Accuracy: {:5.2f}%".format(data_type, 100 * accuracy))
     print("-----------------------")
     print()
 
@@ -59,11 +60,13 @@ def plot_federated_accuracy(history):
 
     """
 
-    plt.plot(history['Accuracy'])
+    plt.plot(history.index + 1, history['Train Accuracy'])
+    plt.plot(history.index + 1, history['Test Accuracy'])
     plt.title('Model accuracy')
     plt.ylabel('Accuracy')
     plt.xlabel('Communication Round')
-    plt.legend(['Test'], loc='upper left')
+    plt.xticks(np.arange(min(history.index+1), max(history.index + 1) + 1, step=1))
+    plt.legend(['Train', 'Test'], loc='upper left')
     plt.show()
 
 
@@ -92,11 +95,13 @@ def plot_federated_loss(history):
 
     """
 
-    plt.plot(history['Loss'])
+    plt.plot(history.index + 1, history['Train Loss'])
+    plt.plot(history.index + 1, history['Test Loss'])
     plt.title('Model loss')
     plt.ylabel('Loss')
     plt.xlabel('Communication Round')
-    plt.legend(['Test'], loc='upper left')
+    plt.xticks(np.arange(min(history.index + 1), max(history.index + 1) + 1, step=1))
+    plt.legend(['Train', 'Test'], loc='upper left')
     plt.show()
 
 
