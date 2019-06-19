@@ -1,20 +1,19 @@
-import json
 import os
-import time
 
 import numpy as np
 import tensorflow as tf
 
-import Scripts.Centralized_CNN as CNN
+import Scripts.Centralized_CNN as cNN
+import Scripts.Print_Functions as Print
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
 
-FEDERATED_GLOBAL_MODEL = os.path.join(CNN.MODELS, "federated_global_model.json")
-FEDERATED_GLOBAL_WEIGHTS = os.path.join(CNN.MODELS, "federated_global_weights.npy")
-FEDERATED_LOCAL_WEIGHTS_PATH = os.path.join(CNN.MODELS, "Federated Weights")
+FEDERATED_GLOBAL_MODEL = os.path.join(cNN.MODELS, "federated_global_model.json")
+FEDERATED_GLOBAL_WEIGHTS = os.path.join(cNN.MODELS, "federated_global_weights.npy")
+FEDERATED_LOCAL_WEIGHTS_PATH = os.path.join(cNN.MODELS, "Federated Weights")
 FEDERATED_LOCAL_WEIGHTS = os.path.join(FEDERATED_LOCAL_WEIGHTS_PATH, "federated_local_weights_client_{}")
 
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
@@ -23,17 +22,6 @@ FEDERATED_LOCAL_WEIGHTS = os.path.join(FEDERATED_LOCAL_WEIGHTS_PATH, "federated_
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------ Utility Functions ----------------------------------------------- #
-
-def print_communication_round(com_round):
-    print()
-    print("----------------------------------------------------------------------------------------------------------------------------------------")
-    print("-------------------------------------------------------- Communication Round {} --------------------------------------------------------".format(com_round))
-
-
-def print_client_id(id):
-    print()
-    print("----------------------------------------------------------------------------------------------------------------------------------------")
-    print("--------------------------------------------------------------- Client {} --------------------------------------------------------------".format(id))
 
 
 def split_data_into_clients(num_of_clients, train_data, train_labels):
@@ -93,6 +81,7 @@ def average_local_weights():
     np.save(FEDERATED_GLOBAL_WEIGHTS, average_weights)
     return average_weights
 
+
 # ---------------------------------------------- End Utility Functions --------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
@@ -101,29 +90,29 @@ def communication_round(num_of_clients, train_data, train_labels, num_participat
     clients = create_client_index_array(num_of_clients, num_participating_clients)
 
     for client in clients:
-        print_client_id(client)
+        Print.print_client_id(client)
         model = init_global_model()
         weights = np.load(FEDERATED_GLOBAL_WEIGHTS, allow_pickle=True)
         model.set_weights(weights)
-        model = CNN.train_cnn(model, train_data[client], train_labels[client], epochs=5)
+        model = cNN.train_cnn(model, train_data[client], train_labels[client], epochs=5)
         weights = model.get_weights()
         np.save(FEDERATED_LOCAL_WEIGHTS.format(client), weights)
     average_local_weights()
 
 
-def federated_learning(communication_rounds, num_of_clients, train_data, train_labels):
+def federated_learning(communication_rounds, num_of_clients, train_data, train_labels, test_data, test_labels):
     for _ in range(communication_rounds):
-        print_communication_round(_+1)
+        Print.print_communication_round(_ + 1)
         communication_round(num_of_clients, train_data, train_labels)
+        evaluate_federated_cnn(test_data, test_labels)
 
 
-def evaluate_federated_cnn(test_images, test_labels):
+def evaluate_federated_cnn(test_data, test_labels):
     model = init_global_model()
     weights = np.load(FEDERATED_GLOBAL_WEIGHTS, allow_pickle=True)
     model.set_weights(weights)
-    test_loss, test_acc = CNN.evaluate_cnn(model, test_images, test_labels)
-    print("Test Loss: {:5.2f}".format(test_loss))
-    print("Test Accuracy: {:5.2f}%".format(100 * test_acc))
+    test_loss, test_acc = cNN.evaluate_cnn(model, test_data, test_labels)
+    Print.print_loss_accuracy(test_acc, test_loss)
 
 
 def main(clients, plotting=False, evaluating=True, max_samples=None):
@@ -140,7 +129,7 @@ def main(clients, plotting=False, evaluating=True, max_samples=None):
     """
 
     # Load data
-    train_images, train_labels, test_images, test_labels = CNN.load_MNIST_data()
+    train_images, train_labels, test_images, test_labels = cNN.load_MNIST_data()
 
     if max_samples:
         train_images = train_images[:max_samples]
@@ -151,10 +140,10 @@ def main(clients, plotting=False, evaluating=True, max_samples=None):
 
     # Display data
     if plotting:
-        CNN.display_images(train_images, train_labels)
+        cNN.display_images(train_images, train_labels)
 
     # Build initial model
-    model = CNN.build_cnn(input_shape=(28, 28, 1))
+    model = cNN.build_cnn(input_shape=(28, 28, 1))
 
     # Save initial model
     json_config = model.to_json()
@@ -162,7 +151,7 @@ def main(clients, plotting=False, evaluating=True, max_samples=None):
         json_file.write(json_config)
 
     # Train Model
-    federated_learning(10, clients, train_data, train_labels)
+    federated_learning(10, clients, train_data, train_labels, test_images, test_labels)
 
     # Evaluate model
     if evaluating:
