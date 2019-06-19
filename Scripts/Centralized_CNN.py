@@ -23,17 +23,15 @@ CENTRALIZED_MODEL = os.path.join(MODELS, "Centralized Model", "centralized_model
 # ------------------------------------------------ Utility Functions ----------------------------------------------- #
 
 
-def load_MNIST_data():
+def load_mnist_data():
     """
     Loads the MNIST Data Set and reshapes it for further model training
 
-    :param:
-
     :return:
-        train_images    - numpy array of shape (60000, 28, 28, 1)
-        train_labels    - numpy array of shape (60000, )
-        test_images     - numpy array of shape (10000, 28, 28, 1)
-        test_labels     - numpy array of shape (10000, )
+        train_images        numpy array of shape (60000, 28, 28, 1)
+        train_labels        numpy array of shape (60000, )
+        test_images         numpy array of shape (10000, 28, 28, 1)
+        test_labels         numpy array of shape (10000, )
     """
 
     (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data()
@@ -50,8 +48,6 @@ def load_MNIST_data():
 def create_checkpoint_callback():
     """
     Creates a checkpoint callback at specified file location, to be passed into the model.fit() function
-
-    :param:
 
     :return:
         cp_callback     - tensorflow callback function object
@@ -158,8 +154,6 @@ def plot_accuracy(model):
 
     :param model:           trained tensorflow model holding a 'History' objects
 
-    :return:
-
     """
 
     try:  # Depending on the TF version, these are labeled differently
@@ -181,8 +175,6 @@ def plot_loss(model):
 
     :param model:           trained tensorflow model holding a 'History' objects
 
-    :return:
-
     """
 
     plt.plot(model.history.history['loss'])
@@ -201,13 +193,11 @@ def display_images(train_data, train_labels):
     :param train_data:      numpy array of shape (60000, 28, 28, 1)
     :param train_labels:    numpy array of shape (60000, )
 
-    :return:
-
     """
 
     train_data = tf.reshape(train_data, [60000, 28, 28])
     # Display Digits
-    fig = plt.figure()
+    plt.figure()
     for i in range(9):
         plt.subplot(3, 3, i + 1)
         plt.tight_layout()
@@ -231,11 +221,9 @@ def main(plotting=False, training=True, loading=False, evaluating=True, max_samp
     :param evaluating:          bool
     :param max_samples:         int
 
-    :return:
-
     """
     # Load data
-    train_images, train_labels, test_images, test_labels = load_MNIST_data()
+    train_images, train_labels, test_images, test_labels = load_mnist_data()
 
     if max_samples:
         train_images = train_images[:max_samples]
@@ -255,7 +243,7 @@ def main(plotting=False, training=True, loading=False, evaluating=True, max_samp
 
     # Train model
     if training:
-        model = train_cnn(model, train_images, train_labels, [cp_callback])
+        model = train_cnn(model, train_images, train_labels, callbacks=[cp_callback])
         # Save full model
         model.save(CENTRALIZED_MODEL)
 
