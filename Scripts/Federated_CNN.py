@@ -7,6 +7,7 @@ import tensorflow as tf
 
 import Scripts.Centralized_CNN as cNN
 import Scripts.Print_Functions as Output
+import Scripts.Model_Reset as Reset
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 
@@ -25,6 +26,16 @@ RESULTS = os.path.join(cNN.ROOT, 'Results')
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------ Utility Functions ----------------------------------------------- #
+
+
+def reset_federated_model():
+    """
+    Deletes the global model and weights, as well as all local weights (if any)
+    :return:
+    """
+
+    Reset.remove_files(FEDERATED_LOCAL_WEIGHTS_PATH)
+    Reset.remove_files(cNN.MODELS)
 
 
 def split_data_into_clients(num_of_clients, train_data, train_labels):
@@ -125,6 +136,10 @@ def average_local_weights():
 
     average_weights = np.mean(layer_stack, axis=1)
     np.save(FEDERATED_GLOBAL_WEIGHTS, average_weights)
+
+    # Delete all local weights (weights are ephemeral and should only exists for averaging)
+    Reset.remove_files(FEDERATED_LOCAL_WEIGHTS_PATH)
+
     return average_weights
 
 
@@ -167,7 +182,8 @@ def communication_round(num_of_clients, train_data, train_labels, num_participat
     average_local_weights()
 
 
-def federated_learning(communication_rounds, num_of_clients, train_data, train_labels, test_data, test_labels):
+def federated_learning(communication_rounds, num_of_clients, train_data, train_labels, test_data, test_labels,
+                       num_participating_clients=None):
     """
     Train a federated model for a specified number of rounds until convergence.
 
@@ -177,6 +193,7 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
     :param train_labels:                    numpy array
     :param test_data:                       numpy array
     :param test_labels:                     numpy array
+    :param num_participating_clients:       int, number of participating clients in a given communication round
 
     :return:
         history                             pandas data-frame, contains the history of loss & accuracy values off all
@@ -185,9 +202,11 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
 
     # Create empty data-frame
     history = pd.DataFrame(columns=['Loss', 'Accuracy'])
+
+    # Start communication rounds and save the results of each round to the data frame
     for _ in range(communication_rounds):
         Output.print_communication_round(_ + 1)
-        communication_round(num_of_clients, train_data, train_labels)
+        communication_round(num_of_clients, train_data, train_labels, num_participating_clients)
         test_loss, test_acc = evaluate_federated_cnn(test_data, test_labels)
 
         history = history.append(pd.Series([test_loss, test_acc], index=['Loss', 'Accuracy']), ignore_index=True)
@@ -248,8 +267,10 @@ def main(clients, rounds=2, data="MNIST", training=True, evaluating=True, plotti
     # Split training data
     train_data, train_labels = split_data_into_clients(clients, train_data, train_labels)
 
-    # Build initial model
     if training:
+        reset_federated_model()
+
+        # Build initial model
         model = cNN.build_cnn(input_shape=(28, 28, 1))
 
         # Save initial model
@@ -263,7 +284,8 @@ def main(clients, rounds=2, data="MNIST", training=True, evaluating=True, plotti
                                      train_data=train_data,
                                      train_labels=train_labels,
                                      test_data=test_data,
-                                     test_labels=test_labels)
+                                     test_labels=test_labels,
+                                     num_participating_clients=5)
 
         # Save history for plotting
         file = time.strftime("%Y-%m-%d-%H%M%S") + r"_{}_rounds_{}_clients_{}.csv".format(data, rounds, clients)
@@ -289,4 +311,4 @@ def main(clients, rounds=2, data="MNIST", training=True, evaluating=True, plotti
 
 
 if __name__ == '__main__':
-    main(clients=10, rounds=2, training=True, plotting=True, evaluating=True)
+    main(clients=10, rounds=2, training=False, plotting=True, evaluating=True)
