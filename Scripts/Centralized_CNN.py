@@ -2,10 +2,9 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
-import pandas as pd
 
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
 
 import Scripts.Print_Functions as Output
 
