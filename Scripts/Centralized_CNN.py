@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
+import pandas as pd
 
 import tensorflow as tf
 import numpy as np
@@ -18,6 +19,7 @@ MODELS = os.path.join(ROOT, 'Models')
 CENTRALIZED_MODEL_PATH = os.path.join(MODELS, "Centralized Model")
 CENTRALIZED_CHECK_POINT = os.path.join(CENTRALIZED_MODEL_PATH, "centralized_cp.ckpt")
 CENTRALIZED_MODEL = os.path.join(CENTRALIZED_MODEL_PATH, "centralized_model.h5")
+RESULTS = os.path.join(ROOT, 'Results')
 
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
@@ -48,6 +50,24 @@ def load_mnist_data():
     return train_images, train_labels, test_images, test_labels
 
 
+def load_data(dataset):
+    # Load data
+    if dataset == "MNIST":
+        train_data, train_labels, test_data, test_labels = load_mnist_data()
+    else:
+        Output.eprint("No data-set named {}. Loading MNIST instead.".format(dataset))
+        train_data, train_labels, test_data, test_labels = load_mnist_data()
+        dataset = "MNIST"
+    return test_data, test_labels, train_data, train_labels, dataset
+
+
+# ---------------------------------------------- End Utility Functions --------------------------------------------- #
+# ------------------------------------------------------------------------------------------------------------------ #
+
+
+# ------------------------------------------------------------------------------------------------------------------ #
+# ----------------------------------------------- Model Configuration ---------------------------------------------- #
+
 def create_checkpoint_callback():
     """
     Creates a checkpoint callback at specified file location, to be passed into the model.fit() function
@@ -61,13 +81,6 @@ def create_checkpoint_callback():
                                                      verbose=1)
     return cp_callback
 
-
-# ---------------------------------------------- End Utility Functions --------------------------------------------- #
-# ------------------------------------------------------------------------------------------------------------------ #
-
-
-# ------------------------------------------------------------------------------------------------------------------ #
-# ----------------------------------------------- Model Configuration ---------------------------------------------- #
 
 def build_cnn(input_shape):
     """
@@ -126,6 +139,10 @@ def train_cnn(model, train_data, train_labels, epochs=2, callbacks=None):
     return model
 
 
+# --------------------------------------------- End Model Configuration -------------------------------------------- #
+# ------------------------------------------------------------------------------------------------------------------ #
+
+
 def evaluate_cnn(model, test_data, test_labels, train_data=None, train_labels=None):
     """
     Evaluate and return a simple CNN model for image recognition
@@ -150,14 +167,11 @@ def evaluate_cnn(model, test_data, test_labels, train_data=None, train_labels=No
     return test_loss, test_acc
 
 
-# --------------------------------------------- End Model Configuration -------------------------------------------- #
-# ------------------------------------------------------------------------------------------------------------------ #
-
-
-def main(plotting=False, training=True, loading=False, evaluating=True, max_samples=None):
+def main(plotting=False, training=True, loading=False, evaluating=True, max_samples=None, dataset='MNIST'):
     """
     Main function including a number of flags that can be set
 
+    :param dataset:             string, specifying the dataset to be used
     :param plotting:            bool
     :param training:            bool
     :param loading:             bool
@@ -165,16 +179,15 @@ def main(plotting=False, training=True, loading=False, evaluating=True, max_samp
     :param max_samples:         int
 
     """
-    # Load data
-    train_images, train_labels, test_images, test_labels = load_mnist_data()
+    test_data, test_labels, train_data, train_labels, dataset = load_data(dataset)
 
     if max_samples:
-        train_images = train_images[:max_samples]
+        train_data = train_data[:max_samples]
         train_labels = train_labels[:max_samples]
 
     # Display data
     if plotting:
-        Output.display_images(train_images, train_labels)
+        Output.display_images(train_data, train_labels)
 
     # Enable check-pointing
     cp_callback = create_checkpoint_callback()
@@ -186,21 +199,21 @@ def main(plotting=False, training=True, loading=False, evaluating=True, max_samp
 
     # Train model
     if training:
-        model = train_cnn(model, train_images, train_labels, callbacks=[cp_callback])
+        model = train_cnn(model, train_data, train_labels, callbacks=[cp_callback])
         # Save full model
         model.save(CENTRALIZED_MODEL)
 
     # Evaluate model
     if evaluating:
-        test_loss, test_acc = evaluate_cnn(model, test_images, test_labels)
+        test_loss, test_acc = evaluate_cnn(model, test_data, test_labels)
         print("Test Loss: {:5.2f}".format(test_loss))
-        print("Test Accuracy: {:5.2f}%".format(100 * test_acc))
+        print("Test Accuracy: {:5.2%}".format(test_acc))
 
     # Plot Accuracy and Loss
     if plotting:
-        Output.plot_accuracy(model)
-        Output.plot_loss(model)
+        Output.plot_centralized_accuracy(model)
+        Output.plot_centralized_loss(model)
 
 
 if __name__ == '__main__':
-    main(training=True, loading=False, max_samples=None)
+    main(training=True, plotting=True, loading=False, max_samples=None)

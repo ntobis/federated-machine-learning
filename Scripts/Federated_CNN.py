@@ -18,7 +18,6 @@ FEDERATED_GLOBAL_MODEL = os.path.join(cNN.MODELS, "federated_global_model.json")
 FEDERATED_GLOBAL_WEIGHTS = os.path.join(cNN.MODELS, "federated_global_weights.npy")
 FEDERATED_LOCAL_WEIGHTS_PATH = os.path.join(cNN.MODELS, "Federated Weights")
 FEDERATED_LOCAL_WEIGHTS = os.path.join(FEDERATED_LOCAL_WEIGHTS_PATH, "federated_local_weights_client_{}")
-RESULTS = os.path.join(cNN.ROOT, 'Results')
 
 
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
@@ -152,7 +151,7 @@ def average_local_weights():
 # ------------------------------------------------ Federated Learning ---------------------------------------------- #
 
 
-def communication_round(num_of_clients, train_data, train_labels, num_participating_clients=None):
+def communication_round(num_of_clients, train_data, train_labels, epochs, num_participating_clients=None):
     """
     One round of communication between a 'server' and the 'clients'. Each client 'downloads' a global model and trains
     a local model, updating its weights locally. When all clients have updated their weights, they are 'uploaded' to
@@ -161,6 +160,7 @@ def communication_round(num_of_clients, train_data, train_labels, num_participat
     :param num_of_clients:                  int, number of clients globally available
     :param train_data:                      numpy array
     :param train_labels:                    numpy array
+    :param epochs:                          int, number of epochs each client will train in a given communication round
     :param num_participating_clients:       int, number of participating clients in a given communication round
     :return:
     """
@@ -175,7 +175,7 @@ def communication_round(num_of_clients, train_data, train_labels, num_participat
         model = build_global_model()
 
         # Train local model and store weights to folder
-        model = cNN.train_cnn(model, train_data[client], train_labels[client], epochs=5)
+        model = cNN.train_cnn(model, train_data[client], train_labels[client], epochs=epochs)
         weights = model.get_weights()
         np.save(FEDERATED_LOCAL_WEIGHTS.format(client), weights)
 
@@ -184,7 +184,7 @@ def communication_round(num_of_clients, train_data, train_labels, num_participat
 
 
 def federated_learning(communication_rounds, num_of_clients, train_data, train_labels, test_data, test_labels,
-                       num_participating_clients=None):
+                       epochs, num_participating_clients=None):
     """
     Train a federated model for a specified number of rounds until convergence.
 
@@ -194,6 +194,7 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
     :param train_labels:                    numpy array
     :param test_data:                       numpy array
     :param test_labels:                     numpy array
+    :param epochs:                          int, number of epochs each client will train in a given communication round
     :param num_participating_clients:       int, number of participating clients in a given communication round
 
     :return:
@@ -207,7 +208,7 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
     # Start communication rounds and save the results of each round to the data frame
     for _ in range(communication_rounds):
         Output.print_communication_round(_ + 1)
-        communication_round(num_of_clients, train_data, train_labels, num_participating_clients)
+        communication_round(num_of_clients, train_data, train_labels, epochs, num_participating_clients)
         test_loss, test_acc, train_loss, train_acc = evaluate_federated_cnn(test_data, test_labels, train_data,
                                                                             train_labels)
 
@@ -255,7 +256,7 @@ def evaluate_federated_cnn(test_data, test_labels, train_data=None, train_labels
 # ------------------------------------------------------------------------------------------------------------------ #
 
 
-def main(clients, rounds=2, participants=5, data="MNIST", training=True, evaluating=True, plotting=False,
+def main(clients, rounds=2, participants=5, dataset="MNIST", training=True, evaluating=True, plotting=False,
          max_samples=None):
     """
     Main function including a number of flags that can be set
@@ -263,7 +264,7 @@ def main(clients, rounds=2, participants=5, data="MNIST", training=True, evaluat
     :param clients:             int, specifying number of participating clients
     :param rounds:              int, number of communication rounds
     :param participants:        int, number of clients participating in a given round
-    :param data:                string (selecting the data set to be used, default is MNIST)
+    :param dataset:                string (selecting the data set to be used, default is MNIST)
     :param training:            bool
     :param plotting:            bool
     :param evaluating:          bool
@@ -273,12 +274,7 @@ def main(clients, rounds=2, participants=5, data="MNIST", training=True, evaluat
     """
 
     # Load data
-    if data == "MNIST":
-        train_data, train_labels, test_data, test_labels = cNN.load_mnist_data()
-    else:
-        Output.eprint("No data-set named {}. Loading MNIST instead.".format(data))
-        train_data, train_labels, test_data, test_labels = cNN.load_mnist_data()
-        data = "MNIST"
+    train_data, train_labels, test_data, test_labels, dataset = cNN.load_data(dataset)
 
     if max_samples:
         train_data = train_data[:max_samples]
@@ -305,11 +301,12 @@ def main(clients, rounds=2, participants=5, data="MNIST", training=True, evaluat
                                      train_labels=train_labels,
                                      test_data=test_data,
                                      test_labels=test_labels,
+                                     epochs=1,
                                      num_participating_clients=participants)
 
         # Save history for plotting
-        file = time.strftime("%Y-%m-%d-%H%M%S") + r"_{}_rounds_{}_clients_{}.csv".format(data, rounds, clients)
-        history.to_csv(os.path.join(RESULTS, file))
+        file = time.strftime("%Y-%m-%d-%H%M%S") + r"_{}_rounds_{}_clients_{}.csv".format(dataset, rounds, clients)
+        history.to_csv(os.path.join(cNN.RESULTS, file))
 
     # Evaluate model
     if evaluating:
@@ -318,8 +315,8 @@ def main(clients, rounds=2, participants=5, data="MNIST", training=True, evaluat
     # Plot Accuracy and Loss
     if plotting:
         # Open most recent history file
-        files = os.listdir(RESULTS)
-        files = [os.path.join(RESULTS, file) for file in files]
+        files = os.listdir(cNN.RESULTS)
+        files = [os.path.join(cNN.RESULTS, file) for file in files]
         latest_file = max(files, key=os.path.getctime)
         history = pd.read_csv(latest_file)
 
