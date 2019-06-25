@@ -57,7 +57,7 @@ def load_data(dataset):
         Output.eprint("No data-set named {}. Loading MNIST instead.".format(dataset))
         train_data, train_labels, test_data, test_labels = load_mnist_data()
         dataset = "MNIST"
-    return test_data, test_labels, train_data, train_labels, dataset
+    return train_data, train_labels, test_data, test_labels, dataset
 
 
 # ---------------------------------------------- End Utility Functions --------------------------------------------- #

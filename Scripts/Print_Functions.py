@@ -1,25 +1,38 @@
 from __future__ import print_function
 
+import os
 import sys
+import time
 
 import numpy as np
 import tensorflow as tf
 from matplotlib import pyplot as plt
 
+# ------------------------------------------------------------------------------------------------------------------ #
+# ------------------------------------------------------ Paths ----------------------------------------------------- #
+
+ROOT = os.path.dirname(os.path.dirname(__file__))
+FIGURES = os.path.join(ROOT, "Figures")
+
+# ---------------------------------------------------- End Paths --------------------------------------------------- #
+# ------------------------------------------------------------------------------------------------------------------ #
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # --------------------------------------------------- Parameters --------------------------------------------------- #
 
 
 class PlotParams:
-    def __init__(self, metric='Accuracy', title='', x_label='', y_label='', legend_loc='upper left',
-                 num_format="{:5.1f}%"):
+    def __init__(self, dataset, experiment, metric='Accuracy', title='', x_label='', y_label='', legend_loc='upper left',
+                 num_format="{:5.1f}%", max_epochs=None):
         self.metric = metric
         self.title = title
         self.x_label = x_label
         self.y_label = y_label
         self.legend_loc = legend_loc
         self.num_format = num_format
+        self.dataset = dataset
+        self.experiment = experiment
+        self.max_epochs = max_epochs
         self.colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
 
 
@@ -154,13 +167,16 @@ def plot_joint_metric(history, params):
     y_label = params.y_label
     legend_loc = params.legend_loc
     num_format = params.num_format
+    dataset = params.dataset
+    experiment = params.experiment
+    max_epochs = params.max_epochs
 
     # Plot line
-    plt.plot(history.index + 1, history['Centralized {}'.format(metric)], color=colors[0])
+    plt.plot((history.index + 1)[:max_epochs], history['Centralized {}'.format(metric)][:max_epochs], color=colors[0])
 
     # Plot labels
-    for i, j in history['Centralized {}'.format(metric)].items():
-        plt.text((i + 1) * 0.99, j * 1.02, num_format.format(j), color='black',
+    for i, j in history['Centralized {}'.format(metric)][:max_epochs].items():
+        plt.text((i + 1) * 0.99, j, num_format.format(j), color='black',
                  bbox=dict(facecolor='white', edgecolor=colors[0], boxstyle='round'))
 
     # Get federated lines
@@ -168,21 +184,26 @@ def plot_joint_metric(history, params):
     for idx, col in enumerate(federated_accuracy_cols):
 
         # Plot lines
-        plt.plot(history.index + 1, history[col], color=colors[idx+1])
+        plt.plot((history.index + 1)[:max_epochs], history[col][:max_epochs], color=colors[idx+1])
 
         # Plot labels
-        for i, j in history[col].items():
-            plt.text((i + 1) * 0.99, j * 0.98, num_format.format(j), color='black',
+        for i, j in history[col][:max_epochs].items():
+            plt.text((i + 1) * 0.99, j, num_format.format(j), color='black',
                      bbox=dict(facecolor='white', edgecolor=colors[idx+1], boxstyle='round'))
 
     # Draw graph
     plt.title(title)
     plt.ylabel(y_label)
     plt.xlabel(x_label)
-    plt.xticks(np.arange(min(history.index+1), max(history.index + 1) + 1, step=1))
+    plt.xticks(np.arange(min(history.index+1), max((history.index + 1)[:max_epochs]) + 1, step=1))
     federated_accuracy_cols.insert(0, "Centralized {}".format(metric))  # Add centralized to list of legend labels
     plt.legend(federated_accuracy_cols, loc=legend_loc)
-    plt.show()
+    file = time.strftime("%Y-%m-%d-%H%M%S") + r"_{}_{}_{}.png".format(dataset, experiment, metric)
+    fig = plt.gcf()
+    fig.set_size_inches((12, 8), forward=False)
+    plt.savefig(os.path.join(FIGURES, file), dpi=300)
+    # plt.show()
+    plt.clf()
 
 
 def display_images(train_data, train_labels):
