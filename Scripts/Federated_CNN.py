@@ -5,9 +5,9 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-import Scripts.Centralized_CNN as cNN
-import Scripts.Print_Functions as Output
-import Scripts.Model_Reset as Reset
+from Scripts import Centralized_CNN as cNN
+from Scripts import Print_Functions as Output
+from Scripts import Model_Reset as Reset
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 

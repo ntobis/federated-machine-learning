@@ -1,6 +1,6 @@
 import os
-import Scripts.Centralized_CNN as cNN
-import Scripts.Federated_CNN as fedCNN
+from Scripts import Centralized_CNN as cNN
+from Scripts import Federated_CNN as fedCNN
 
 
 def remove_files(directory):

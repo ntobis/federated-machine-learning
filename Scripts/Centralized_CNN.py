@@ -6,7 +6,7 @@ import os
 import numpy as np
 import tensorflow as tf
 
-import Scripts.Print_Functions as Output
+from Scripts import Print_Functions as Output
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 layers = tf.keras.layers  # like 'from tensorflow.keras import layers' (PyCharm import issue workaround)

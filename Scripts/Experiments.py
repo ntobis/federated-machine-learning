@@ -4,9 +4,9 @@ import time
 import pandas as pd
 import numpy as np
 
-import Scripts.Centralized_CNN as cNN
-import Scripts.Federated_CNN as fed_CNN
-import Scripts.Print_Functions as Output
+from Scripts import Centralized_CNN as cNN
+from Scripts import Federated_CNN as fed_CNN
+from Scripts import Print_Functions as Output
 
 pd.set_option('display.max_columns', 500)
 
