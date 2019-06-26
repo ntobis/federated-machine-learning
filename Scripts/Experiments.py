@@ -209,8 +209,8 @@ def experiment_3_add_noise(dataset, experiment, rounds, std_devs):
 
 if __name__ == '__main__':
     # Experiment 1 - Number of clients
-    num_clients = [2, 5, 10, 20, 50, 100]
-    experiment_1_number_of_clients(dataset="MNIST", experiment="CLIENTS", rounds=30, clients=num_clients)
+    # num_clients = [2, 5, 10, 20, 50, 100]
+    # experiment_1_number_of_clients(dataset="MNIST", experiment="CLIENTS", rounds=30, clients=num_clients)
 
     # Experiment 2 - Digits
     digits_arr = [[0, 5], [0, 2, 5, 9], [0, 2, 4, 5, 7, 9], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]]
