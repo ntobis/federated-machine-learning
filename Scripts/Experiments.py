@@ -221,7 +221,12 @@ if __name__ == '__main__':
     # experiment_1_number_of_clients(dataset="MNIST", experiment="CLIENTS", rounds=30, clients=num_clients)
 
     # Experiment 2 - Digits
-    digits_arr = [[0, 5], [0, 2, 5, 9], [0, 2, 4, 5, 7, 9], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]]
+    digits_arr = [
+        # [0, 5],
+        [0, 2, 5, 9],
+        [0, 2, 4, 5, 7, 9],
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    ]
     experiment_2_limited_digits(dataset="MNIST", experiment="DIGITS", rounds=30, digit_array=digits_arr)
 
     # Experiment 3 - Adding Noise
