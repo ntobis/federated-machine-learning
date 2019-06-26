@@ -1,11 +1,12 @@
-import os
 import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
 import time
 
 import pandas as pd
 import numpy as np
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from Scripts import Centralized_CNN as cNN
 from Scripts import Federated_CNN as fed_CNN
 from Scripts import Print_Functions as Output
@@ -16,10 +17,14 @@ pd.set_option('display.max_columns', 500)
 # ------------------------------------------------ Utility Functions ----------------------------------------------- #
 
 
-def combine_results(dataset, experiment, rounds, keys):
+def combine_results(dataset, experiment, rounds, keys, sub_folder=None):
     # Open most recent history files
-    files = os.listdir(cNN.RESULTS)
-    files = [os.path.join(cNN.RESULTS, file) for file in files]
+    if sub_folder:
+        files = os.listdir(os.path.join(cNN.RESULTS, sub_folder))
+        files = [os.path.join(os.path.join(cNN.RESULTS, sub_folder), file) for file in files]
+    else:
+        files = os.listdir(cNN.RESULTS)
+        files = [os.path.join(cNN.RESULTS, file) for file in files]
 
     # Combine Results
     sorted_files = sorted(files, key=os.path.getctime)
@@ -63,7 +68,8 @@ def plot_results(dataset, rounds, experiment, keys):
         y_label='Accuracy',
         legend_loc='upper left',
         num_format="{:5.1%}",
-        max_epochs=None
+        max_epochs=None,
+        label_spaces=4
     )
     Output.plot_joint_metric(history, params)
 
@@ -77,7 +83,8 @@ def plot_results(dataset, rounds, experiment, keys):
         y_label='Loss',
         legend_loc='lower left',
         num_format="{:5.2f}",
-        max_epochs=None
+        max_epochs=None,
+        label_spaces=4
     )
     Output.plot_joint_metric(history, params)
 
@@ -163,7 +170,7 @@ def experiment_1_number_of_clients(dataset, experiment, rounds, clients):
     experiment_centralized(dataset, experiment, train_data, train_labels, test_data, test_labels, rounds)
 
     # Plot results
-    plot_results(dataset, rounds=rounds, experiment=experiment, keys=clients)
+    # plot_results(dataset, rounds=rounds, experiment=experiment, keys=clients)
 
 
 def experiment_2_limited_digits(dataset, experiment, rounds, digit_array):
@@ -172,6 +179,7 @@ def experiment_2_limited_digits(dataset, experiment, rounds, digit_array):
 
     # Perform Experiments
     for digits in digit_array:
+        experiment = experiment + "_" + str(digits)
         train_data_filtered = train_data[np.in1d(train_labels, digits)]
         train_labels_filtered = train_labels[np.in1d(train_labels, digits)]
         test_data_filtered = test_data[np.in1d(test_labels, digits)]
@@ -184,7 +192,7 @@ def experiment_2_limited_digits(dataset, experiment, rounds, digit_array):
                                test_labels_filtered, rounds)
 
         # Plot results
-        plot_results(dataset, rounds=rounds, experiment=experiment + str(digits), keys=[digits])
+        # plot_results(dataset, rounds=rounds, experiment=experiment + str(digits), keys=[digits])
 
 
 def experiment_3_add_noise(dataset, experiment, rounds, std_devs):
@@ -200,7 +208,7 @@ def experiment_3_add_noise(dataset, experiment, rounds, std_devs):
         experiment_centralized(dataset, experiment, train_data_noise, train_labels, test_data, test_labels, rounds)
 
         # Plot results
-        plot_results(dataset, rounds=rounds, experiment=experiment, keys=[std_devs])
+        # plot_results(dataset, rounds=rounds, experiment=experiment, keys=[std_devs])
 
 
 # -------------------------------------------------- End Experiments ----------------------------------------------- #
@@ -219,3 +227,4 @@ if __name__ == '__main__':
     # Experiment 3 - Adding Noise
     std_dev_arr = [0.1, 0.25, 0.5]
     experiment_3_add_noise(dataset="MNIST", experiment="NOISE", rounds=30, std_devs=std_dev_arr)
+    plot_results("MNIST", 30, "CLIENTS", [2, 5, 10, 20, 50, 100])

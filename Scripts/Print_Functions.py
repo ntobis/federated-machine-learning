@@ -23,7 +23,7 @@ FIGURES = os.path.join(ROOT, "Figures")
 
 class PlotParams:
     def __init__(self, dataset, experiment, metric='Accuracy', title='', x_label='', y_label='', legend_loc='upper left',
-                 num_format="{:5.1f}%", max_epochs=None):
+                 num_format="{:5.1f}%", max_epochs=None, label_spaces=1):
         self.metric = metric
         self.title = title
         self.x_label = x_label
@@ -33,6 +33,7 @@ class PlotParams:
         self.dataset = dataset
         self.experiment = experiment
         self.max_epochs = max_epochs
+        self.label_spaces = label_spaces
         self.colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
 
 
@@ -170,14 +171,16 @@ def plot_joint_metric(history, params):
     dataset = params.dataset
     experiment = params.experiment
     max_epochs = params.max_epochs
+    label_spaces = params.label_spaces
 
     # Plot line
     plt.plot((history.index + 1)[:max_epochs], history['Centralized {}'.format(metric)][:max_epochs], color=colors[0])
 
     # Plot labels
     for i, j in history['Centralized {}'.format(metric)][:max_epochs].items():
-        plt.text((i + 1) * 0.99, j, num_format.format(j), color='black',
-                 bbox=dict(facecolor='white', edgecolor=colors[0], boxstyle='round'))
+        if not i % label_spaces:
+            plt.text((i + 1) * 0.99, j, num_format.format(j), color='black',
+                     bbox=dict(facecolor='white', edgecolor=colors[0], boxstyle='round'))
 
     # Get federated lines
     federated_accuracy_cols = [str(col) for col in history.columns if 'Federated Test {}'.format(metric) in col]
@@ -188,8 +191,9 @@ def plot_joint_metric(history, params):
 
         # Plot labels
         for i, j in history[col][:max_epochs].items():
-            plt.text((i + 1) * 0.99, j, num_format.format(j), color='black',
-                     bbox=dict(facecolor='white', edgecolor=colors[idx+1], boxstyle='round'))
+            if not i % label_spaces:
+                    plt.text((i + 1) * 0.99, j, num_format.format(j), color='black',
+                             bbox=dict(facecolor='white', edgecolor=colors[idx+1], boxstyle='round'))
 
     # Draw graph
     plt.title(title)
@@ -201,8 +205,8 @@ def plot_joint_metric(history, params):
     file = time.strftime("%Y-%m-%d-%H%M%S") + r"_{}_{}_{}.png".format(dataset, experiment, metric)
     fig = plt.gcf()
     fig.set_size_inches((12, 8), forward=False)
-    plt.savefig(os.path.join(FIGURES, file), dpi=300)
-    # plt.show()
+    # plt.savefig(os.path.join(FIGURES, file), dpi=300)
+    plt.show()
     plt.clf()
 
 
