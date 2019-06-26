@@ -1,9 +1,11 @@
 import os
+import sys
 import time
 
 import pandas as pd
 import numpy as np
 
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from Scripts import Centralized_CNN as cNN
 from Scripts import Federated_CNN as fed_CNN
 from Scripts import Print_Functions as Output
