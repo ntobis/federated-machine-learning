@@ -201,11 +201,11 @@ def experiment_3_add_noise(dataset, experiment, rounds, std_devs):
 
     # Perform Experiments
     for std_dev in std_devs:
-        experiment = experiment + "_" + str(std_dev)
+        this_experiment = experiment + "_" + str(std_dev)
         train_data_noise = train_data + np.random.normal(loc=0, scale=std_dev, size=train_data.shape)
-        experiment_federated(10, dataset, experiment, train_data_noise, train_labels, test_data, test_labels, rounds)
+        experiment_federated(10, dataset, this_experiment, train_data_noise, train_labels, test_data, test_labels, rounds)
 
-        experiment_centralized(dataset, experiment, train_data_noise, train_labels, test_data, test_labels, rounds)
+        experiment_centralized(dataset, this_experiment, train_data_noise, train_labels, test_data, test_labels, rounds)
 
         # Plot results
         # plot_results(dataset, rounds=rounds, experiment=experiment, keys=[std_devs])
