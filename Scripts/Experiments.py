@@ -223,8 +223,8 @@ if __name__ == '__main__':
     # Experiment 2 - Digits
     digits_arr = [
         # [0, 5],
-        [0, 2, 5, 9],
-        [0, 2, 4, 5, 7, 9],
+        # [0, 2, 5, 9],
+        # [0, 2, 4, 5, 7, 9],
         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     ]
     experiment_2_limited_digits(dataset="MNIST", experiment="DIGITS", rounds=30, digit_array=digits_arr)
@@ -232,4 +232,4 @@ if __name__ == '__main__':
     # Experiment 3 - Adding Noise
     std_dev_arr = [0.1, 0.25, 0.5]
     experiment_3_add_noise(dataset="MNIST", experiment="NOISE", rounds=30, std_devs=std_dev_arr)
-    plot_results("MNIST", 30, "CLIENTS", [2, 5, 10, 20, 50, 100])
+    # plot_results("MNIST", 30, "DIGITS", [0, 5])

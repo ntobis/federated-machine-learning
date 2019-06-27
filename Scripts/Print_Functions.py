@@ -177,8 +177,10 @@ def plot_joint_metric(history, params):
     plt.plot((history.index + 1)[:max_epochs], history['Centralized {}'.format(metric)][:max_epochs], color=colors[0])
 
     # Plot labels
+    print(history['Centralized {}'.format(metric)][:max_epochs].items())
     for i, j in history['Centralized {}'.format(metric)][:max_epochs].items():
-        if not i % label_spaces:
+        # print(i, j, label_spaces)
+        if not int(i) % label_spaces:
             plt.text((i + 1) * 0.99, j, num_format.format(j), color='black',
                      bbox=dict(facecolor='white', edgecolor=colors[0], boxstyle='round'))
 
@@ -191,7 +193,7 @@ def plot_joint_metric(history, params):
 
         # Plot labels
         for i, j in history[col][:max_epochs].items():
-            if not i % label_spaces:
+            if not int(i) % label_spaces:
                     plt.text((i + 1) * 0.99, j, num_format.format(j), color='black',
                              bbox=dict(facecolor='white', edgecolor=colors[idx+1], boxstyle='round'))
 
