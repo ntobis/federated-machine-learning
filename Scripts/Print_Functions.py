@@ -23,7 +23,7 @@ FIGURES = os.path.join(ROOT, "Figures")
 
 class PlotParams:
     def __init__(self, dataset, experiment, metric='Accuracy', title='', x_label='', y_label='', legend_loc='upper left',
-                 num_format="{:5.1f}%", max_epochs=None, label_spaces=1):
+                 num_format="{:5.1f}%", max_epochs=None, label_spaces=1, suffix=''):
         self.metric = metric
         self.title = title
         self.x_label = x_label
@@ -34,6 +34,7 @@ class PlotParams:
         self.experiment = experiment
         self.max_epochs = max_epochs
         self.label_spaces = label_spaces
+        self.suffix = suffix
         self.colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
 
 
@@ -172,14 +173,13 @@ def plot_joint_metric(history, params):
     experiment = params.experiment
     max_epochs = params.max_epochs
     label_spaces = params.label_spaces
+    suffix = params.suffix
 
     # Plot line
     plt.plot((history.index + 1)[:max_epochs], history['Centralized {}'.format(metric)][:max_epochs], color=colors[0])
 
     # Plot labels
-    print(history['Centralized {}'.format(metric)][:max_epochs].items())
     for i, j in history['Centralized {}'.format(metric)][:max_epochs].items():
-        # print(i, j, label_spaces)
         if not int(i) % label_spaces:
             plt.text((i + 1) * 0.99, j, num_format.format(j), color='black',
                      bbox=dict(facecolor='white', edgecolor=colors[0], boxstyle='round'))
@@ -204,15 +204,15 @@ def plot_joint_metric(history, params):
     plt.xticks(np.arange(min(history.index+1), max((history.index + 1)[:max_epochs]) + 1, step=1))
     federated_accuracy_cols.insert(0, "Centralized {}".format(metric))  # Add centralized to list of legend labels
     plt.legend(federated_accuracy_cols, loc=legend_loc)
-    file = time.strftime("%Y-%m-%d-%H%M%S") + r"_{}_{}_{}.png".format(dataset, experiment, metric)
+    file = time.strftime("%Y-%m-%d-%H%M%S") + r"_{}_{}_{}_{}.png".format(dataset, experiment, metric, suffix)
     fig = plt.gcf()
     fig.set_size_inches((12, 8), forward=False)
-    # plt.savefig(os.path.join(FIGURES, file), dpi=300)
-    plt.show()
+    plt.savefig(os.path.join(FIGURES, file), dpi=300)
+    # plt.show()
     plt.clf()
 
 
-def display_images(train_data, train_labels):
+def display_images(train_data, train_labels, noise=None):
     """
     Display first 9 MNIST images
 

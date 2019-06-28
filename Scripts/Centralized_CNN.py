@@ -7,6 +7,7 @@ import numpy as np
 import tensorflow as tf
 
 from Scripts import Print_Functions as Output
+from Scripts import Data_Loader_Functions as Data_Loader
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 layers = tf.keras.layers  # like 'from tensorflow.keras import layers' (PyCharm import issue workaround)
@@ -15,54 +16,15 @@ layers = tf.keras.layers  # like 'from tensorflow.keras import layers' (PyCharm 
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
 ROOT = os.path.dirname(os.path.dirname(__file__))
 MODELS = os.path.join(ROOT, 'Models')
+AUTISM = os.path.join(ROOT, 'Data', 'Autism')
 CENTRALIZED_MODEL_PATH = os.path.join(MODELS, "Centralized Model")
 CENTRALIZED_CHECK_POINT = os.path.join(CENTRALIZED_MODEL_PATH, "centralized_cp.ckpt")
 CENTRALIZED_MODEL = os.path.join(CENTRALIZED_MODEL_PATH, "centralized_model.h5")
 RESULTS = os.path.join(ROOT, 'Results')
 
+
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-# ------------------------------------------------ Utility Functions ----------------------------------------------- #
-
-
-def load_mnist_data():
-    """
-    Loads the MNIST Data Set and reshapes it for further model training
-
-    :return:
-        train_images        numpy array of shape (60000, 28, 28, 1)
-        train_labels        numpy array of shape (60000, )
-        test_images         numpy array of shape (10000, 28, 28, 1)
-        test_labels         numpy array of shape (10000, )
-    """
-
-    (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data()
-
-    train_images = train_images.reshape((60000, 28, 28, 1))
-    test_images = test_images.reshape((10000, 28, 28, 1))
-
-    # Normalize pixel values to be between 0 and 1
-    train_images, test_images = train_images / 255.0, test_images / 255.0
-
-    return train_images, train_labels, test_images, test_labels
-
-
-def load_data(dataset):
-    # Load data
-    if dataset == "MNIST":
-        train_data, train_labels, test_data, test_labels = load_mnist_data()
-    else:
-        Output.eprint("No data-set named {}. Loading MNIST instead.".format(dataset))
-        train_data, train_labels, test_data, test_labels = load_mnist_data()
-        dataset = "MNIST"
-    return train_data, train_labels, test_data, test_labels, dataset
-
-
-# ---------------------------------------------- End Utility Functions --------------------------------------------- #
-# ------------------------------------------------------------------------------------------------------------------ #
-
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ----------------------------------------------- Model Configuration ---------------------------------------------- #
@@ -178,7 +140,7 @@ def main(plotting=False, training=True, loading=False, evaluating=True, max_samp
     :param max_samples:         int
 
     """
-    test_data, test_labels, train_data, train_labels, dataset = load_data(dataset)
+    test_data, test_labels, train_data, train_labels, dataset = Data_Loader.load_data(dataset)
 
     if max_samples:
         train_data = train_data[:max_samples]

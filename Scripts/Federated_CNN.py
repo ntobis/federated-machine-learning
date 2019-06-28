@@ -1,10 +1,12 @@
 import os
+import threading
 import time
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 
+import Scripts.Data_Loader_Functions as Data_Loader
 from Scripts import Centralized_CNN as cNN
 from Scripts import Print_Functions as Output
 from Scripts import Model_Reset as Reset
@@ -168,19 +170,23 @@ def communication_round(num_of_clients, train_data, train_labels, epochs, num_pa
     # Select clients to participate in communication round
     clients = create_client_index_array(num_of_clients, num_participating_clients)
 
+    # Set up one thread per client
+    threads = list()
     for client in clients:
-        Output.print_client_id(client)
-
-        # Initialize model structure and load weights
-        model = build_global_model()
-
-        # Train local model and store weights to folder
-        model = cNN.train_cnn(model, train_data[client], train_labels[client], epochs=epochs)
-        weights = model.get_weights()
-        np.save(FEDERATED_LOCAL_WEIGHTS.format(client), weights)
+        x = threading.Thread(target=client_learning, args=(client, epochs, train_data, train_labels))
 
     # Average all local updates and store them as new 'global weights'
     average_local_weights()
+
+
+def client_learning(client, epochs, train_data, train_labels):
+    Output.print_client_id(client)
+    # Initialize model structure and load weights
+    model = build_global_model()
+    # Train local model and store weights to folder
+    model = cNN.train_cnn(model, train_data[client], train_labels[client], epochs=epochs)
+    weights = model.get_weights()
+    np.save(FEDERATED_LOCAL_WEIGHTS.format(client), weights)
 
 
 def federated_learning(communication_rounds, num_of_clients, train_data, train_labels, test_data, test_labels,
@@ -274,7 +280,7 @@ def main(clients, rounds=2, participants=5, dataset="MNIST", training=True, eval
     """
 
     # Load data
-    train_data, train_labels, test_data, test_labels, dataset = cNN.load_data(dataset)
+    train_data, train_labels, test_data, test_labels, dataset = Data_Loader.load_data(dataset)
 
     if max_samples:
         train_data = train_data[:max_samples]
