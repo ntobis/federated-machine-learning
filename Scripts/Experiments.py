@@ -336,7 +336,6 @@ def experiment_main_1():
 # -------------------------------------------------- Experiments - 2 ----------------------------------------------- #
 
 def experiment_4_autism():
-
     features, labels = Data_Loader.load_autism_data_body()
     train_data_clients, train_labels_clients, test_data_clients, test_labels_clients = [], [], [], []
     for idx, client in enumerate(features):
@@ -354,9 +353,9 @@ def experiment_4_autism():
 
 
 if __name__ == '__main__':
-    print("AUTISM")
-    experiment_4_autism()
-    # Experiment 1 - Number of clients
-    num_clients = [2]
-    print("MNIST")
+    # print("AUTISM")
+    # experiment_4_autism()
+    # # Experiment 1 - Number of clients
+    num_clients = [5]
+    # print("MNIST")
     experiment_1_number_of_clients(dataset="MNIST", experiment="CLIENTS", rounds=30, clients=num_clients)

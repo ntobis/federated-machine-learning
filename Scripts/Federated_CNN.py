@@ -1,3 +1,4 @@
+import logging
 import os
 import threading
 import time
@@ -174,7 +175,16 @@ def communication_round(num_of_clients, train_data, train_labels, epochs, num_pa
     threads = list()
     for client in clients:
         x = threading.Thread(target=client_learning, args=(client, epochs, train_data, train_labels))
+        threads.append(x)
+        x.start()
 
+    # Waiting for all threads to finish
+    for index, thread in enumerate(threads):
+        logging.info("Main    : before joining thread %d.", index)
+        thread.join()
+        logging.info("Main    : thread %d done", index)
+    # for client in clients:
+    #     client_learning(client, epochs, train_data, train_labels)
     # Average all local updates and store them as new 'global weights'
     average_local_weights()
 
@@ -184,6 +194,7 @@ def client_learning(client, epochs, train_data, train_labels):
     # Initialize model structure and load weights
     model = build_global_model()
     # Train local model and store weights to folder
+    print(client)
     model = cNN.train_cnn(model, train_data[client], train_labels[client], epochs=epochs)
     weights = model.get_weights()
     np.save(FEDERATED_LOCAL_WEIGHTS.format(client), weights)
