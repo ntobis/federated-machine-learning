@@ -21,6 +21,17 @@ pd.set_option('display.max_columns', 500)
 
 
 def combine_results(experiment, keys, sub_folder=None):
+    """
+    Combines the results from various experiments into one data frame that can be used for joint plotting of metrics.
+
+    :param experiment:                  string, the type of experimental setting to be used, e.g. "CLIENTS"
+    :param keys:                        array, the different experiments, e.g. number of clients [2, 5, 10]
+    :param sub_folder:                  string, where in the "Results" folder the results should be stored
+
+    :return:
+        history:                        DataFrame, holds the results of all experiments, passed to a plotting function
+    """
+
     # Open most recent history files
     if sub_folder:
         files = os.listdir(os.path.join(cNN.RESULTS, sub_folder))
@@ -54,6 +65,18 @@ def combine_results(experiment, keys, sub_folder=None):
 
 
 def plot_results(dataset, experiment, keys, date, suffix):
+    """
+    Sets the parameters for the plotting function, and calls the plotting function to plott loss and accuracy over
+    multiple epochs/communication rounds.
+
+    :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
+    :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
+    :param keys:                    array, the different experiments, e.g. number of clients [2, 5, 10]
+    :param date:                    string, date to be used for folder naming
+    :param suffix:                  string, additional information to be added to the folder name
+    :return:
+    """
+
     sub_folder = experiment + " " + date + " " + suffix
     history = combine_results(experiment, keys, sub_folder)
 
@@ -99,6 +122,19 @@ def plot_results(dataset, experiment, keys, date, suffix):
 
 
 def experiment_centralized(dataset, experiment, train_data, train_labels, test_data, test_labels, epochs=5):
+    """
+    Sets up a centralized CNN that trains on a specified dataset. Saves the results to CSV.
+
+    :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
+    :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
+    :param train_data:              numpy array, the train data
+    :param train_labels:            numpy array, the train labels
+    :param test_data:               numpy array, the test data
+    :param test_labels:             numpy array, the test labels
+    :param epochs:                  int, number of epochs that the centralized CNN trains for
+    :return:
+    """
+
     # Train Centralized CNN
     centralized_model = cNN.build_cnn(input_shape=(28, 28, 1))
     centralized_model = cNN.train_cnn(centralized_model, train_data, train_labels, epochs=epochs)
@@ -119,6 +155,21 @@ def experiment_centralized(dataset, experiment, train_data, train_labels, test_d
 
 def experiment_federated(clients, dataset, experiment, train_data, train_labels, test_data, test_labels,
                          rounds=5, epochs=1):
+    """
+    Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
+
+    :param clients:                 int, the maximum number of clients participating in a communication round
+    :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
+    :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
+    :param train_data:              numpy array, the train data
+    :param train_labels:            numpy array, the train labels
+    :param test_data:               numpy array, the test data
+    :param test_labels:             numpy array, the test labels
+    :param rounds:                  int, number of communication rounds that the federated clients average results for
+    :param epochs:                  int, number of epochs that the client CNN trains for
+    :return:
+    """
+
     # Split data
     if dataset is not "AUTISM_BODY":
         train_data, train_labels = fed_CNN.split_data_into_clients(clients, train_data, train_labels)
@@ -162,6 +213,16 @@ def experiment_federated(clients, dataset, experiment, train_data, train_labels,
 
 
 def experiment_1_number_of_clients(dataset, experiment, rounds, clients):
+    """
+    First experiment conducted. Experimenting with varying the number of clients used in a federated setting.
+
+    :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
+    :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
+    :param rounds:                  int, number of communication rounds that the federated clients average results for
+    :param clients:                 int_array, the maximum number of clients participating in a communication round
+    :return:
+    """
+
     # Load data
     train_data, train_labels, test_data, test_labels, dataset = Data_Loader.load_data(dataset)
 
@@ -173,6 +234,18 @@ def experiment_1_number_of_clients(dataset, experiment, rounds, clients):
 
 
 def experiment_2_limited_digits(dataset, experiment, rounds, digit_array):
+    """
+    Second experiment conducted. Experimenting with varying the number of MNIST digits used in a centralized and federated
+    setting. The number of clients is held constant at 10.
+
+    :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
+    :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
+    :param rounds:                  int, number of communication rounds that the federated clients average results for
+    :param digit_array:             array of arrays, specifying the digits to be used in a given experiment,
+                                    e.g. [[0,5],[0,2,5]]
+    :return:
+    """
+
     # Load data
     train_data, train_labels, test_data, test_labels, dataset = Data_Loader.load_data(dataset)
 
@@ -192,6 +265,17 @@ def experiment_2_limited_digits(dataset, experiment, rounds, digit_array):
 
 
 def experiment_3_add_noise(dataset, experiment, rounds, std_devs):
+    """
+    Third experiment conducted. Experimenting with varying the noise added to the MNIST data in a centralized and a
+    federated setting. The number of clients is held constant at 10.
+
+    :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
+    :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
+    :param rounds:                  int, number of communication rounds that the federated clients average results for
+    :param std_devs:                float_array, the standard deviation of gaussian noise to be added to the dataset
+    :return:
+    """
+
     # Load data
     train_data, train_labels, test_data, test_labels, dataset = Data_Loader.load_data(dataset)
 
@@ -207,6 +291,11 @@ def experiment_3_add_noise(dataset, experiment, rounds, std_devs):
 
 
 def experiment_main_1():
+    """
+    Main function running the first 3 experiments.
+    :return:
+    """
+
     # Experiment 1 - Number of clients
     num_clients = [2, 5, 10, 20, 50, 100]
     experiment_1_number_of_clients(dataset="MNIST", experiment="CLIENTS", rounds=30, clients=num_clients)
@@ -247,6 +336,7 @@ def experiment_main_1():
 # -------------------------------------------------- Experiments - 2 ----------------------------------------------- #
 
 def experiment_4_autism():
+
     features, labels = Data_Loader.load_autism_data_body()
     train_data_clients, train_labels_clients, test_data_clients, test_labels_clients = [], [], [], []
     for idx, client in enumerate(features):

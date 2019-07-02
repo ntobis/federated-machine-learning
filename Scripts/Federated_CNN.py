@@ -270,7 +270,7 @@ def main(clients, rounds=2, participants=5, dataset="MNIST", training=True, eval
     :param clients:             int, specifying number of participating clients
     :param rounds:              int, number of communication rounds
     :param participants:        int, number of clients participating in a given round
-    :param dataset:                string (selecting the data set to be used, default is MNIST)
+    :param dataset:             string (selecting the data set to be used, default is MNIST)
     :param training:            bool
     :param plotting:            bool
     :param evaluating:          bool
