@@ -5,7 +5,9 @@ import numpy as np
 import tensorflow as tf
 
 from Scripts import Print_Functions as Output
-from Scripts.Centralized_CNN import AUTISM
+
+ROOT = os.path.dirname(os.path.dirname(__file__))
+AUTISM = os.path.join(ROOT, 'Data', 'Autism')
 
 
 def unison_shuffled_copies(a, b):

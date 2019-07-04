@@ -114,7 +114,6 @@ def evaluate_cnn(model, test_data, test_labels, train_data=None, train_labels=No
         test_loss           float
         test_acc            float (TP / All Observations)
     """
-
     test_loss, test_acc = model.evaluate(test_data, test_labels)
 
     if train_data is not None and train_labels is not None:

@@ -1,10 +1,25 @@
 import tensorflow as tf
+import numpy as np
+
 from Scripts import Centralized_CNN as cNN
+from Scripts import Data_Loader_Functions as Data_Loader
+from Scripts import Print_Functions as Output
 
 
-def loss(model, x, y):
-    y_ = model(x)
-    return tf.losses.sparse_softmax_cross_entropy(labels=y, logits=y_)
+def shuffling(train_data, train_labels):
+    shuffled_inputs = train_data.copy()
+    shuffled_outputs = train_labels.copy()
+    rng_state = np.random.get_state()
+    np.random.shuffle(shuffled_inputs)
+    np.random.set_state(rng_state)
+    np.random.shuffle(shuffled_outputs)
+
+    return shuffled_inputs, shuffled_outputs
+
+
+def loss(model, x, y_true):
+    y_pred = model(x)
+    return tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred)
 
 
 def grad(model, inputs, targets):
@@ -12,13 +27,81 @@ def grad(model, inputs, targets):
         loss_value = loss(model, inputs, targets)
     return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
-# Training loop - using batches of 32
-optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
-model = cNN.build_cnn()
 
-global_step = tf.Variable(0)
-for x, y in train_data:
-    # Optimize the model
-    loss_value, grads = grad(model, x, y)
-    optimizer.apply_gradients(zip(grads, model.trainable_variables),
-                          global_step)
+def train(model, train_data, train_labels, batch_size, epochs, optimizer, shuffle=True, noise=None):
+    # Keep results for plotting
+    train_loss_results = []
+    train_accuracy_results = []
+
+    train_data = tf.convert_to_tensor(train_data, dtype=tf.float32)
+    train_labels = tf.convert_to_tensor(train_labels, dtype=tf.float32)
+    tf.data.Dataset.from_tensors(train_data)
+    for epoch in range(epochs):
+        epoch_loss_avg = tf.metrics.Mean()
+        epoch_accuracy = tf.metrics.Accuracy()
+        # Shuffle
+        # if shuffle:
+        #     train_data, train_labels = shuffling(train_data, train_labels)
+        input_batches = np.array_split(train_data, train_data.shape[0] // batch_size)
+        output_batches = np.array_split(train_labels, train_labels.shape[0] // batch_size)
+
+        global_step = tf.Variable(0)
+        for input_batch, output_batch in zip(input_batches, output_batches):
+            # Optimize the model
+            loss_value, grads = grad(model, input_batch, output_batch)
+            for idx, gradient in enumerate(grads):
+                # Clip gradients
+                grads[idx] = tf.minimum(gradient, 0.5)
+
+                # Add noise
+                if noise['type'].lower() is 'normal' or 'gaussian':
+                    grads[idx] += tf.random.normal(gradient.shape, noise['mean'], noise['stdev'])
+                elif noise['type'].lower() is 'laplace':
+                    grads[idx] += np.random.laplace(noise['mean'], noise['stdev'], gradient.shape)
+
+            optimizer.apply_gradients(zip(grads, model.trainable_variables), global_step)
+
+            # Track progress
+            epoch_loss_avg(loss_value)  # add current batch loss
+            # compare predicted label to actual label
+            epoch_accuracy(tf.argmax(model(input_batch), axis=1, output_type=tf.int32), output_batch)
+
+            # end epoch
+        train_loss_results.append(epoch_loss_avg.result())
+        train_accuracy_results.append(epoch_accuracy.result())
+
+        if epoch % 1 == 0:
+            print("Epoch {:03d}: Loss: {:.3f}, Accuracy: {:.3%}".format(epoch + 1,
+                                                                        epoch_loss_avg.result(),
+                                                                        epoch_accuracy.result()))
+
+        return model
+
+
+def main():
+    noisy_model = cNN.build_cnn(input_shape=(28, 28, 1))
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01, clipvalue=0.5)
+    train_data, train_labels, test_data, test_labels, dataset = Data_Loader.load_data("MNIST")
+
+    test_data = tf.convert_to_tensor(test_data, dtype=tf.float32)
+    test_labels = tf.convert_to_tensor(test_labels, dtype=tf.float32)
+
+    noise = {'type': 'normal', 'mean': 0, 'stdev': 1}
+    noisy_model = train(model=noisy_model,
+                        train_data=train_data,
+                        train_labels=train_labels,
+                        batch_size=32,
+                        epochs=1,
+                        optimizer=optimizer,
+                        noise=noise)
+
+    noisy_model.compile(optimizer=optimizer,
+                        loss=tf.keras.losses.sparse_categorical_crossentropy,
+                        metrics=['accuracy'])
+
+    test_loss, test_acc = cNN.evaluate_cnn(noisy_model, test_data, test_labels)
+    Output.print_loss_accuracy(test_acc, test_loss)
+
+
+if __name__ == '__main__':
+    main()
