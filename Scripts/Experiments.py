@@ -137,6 +137,7 @@ def experiment_centralized(dataset, experiment, train_data, train_labels, test_d
 
     # Train Centralized CNN
     centralized_model = cNN.build_cnn(input_shape=(28, 28, 1))
+    centralized_model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     centralized_model = cNN.train_cnn(centralized_model, train_data, train_labels, epochs=epochs)
 
     # Save full model
@@ -179,6 +180,7 @@ def experiment_federated(clients, dataset, experiment, train_data, train_labels,
 
     # Build initial model
     model = cNN.build_cnn(input_shape=(28, 28, 1))
+    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     # Save initial model
     json_config = model.to_json()
@@ -235,8 +237,8 @@ def experiment_1_number_of_clients(dataset, experiment, rounds, clients):
 
 def experiment_2_limited_digits(dataset, experiment, rounds, digit_array):
     """
-    Second experiment conducted. Experimenting with varying the number of MNIST digits used in a centralized and federated
-    setting. The number of clients is held constant at 10.
+    Second experiment conducted. Experimenting with varying the number of MNIST digits used in a centralized and
+    federated setting. The number of clients is held constant at 10.
 
     :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
     :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
@@ -297,12 +299,12 @@ def experiment_main_1():
     """
 
     # Experiment 1 - Number of clients
-    num_clients = [2, 5, 10, 20, 50, 100]
-    experiment_1_number_of_clients(dataset="MNIST", experiment="CLIENTS", rounds=30, clients=num_clients)
+    clients = [2, 5, 10, 20, 50, 100]
+    experiment_1_number_of_clients(dataset="MNIST", experiment="CLIENTS", rounds=30, clients=clients)
 
     # Plot results
-    plot_results(dataset="MNIST", experiment="CLIENTS", keys=num_clients, date="2019-06-25",
-                 suffix=str(num_clients))
+    plot_results(dataset="MNIST", experiment="CLIENTS", keys=clients, date="2019-06-25",
+                 suffix=str(clients))
 
     # Experiment 2 - Digits
     digits_arr = [
@@ -345,7 +347,8 @@ def experiment_4_autism():
         test_data_clients.append(test_data)
         test_labels_clients.append(test_labels)
 
-    experiment_federated(len(train_data_clients), "AUTISM_BODY", "TEST", train_data_clients, train_labels_clients, test_data_clients, test_labels_clients)
+    experiment_federated(len(train_data_clients), "AUTISM_BODY", "TEST", train_data_clients, train_labels_clients,
+                         test_data_clients, test_labels_clients)
 
 
 # ------------------------------------------------ End Experiments - 2 --------------------------------------------- #

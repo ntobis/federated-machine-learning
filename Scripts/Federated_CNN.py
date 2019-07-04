@@ -1,6 +1,4 @@
-import logging
 import os
-import threading
 import time
 
 import numpy as np
@@ -9,8 +7,8 @@ import tensorflow as tf
 
 import Scripts.Data_Loader_Functions as Data_Loader
 from Scripts import Centralized_CNN as cNN
-from Scripts import Print_Functions as Output
 from Scripts import Model_Reset as Reset
+from Scripts import Print_Functions as Output
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 
@@ -171,20 +169,10 @@ def communication_round(num_of_clients, train_data, train_labels, epochs, num_pa
     # Select clients to participate in communication round
     clients = create_client_index_array(num_of_clients, num_participating_clients)
 
-    # Set up one thread per client
-    threads = list()
+    # Train each client
     for client in clients:
-        x = threading.Thread(target=client_learning, args=(client, epochs, train_data, train_labels))
-        threads.append(x)
-        x.start()
+        client_learning(client, epochs, train_data, train_labels)
 
-    # Waiting for all threads to finish
-    for index, thread in enumerate(threads):
-        logging.info("Main    : before joining thread %d.", index)
-        thread.join()
-        logging.info("Main    : thread %d done", index)
-    # for client in clients:
-    #     client_learning(client, epochs, train_data, train_labels)
     # Average all local updates and store them as new 'global weights'
     average_local_weights()
 
@@ -194,7 +182,10 @@ def client_learning(client, epochs, train_data, train_labels):
     # Initialize model structure and load weights
     model = build_global_model()
     # Train local model and store weights to folder
-    print(client)
+    train_client_model(client, epochs, model, train_data, train_labels)
+
+
+def train_client_model(client, epochs, model, train_data, train_labels):
     model = cNN.train_cnn(model, train_data[client], train_labels[client], epochs=epochs)
     weights = model.get_weights()
     np.save(FEDERATED_LOCAL_WEIGHTS.format(client), weights)
@@ -305,6 +296,8 @@ def main(clients, rounds=2, participants=5, dataset="MNIST", training=True, eval
 
         # Build initial model
         model = cNN.build_cnn(input_shape=(28, 28, 1))
+        # Compile the model
+        model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
         # Save initial model
         json_config = model.to_json()

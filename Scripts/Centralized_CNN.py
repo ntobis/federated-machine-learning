@@ -11,6 +11,7 @@ from Scripts import Data_Loader_Functions as Data_Loader
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 layers = tf.keras.layers  # like 'from tensorflow.keras import layers' (PyCharm import issue workaround)
+optimizers = tf.keras.optimizers  # like 'from tensorflow.keras import optimizers' (PyCharm import issue workaround)
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
@@ -74,15 +75,10 @@ def build_cnn(input_shape):
     model.add(layers.Dense(32, activation='relu'))
     model.add(layers.Dense(10, activation='softmax'))
 
-    # Compile the model
-    model.compile(optimizer='adam',
-                  loss='sparse_categorical_crossentropy',
-                  metrics=['accuracy'])
-
     return model
 
 
-def train_cnn(model, train_data, train_labels, epochs=2, callbacks=None):
+def train_cnn(model, train_data, train_labels, epochs=30, callbacks=None):
     """
     Train and return a simple CNN model for image recognition
 
@@ -140,21 +136,24 @@ def main(plotting=False, training=True, loading=False, evaluating=True, max_samp
     :param max_samples:         int
 
     """
-    test_data, test_labels, train_data, train_labels, dataset = Data_Loader.load_data(dataset)
+    train_data, train_labels, test_data, test_labels, dataset = Data_Loader.load_data(dataset)
 
     if max_samples:
         train_data = train_data[:max_samples]
         train_labels = train_labels[:max_samples]
 
     # Display data
-    if plotting:
-        Output.display_images(train_data, train_labels)
+    # if plotting:
+    #     Output.display_images(train_data, train_labels)
 
     # Enable check-pointing
     cp_callback = create_checkpoint_callback()
 
     # Build model
     model = build_cnn(input_shape=(28, 28, 1))
+    # Compile the model
+    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
     if loading:
         model.load_weights(CENTRALIZED_CHECK_POINT)
 
