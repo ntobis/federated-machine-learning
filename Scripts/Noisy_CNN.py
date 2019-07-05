@@ -28,7 +28,7 @@ def grad(model, inputs, targets):
     return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
 
-def train(model, train_data, train_labels, batch_size, epochs, optimizer, shuffle=True, noise=None):
+def train(model, train_data, train_labels, batch_size, epochs, optimizer, shuffle=True, noise=None, clipnorm=None):
     # Keep results for plotting
     train_loss_results = []
     train_accuracy_results = []
@@ -51,15 +51,16 @@ def train(model, train_data, train_labels, batch_size, epochs, optimizer, shuffl
             loss_value, grads = grad(model, input_batch, output_batch)
 
             for idx, gradient in enumerate(grads):
+
                 # Clip gradients
-                grads[idx] = tf.minimum(gradient, 0.5)
+                if clipnorm:
+                    grads[idx] = tf.clip_by_norm(grads[idx], clipnorm)
 
                 # Add noise
                 if noise['type'].lower() is 'normal' or 'gaussian':
-                    grads[idx] += tf.random.normal(gradient.shape, noise['mean'], noise['stdev'])
-                    print(np.sum(grads[idx]))
+                    grads[idx] += tf.random.normal(gradient.shape, noise['mean'], noise['stdev'] * clipnorm)
                 elif noise['type'].lower() is 'laplace':
-                    grads[idx] += np.random.laplace(noise['mean'], noise['stdev'], gradient.shape)
+                    grads[idx] += np.random.laplace(noise['mean'], noise['stdev'] * clipnorm, gradient.shape)
             optimizer.apply_gradients(zip(grads, model.trainable_variables), global_step)
 
             # Track progress
@@ -81,20 +82,21 @@ def train(model, train_data, train_labels, batch_size, epochs, optimizer, shuffl
 
 def main():
     noisy_model = cNN.build_cnn(input_shape=(28, 28, 1))
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01, clipvalue=0.5)
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
     train_data, train_labels, test_data, test_labels, dataset = Data_Loader.load_data("MNIST")
 
     test_data = tf.convert_to_tensor(test_data, dtype=tf.float32)
     test_labels = tf.convert_to_tensor(test_labels, dtype=tf.float32)
 
-    noise = {'type': 'normal', 'mean': 0, 'stdev': 1}
+    noise = {'type': 'normal', 'mean': 0, 'stdev': 4}
     noisy_model = train(model=noisy_model,
                         train_data=train_data,
                         train_labels=train_labels,
                         batch_size=32,
                         epochs=10,
                         optimizer=optimizer,
-                        noise=noise)
+                        noise=noise,
+                        clipnorm=3)
 
     noisy_model.compile(optimizer=optimizer,
                         loss=tf.keras.losses.sparse_categorical_crossentropy,
