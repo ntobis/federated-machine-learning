@@ -49,6 +49,7 @@ def train(model, train_data, train_labels, batch_size, epochs, optimizer, shuffl
         for input_batch, output_batch in zip(input_batches, output_batches):
             # Optimize the model
             loss_value, grads = grad(model, input_batch, output_batch)
+
             for idx, gradient in enumerate(grads):
                 # Clip gradients
                 grads[idx] = tf.minimum(gradient, 0.5)
@@ -56,9 +57,9 @@ def train(model, train_data, train_labels, batch_size, epochs, optimizer, shuffl
                 # Add noise
                 if noise['type'].lower() is 'normal' or 'gaussian':
                     grads[idx] += tf.random.normal(gradient.shape, noise['mean'], noise['stdev'])
+                    print(np.sum(grads[idx]))
                 elif noise['type'].lower() is 'laplace':
                     grads[idx] += np.random.laplace(noise['mean'], noise['stdev'], gradient.shape)
-
             optimizer.apply_gradients(zip(grads, model.trainable_variables), global_step)
 
             # Track progress
@@ -75,7 +76,7 @@ def train(model, train_data, train_labels, batch_size, epochs, optimizer, shuffl
                                                                         epoch_loss_avg.result(),
                                                                         epoch_accuracy.result()))
 
-        return model
+    return model
 
 
 def main():
@@ -91,7 +92,7 @@ def main():
                         train_data=train_data,
                         train_labels=train_labels,
                         batch_size=32,
-                        epochs=1,
+                        epochs=10,
                         optimizer=optimizer,
                         noise=noise)
 
