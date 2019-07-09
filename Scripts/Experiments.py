@@ -1,8 +1,6 @@
 import sys
 import os
 
-import Scripts.Data_Loader_Functions as Data_Loader
-
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import time
@@ -13,6 +11,8 @@ import numpy as np
 from Scripts import Centralized_CNN as cNN
 from Scripts import Federated_CNN as fed_CNN
 from Scripts import Print_Functions as Output
+from Scripts import Data_Loader_Functions as Data_Loader
+
 
 pd.set_option('display.max_columns', 500)
 
