@@ -14,6 +14,7 @@ from matplotlib import pyplot as plt
 ROOT = os.path.dirname(os.path.dirname(__file__))
 FIGURES = os.path.join(ROOT, "Figures")
 
+
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
@@ -22,7 +23,8 @@ FIGURES = os.path.join(ROOT, "Figures")
 
 
 class PlotParams:
-    def __init__(self, dataset, experiment, metric='Accuracy', title='', x_label='', y_label='', legend_loc='upper left',
+    def __init__(self, dataset, experiment, metric='Accuracy', title='', x_label='', y_label='',
+                 legend_loc='upper left',
                  num_format="{:5.1f}%", max_epochs=None, label_spaces=1, suffix=''):
         self.metric = metric
         self.title = title
@@ -70,6 +72,7 @@ def print_loss_accuracy(accuracy, loss, data_type="Test"):
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
+
 
 # ----------------------------------------------- End Print Functions ---------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
@@ -130,7 +133,7 @@ def plot_federated_accuracy(history):
     plt.title('Model accuracy')
     plt.ylabel('Accuracy')
     plt.xlabel('Communication Round')
-    plt.xticks(np.arange(min(history.index+1), max(history.index + 1) + 1, step=1))
+    plt.xticks(np.arange(min(history.index + 1), max(history.index + 1) + 1, step=1))
     plt.legend(['Train', 'Test'], loc='upper left')
     plt.show()
 
@@ -176,39 +179,42 @@ def plot_joint_metric(history, params):
     suffix = params.suffix
 
     # Plot line
-    plt.plot((history.index + 1)[:max_epochs], history['Centralized {}'.format(metric)][:max_epochs], color=colors[0])
+    try:
+        plt.plot((history.index + 1)[:max_epochs], history['Centralized {}'.format(metric)][:max_epochs], color=colors[0])
 
-    # Plot labels
-    for i, j in history['Centralized {}'.format(metric)][:max_epochs].items():
-        if not int(i) % label_spaces:
-            plt.text((i + 1) * 0.99, j, num_format.format(j), color='black',
-                     bbox=dict(facecolor='white', edgecolor=colors[0], boxstyle='round'))
+        # Plot labels
+        for i, j in history['Centralized {}'.format(metric)][:max_epochs].items():
+            if not int(i) % label_spaces:
+                plt.text((i + 1) * 0.99, j, num_format.format(j), color='black',
+                         bbox=dict(facecolor='white', edgecolor=colors[0], boxstyle='round'))
+    except KeyError:
+        pass
 
     # Get federated lines
     federated_accuracy_cols = [str(col) for col in history.columns if 'Federated Test {}'.format(metric) in col]
     for idx, col in enumerate(federated_accuracy_cols):
 
         # Plot lines
-        plt.plot((history.index + 1)[:max_epochs], history[col][:max_epochs], color=colors[idx+1])
+        plt.plot((history.index + 1)[:max_epochs], history[col][:max_epochs], color=colors[idx + 1])
 
         # Plot labels
         for i, j in history[col][:max_epochs].items():
             if not int(i) % label_spaces:
-                    plt.text((i + 1) * 0.99, j, num_format.format(j), color='black',
-                             bbox=dict(facecolor='white', edgecolor=colors[idx+1], boxstyle='round'))
+                plt.text((i + 1) * 0.99, j, num_format.format(j), color='black',
+                         bbox=dict(facecolor='white', edgecolor=colors[idx + 1], boxstyle='round'))
 
     # Draw graph
     plt.title(title)
     plt.ylabel(y_label)
     plt.xlabel(x_label)
-    plt.xticks(np.arange(min(history.index+1), max((history.index + 1)[:max_epochs]) + 1, step=1))
+    plt.xticks(np.arange(min(history.index + 1), max((history.index + 1)[:max_epochs]) + 1, step=1))
     federated_accuracy_cols.insert(0, "Centralized {}".format(metric))  # Add centralized to list of legend labels
     plt.legend(federated_accuracy_cols, loc=legend_loc)
     file = time.strftime("%Y-%m-%d-%H%M%S") + r"_{}_{}_{}_{}.png".format(dataset, experiment, metric, suffix)
     fig = plt.gcf()
     fig.set_size_inches((12, 8), forward=False)
-    plt.savefig(os.path.join(FIGURES, file), dpi=300)
-    # plt.show()
+    # plt.savefig(os.path.join(FIGURES, file), dpi=300)
+    plt.show()
     plt.clf()
 
 
@@ -216,12 +222,13 @@ def display_images(train_data, train_labels, noise=None):
     """
     Display first 9 MNIST images
 
+    :param noise:           Noise level added
     :param train_data:      numpy array of shape (60000, 28, 28, 1)
     :param train_labels:    numpy array of shape (60000, )
 
     """
 
-    train_data = tf.reshape(train_data, [60000, 28, 28])
+    train_data = tf.reshape(train_data, [train_data.shape[0], 28, 28])
     # Display Digits
     plt.figure()
     for i in range(9):
@@ -232,7 +239,6 @@ def display_images(train_data, train_labels, noise=None):
         plt.xticks([])
         plt.yticks([])
     plt.show()
-
 
 # ----------------------------------------------- End Plot Functions ----------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #

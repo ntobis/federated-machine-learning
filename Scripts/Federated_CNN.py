@@ -34,9 +34,14 @@ def reset_federated_model():
     Deletes the global model and weights, as well as all local weights (if any)
     :return:
     """
-
-    Reset.remove_files(FEDERATED_LOCAL_WEIGHTS_PATH)
-    Reset.remove_files(cNN.MODELS)
+    if os.path.isdir(FEDERATED_LOCAL_WEIGHTS_PATH):
+        Reset.remove_files(FEDERATED_LOCAL_WEIGHTS_PATH)
+    else:
+        os.mkdir(FEDERATED_LOCAL_WEIGHTS_PATH)
+    if os.path.isdir(cNN.MODELS):
+        Reset.remove_files(cNN.MODELS)
+    else:
+        os.mkdir(cNN.MODELS)
 
 
 def split_data_into_clients(num_of_clients, train_data, train_labels):

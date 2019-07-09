@@ -155,7 +155,7 @@ def experiment_centralized(dataset, experiment, train_data, train_labels, test_d
 
 
 def experiment_federated(clients, dataset, experiment, train_data, train_labels, test_data, test_labels,
-                         rounds=5, epochs=1):
+                         rounds=5, epochs=1, random_split=True):
     """
     Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
 
@@ -168,12 +168,20 @@ def experiment_federated(clients, dataset, experiment, train_data, train_labels,
     :param test_labels:             numpy array, the test labels
     :param rounds:                  int, number of communication rounds that the federated clients average results for
     :param epochs:                  int, number of epochs that the client CNN trains for
+    :param random_split:            Determine if split should occur randomly
     :return:
     """
 
     # Split data
-    if dataset is not "AUTISM_BODY":
+    if random_split:
         train_data, train_labels = fed_CNN.split_data_into_clients(clients, train_data, train_labels)
+    else:
+        split_data, split_labels = Data_Loader.split_by_label(train_data, train_labels)
+        train_data, train_labels = Data_Loader.allocate_data(clients,
+                                                             split_data,
+                                                             split_labels,
+                                                             categories_per_client=2,
+                                                             data_points_per_category=int(len(train_data)/(clients*2)))
 
     # Train federated model
     fed_CNN.reset_federated_model()
@@ -333,22 +341,29 @@ def experiment_main_1():
 # ------------------------------------------------ End Experiments - 1 --------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
-
 # ------------------------------------------------------------------------------------------------------------------ #
 # -------------------------------------------------- Experiments - 2 ----------------------------------------------- #
 
-def experiment_4_autism():
-    features, labels = Data_Loader.load_autism_data_body()
-    train_data_clients, train_labels_clients, test_data_clients, test_labels_clients = [], [], [], []
-    for idx, client in enumerate(features):
-        train_data, train_labels, test_data, test_labels = Data_Loader.train_test_split(features[idx], labels[idx])
-        train_data_clients.append(train_data)
-        train_labels_clients.append(train_labels)
-        test_data_clients.append(test_data)
-        test_labels_clients.append(test_labels)
+def experiment_4_split_digits(dataset, experiment, rounds, clients):
+    """
+    First experiment conducted. Experimenting with varying the number of clients used in a federated setting.
 
-    experiment_federated(len(train_data_clients), "AUTISM_BODY", "TEST", train_data_clients, train_labels_clients,
-                         test_data_clients, test_labels_clients)
+    :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
+    :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
+    :param rounds:                  int, number of communication rounds that the federated clients average results for
+    :param clients:                 int_array, the maximum number of clients participating in a communication round
+    :return:
+    """
+
+    # Load data
+    train_data, train_labels, test_data, test_labels, dataset = Data_Loader.load_data(dataset)
+
+    # Perform Experiments
+    for client_num in clients:
+        experiment_federated(client_num, dataset, experiment, train_data, train_labels, test_data, test_labels, rounds,
+                             random_split=False)
+
+    experiment_centralized(dataset, experiment, train_data, train_labels, test_data, test_labels, rounds)
 
 
 # ------------------------------------------------ End Experiments - 2 --------------------------------------------- #
@@ -356,9 +371,10 @@ def experiment_4_autism():
 
 
 if __name__ == '__main__':
-    # print("AUTISM")
-    # experiment_4_autism()
-    # # Experiment 1 - Number of clients
-    num_clients = [5]
-    # print("MNIST")
-    experiment_1_number_of_clients(dataset="MNIST", experiment="CLIENTS", rounds=30, clients=num_clients)
+    # Experiment 4 - Number of clients
+    num_clients = [5, 100]
+    experiment_4_split_digits(dataset="MNIST", experiment="SPLIT_DIGITS", rounds=100, clients=num_clients)
+    # num_clients = [100]
+    # experiment_4_split_digits(dataset="MNIST", experiment="SPLIT_DIGITS", rounds=100, clients=num_clients)
+    # plot_results(dataset="MNIST", experiment="SPLIT_DIGITS", keys=num_clients, date="2019-06-25",
+    #              suffix=str(num_clients))

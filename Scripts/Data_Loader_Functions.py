@@ -67,7 +67,7 @@ def load_autism_data_into_clients(folder_path):
 def train_test_split(features, labels, test_split=0.25, shuffle=False):
     if shuffle:
         features, labels = unison_shuffled_copies(features, labels)
-    split_point = int(len(features)*test_split)
+    split_point = int(len(features) * test_split)
     train_data = features[split_point:]
     test_data = features[:split_point]
     train_labels = features[split_point:]
@@ -97,6 +97,32 @@ def load_mnist_data():
     return train_images, train_labels, test_images, test_labels
 
 
+def split_by_label(data, labels):
+    split_data = [data[labels == label] for label in np.unique(labels).tolist()]
+    split_labels = [labels[labels == label] for label in np.unique(labels).tolist()]
+    return split_data, split_labels
+
+
+def allocate_data(num_clients, split_data, split_labels, categories_per_client, data_points_per_category):
+    clients = []
+    labels = []
+    it = 0
+    for idx in range(num_clients):
+        client = []
+        label = []
+        for _ in range(categories_per_client):
+            choice_arr = np.random.choice(split_data[it % len(split_data)].shape[0], data_points_per_category)
+            client.append(split_data[it % len(split_data)][choice_arr, :])
+            label.append(split_labels[it % len(split_labels)][choice_arr])
+            it += 1
+        client = np.concatenate(client)
+        label = np.concatenate(label)
+        client, label = unison_shuffled_copies(client, label)
+        clients.append(client)
+        labels.append(label)
+    return clients, labels
+
+
 def load_autism_data_body():
     clients = load_autism_data_into_clients(AUTISM)
     return clients[2], clients[-1]
@@ -110,4 +136,9 @@ def load_data(dataset):
         Output.eprint("No data-set named {}. Loading MNIST instead.".format(dataset))
         train_data, train_labels, test_data, test_labels = load_mnist_data()
         dataset = "MNIST"
+
+    train_data = train_data.astype('float32')
+    train_labels = train_labels.astype('float32')
+    test_data = test_data.astype('float32')
+    test_labels = test_labels.astype('float32')
     return train_data, train_labels, test_data, test_labels, dataset

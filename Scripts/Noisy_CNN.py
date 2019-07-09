@@ -40,15 +40,13 @@ def train(model, train_data, train_labels, batch_size, epochs, optimizer, shuffl
     train_loss_results = []
     train_accuracy_results = []
 
-    train_data = tf.convert_to_tensor(train_data, dtype=tf.float32)
-    train_labels = tf.convert_to_tensor(train_labels, dtype=tf.float32)
-    tf.data.Dataset.from_tensors(train_data)
     for epoch in range(epochs):
         epoch_loss_avg = tf.metrics.Mean()
         epoch_accuracy = tf.metrics.Accuracy()
+
         # Shuffle
-        # if shuffle:
-        #     train_data, train_labels = shuffling(train_data, train_labels)
+        if shuffle:
+            train_data, train_labels = shuffling(train_data, train_labels)
         input_batches = np.array_split(train_data, train_data.shape[0] // batch_size)
         output_batches = np.array_split(train_labels, train_labels.shape[0] // batch_size)
 
