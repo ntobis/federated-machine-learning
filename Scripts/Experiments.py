@@ -372,9 +372,9 @@ def experiment_4_split_digits(dataset, experiment, rounds, clients):
 
 if __name__ == '__main__':
     # Experiment 4 - Number of clients
-    num_clients = [5, 100]
+    # clients = [2]
+    # experiment_1_number_of_clients(dataset="MNIST", experiment="CLIENTS", rounds=2, clients=clients)
+    num_clients = [100]
     experiment_4_split_digits(dataset="MNIST", experiment="SPLIT_DIGITS", rounds=100, clients=num_clients)
-    # num_clients = [100]
-    # experiment_4_split_digits(dataset="MNIST", experiment="SPLIT_DIGITS", rounds=100, clients=num_clients)
     # plot_results(dataset="MNIST", experiment="SPLIT_DIGITS", keys=num_clients, date="2019-06-25",
     #              suffix=str(num_clients))
