@@ -39,6 +39,7 @@ class WeightsAccountant:
     def average_local_weights(self):
         self.Local_Weights = np.array(self.Local_Weights).T
         self.Global_Weights = np.mean(self.Local_Weights, axis=1)
+        del self.Local_Weights
         self.Local_Weights = []
         return self.Global_Weights
 
@@ -133,11 +134,10 @@ def train_client_model(client, epochs, model, train_data, train_labels, weights_
     weights_accountant.append_local_weights(weights)
 
 
-def client_learning(client, epochs, train_data, train_labels, weights_accountant):
+def client_learning(model, client, epochs, train_data, train_labels, weights_accountant):
     Output.print_client_id(client)
 
     # Initialize model structure and load weights
-    model = init_global_model()
     weights = weights_accountant.get_global_weights()
     model.set_weights(weights)
 
@@ -145,12 +145,13 @@ def client_learning(client, epochs, train_data, train_labels, weights_accountant
     train_client_model(client, epochs, model, train_data, train_labels, weights_accountant)
 
 
-def communication_round(num_of_clients, train_data, train_labels, epochs, weights_accountant, num_participating_clients=None):
+def communication_round(model, num_of_clients, train_data, train_labels, epochs, weights_accountant, num_participating_clients=None):
     """
     One round of communication between a 'server' and the 'clients'. Each client 'downloads' a global model and trains
     a local model, updating its weights locally. When all clients have updated their weights, they are 'uploaded' to
     the server and averaged.
 
+    :param model:                           Tensorflow Graph
     :param num_of_clients:                  int, number of clients globally available
     :param train_data:                      numpy array
     :param train_labels:                    numpy array
@@ -165,7 +166,7 @@ def communication_round(num_of_clients, train_data, train_labels, epochs, weight
 
     # Train each client
     for client in clients:
-        client_learning(client, epochs, train_data, train_labels, weights_accountant)
+        client_learning(model, client, epochs, train_data, train_labels, weights_accountant)
 
     # Average all local updates and store them as new 'global weights'
     weights_accountant.average_local_weights()
@@ -201,8 +202,8 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
     # Start communication rounds and save the results of each round to the data frame
     for _ in range(communication_rounds):
         Output.print_communication_round(_ + 1)
-        communication_round(num_of_clients, train_data, train_labels, epochs, weights_accountant, num_participating_clients)
-        test_loss, test_acc, train_loss, train_acc = evaluate_federated_cnn(test_data, test_labels, weights_accountant, train_data,
+        communication_round(model, num_of_clients, train_data, train_labels, epochs, weights_accountant, num_participating_clients)
+        test_loss, test_acc, train_loss, train_acc = evaluate_federated_cnn(test_data, test_labels, model, weights_accountant, train_data,
                                                                             train_labels)
 
         history = history.append(pd.Series([test_loss, test_acc, train_loss, train_acc],
@@ -213,12 +214,13 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
     return history
 
 
-def evaluate_federated_cnn(test_data, test_labels, weights_accountant=None, train_data=None, train_labels=None):
+def evaluate_federated_cnn(test_data, test_labels, model=None, weights_accountant=None, train_data=None, train_labels=None):
     """
     Evaluate the global CNN.
 
     :param test_data:                       numpy array
     :param test_labels:                     numpy array
+    :param model:                           Tensorflow graph
     :param weights_accountant:              WeightsAccountant object
     :param train_labels:                    numpy array, optional
     :param train_data:                      numpy array, optional
@@ -228,7 +230,8 @@ def evaluate_federated_cnn(test_data, test_labels, weights_accountant=None, trai
         test_acc                            float
     """
 
-    model = init_global_model()
+    if not model:
+        model = init_global_model()
     if weights_accountant:
         weights = weights_accountant.get_global_weights()
     else:
@@ -283,16 +286,6 @@ def main(clients, rounds=2, participants=5, dataset="MNIST", training=True, eval
 
     if training:
         reset_federated_model()
-
-        # Build initial model
-        model = cNN.build_cnn(input_shape=(28, 28, 1))
-        # Compile the model
-        model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-
-        # Save initial model
-        json_config = model.to_json()
-        with open(FEDERATED_GLOBAL_MODEL, 'w') as json_file:
-            json_file.write(json_config)
 
         # Train Model
         history = federated_learning(communication_rounds=rounds,
