@@ -10,14 +10,49 @@ import numpy as np
 
 from Scripts import Centralized_CNN as cNN
 from Scripts import Federated_CNN as fed_CNN
+from Scripts import Differentially_Private_CNN as diff_CNN
 from Scripts import Print_Functions as Output
 from Scripts import Data_Loader_Functions as Data_Loader
 
-
 pd.set_option('display.max_columns', 500)
+
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------ Utility Functions ----------------------------------------------- #
+
+
+def split_data_into_clients(clients, split, train_data, train_labels):
+    # Split data
+    if split.lower() == 'random':
+        train_data, train_labels = fed_CNN.split_data_into_clients(clients, train_data, train_labels)
+    elif split.lower() == 'overlap':
+        train_data, train_labels = Data_Loader.sort_data(train_data, train_labels)
+        train_data, train_labels = fed_CNN.split_data_into_clients(clients, train_data, train_labels)
+        for idx in range(len(train_data)):
+            train_data[idx], train_labels[idx] = Data_Loader.unison_shuffled_copies(train_data[idx], train_labels[idx])
+    elif split.lower() == 'no_overlap':
+        split_data, split_labels = Data_Loader.split_by_label(train_data, train_labels)
+        train_data, train_labels = Data_Loader.allocate_data(clients,
+                                                             split_data,
+                                                             split_labels,
+                                                             categories_per_client=2,
+                                                             data_points_per_category=int(
+                                                                 len(train_data) / (clients * 2)))
+    else:
+        raise ValueError(
+            "Invalid value for 'Split'. Value can be 'random', 'overlap', 'no_overlap', value was: {}".format(split))
+    return train_data, train_labels
+
+
+def move_results(experiment, date, keys):
+    experiment_path = os.path.join(cNN.RESULTS, experiment + " " + date + " " + str(keys))
+    if not os.path.isdir(experiment_path):
+        os.mkdir(experiment_path)
+    for elem in os.listdir(cNN.RESULTS):
+        if os.path.isfile(os.path.join(cNN.RESULTS, elem)):
+            old_loc = os.path.join(cNN.RESULTS, elem)
+            new_loc = os.path.join(cNN.RESULTS, experiment_path, elem)
+            os.rename(old_loc, new_loc)
 
 
 def combine_results(experiment, keys, sub_folder=None):
@@ -64,7 +99,15 @@ def combine_results(experiment, keys, sub_folder=None):
     return history
 
 
-def plot_results(dataset, experiment, keys, date, suffix):
+# ---------------------------------------------- End Utility Functions --------------------------------------------- #
+# ------------------------------------------------------------------------------------------------------------------ #
+
+
+# ------------------------------------------------------------------------------------------------------------------ #
+# ------------------------------------------------ Experiment Runners ---------------------------------------------- #
+
+
+def plot_results(dataset, experiment, keys, date, suffix, move=False):
     """
     Sets the parameters for the plotting function, and calls the plotting function to plott loss and accuracy over
     multiple epochs/communication rounds.
@@ -74,8 +117,12 @@ def plot_results(dataset, experiment, keys, date, suffix):
     :param keys:                    array, the different experiments, e.g. number of clients [2, 5, 10]
     :param date:                    string, date to be used for folder naming
     :param suffix:                  string, additional information to be added to the folder name
+    :param move:                    bool, set to true if results are still in general "Results" folder
     :return:
     """
+
+    if move:
+        move_results(experiment, time.strftime("%Y-%m-%d"), keys)
 
     sub_folder = experiment + " " + date + " " + suffix
     history = combine_results(experiment, keys, sub_folder)
@@ -113,14 +160,6 @@ def plot_results(dataset, experiment, keys, date, suffix):
     Output.plot_joint_metric(history, params)
 
 
-# ---------------------------------------------- End Utility Functions --------------------------------------------- #
-# ------------------------------------------------------------------------------------------------------------------ #
-
-
-# ------------------------------------------------------------------------------------------------------------------ #
-# ------------------------------------------------ Experiment Runners ---------------------------------------------- #
-
-
 def experiment_centralized(dataset, experiment, train_data, train_labels, test_data, test_labels, epochs=5):
     """
     Sets up a centralized CNN that trains on a specified dataset. Saves the results to CSV.
@@ -137,7 +176,7 @@ def experiment_centralized(dataset, experiment, train_data, train_labels, test_d
 
     # Train Centralized CNN
     centralized_model = cNN.build_cnn(input_shape=(28, 28, 1))
-    centralized_model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    centralized_model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     centralized_model = cNN.train_cnn(centralized_model, train_data, train_labels, epochs=epochs)
 
     # Save full model
@@ -155,7 +194,7 @@ def experiment_centralized(dataset, experiment, train_data, train_labels, test_d
 
 
 def experiment_federated(clients, dataset, experiment, train_data, train_labels, test_data, test_labels,
-                         rounds=5, epochs=1, random_split=True):
+                         rounds=5, epochs=1, split='random', participants=None):
     """
     Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
 
@@ -168,32 +207,15 @@ def experiment_federated(clients, dataset, experiment, train_data, train_labels,
     :param test_labels:             numpy array, the test labels
     :param rounds:                  int, number of communication rounds that the federated clients average results for
     :param epochs:                  int, number of epochs that the client CNN trains for
-    :param random_split:            Determine if split should occur randomly
+    :param split:                   Determine if split should occur randomly
+    :param participants:            participants in a given communications round
     :return:
     """
 
-    # Split data
-    if random_split:
-        train_data, train_labels = fed_CNN.split_data_into_clients(clients, train_data, train_labels)
-    else:
-        split_data, split_labels = Data_Loader.split_by_label(train_data, train_labels)
-        train_data, train_labels = Data_Loader.allocate_data(clients,
-                                                             split_data,
-                                                             split_labels,
-                                                             categories_per_client=2,
-                                                             data_points_per_category=int(len(train_data)/(clients*2)))
+    train_data, train_labels = split_data_into_clients(clients, split, train_data, train_labels)
 
-    # Train federated model
+    # Reset federated model
     fed_CNN.reset_federated_model()
-
-    # Build initial model
-    model = cNN.build_cnn(input_shape=(28, 28, 1))
-    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-
-    # Save initial model
-    json_config = model.to_json()
-    with open(fed_CNN.FEDERATED_GLOBAL_MODEL, 'w') as json_file:
-        json_file.write(json_config)
 
     # Train Model
     history = fed_CNN.federated_learning(communication_rounds=rounds,
@@ -201,8 +223,57 @@ def experiment_federated(clients, dataset, experiment, train_data, train_labels,
                                          train_data=train_data,
                                          train_labels=train_labels,
                                          test_data=test_data,
+                                         test_labels=test_labels,
                                          epochs=epochs,
-                                         test_labels=test_labels)
+                                         num_participating_clients=participants
+                                         )
+
+    # Save history for plotting
+    file = time.strftime("%Y-%m-%d-%H%M%S") + r"_Federated_{}_{}_rounds_{}_clients_{}.csv".format(dataset, experiment,
+                                                                                                  rounds, clients)
+    history = history.rename(index=str, columns={"Train Loss": "Federated Train Loss",
+                                                 "Train Accuracy": "Federated Train Accuracy",
+                                                 "Test Loss": "Federated Test Loss",
+                                                 "Test Accuracy": "Federated Test Accuracy"})
+    history.to_csv(os.path.join(cNN.RESULTS, file))
+
+
+def experiment_differential_privacy(clients, dataset, experiment, train_data, train_labels, test_data, test_labels,
+                                    sigma, rounds=5, epochs=1, split='random', participants=None):
+    """
+    Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
+
+    :param clients:                 int, the maximum number of clients participating in a communication round
+    :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
+    :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
+    :param train_data:              numpy array, the train data
+    :param train_labels:            numpy array, the train labels
+    :param test_data:               numpy array, the test data
+    :param test_labels:             numpy array, the test labels
+    :param sigma:                   float, determining the level of differential privacy
+    :param rounds:                  int, number of communication rounds that the federated clients average results for
+    :param epochs:                  int, number of epochs that the client CNN trains for
+    :param split:                   Determine if split should occur randomly
+    :param participants:            participants in a given communications round
+    :return:
+    """
+
+    train_data, train_labels = split_data_into_clients(clients, split, train_data, train_labels)
+
+    # Reset federated model
+    fed_CNN.reset_federated_model()
+
+    # Train Model
+    history = diff_CNN.federated_learning(communication_rounds=rounds,
+                                          num_of_clients=clients,
+                                          train_data=train_data,
+                                          train_labels=train_labels,
+                                          test_data=test_data,
+                                          test_labels=test_labels,
+                                          epochs=epochs,
+                                          sigma=sigma,
+                                          num_participating_clients=participants
+                                          )
 
     # Save history for plotting
     file = time.strftime("%Y-%m-%d-%H%M%S") + r"_Federated_{}_{}_rounds_{}_clients_{}.csv".format(dataset, experiment,
@@ -300,6 +371,9 @@ def experiment_3_add_noise(dataset, experiment, rounds, std_devs):
         experiment_centralized(dataset, this_experiment, train_data_noise, train_labels, test_data, test_labels, rounds)
 
 
+# ------------------------------------------------ End Experiments - 1 --------------------------------------------- #
+# ------------------------------------------------------------------------------------------------------------------ #
+
 def experiment_main_1():
     """
     Main function running the first 3 experiments.
@@ -338,9 +412,6 @@ def experiment_main_1():
                      suffix=str(std_dev))
 
 
-# ------------------------------------------------ End Experiments - 1 --------------------------------------------- #
-# ------------------------------------------------------------------------------------------------------------------ #
-
 # ------------------------------------------------------------------------------------------------------------------ #
 # -------------------------------------------------- Experiments - 2 ----------------------------------------------- #
 
@@ -361,7 +432,29 @@ def experiment_4_split_digits(dataset, experiment, rounds, clients):
     # Perform Experiments
     for client_num in clients:
         experiment_federated(client_num, dataset, experiment, train_data, train_labels, test_data, test_labels, rounds,
-                             random_split=False)
+                             split='no_overlap')
+
+    experiment_centralized(dataset, experiment, train_data, train_labels, test_data, test_labels, rounds)
+
+
+def experiment_5_split_digits_with_overlap(dataset, experiment, rounds, clients):
+    """
+    First experiment conducted. Experimenting with varying the number of clients used in a federated setting.
+
+    :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
+    :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
+    :param rounds:                  int, number of communication rounds that the federated clients average results for
+    :param clients:                 int_array, the maximum number of clients participating in a communication round
+    :return:
+    """
+
+    # Load data
+    train_data, train_labels, test_data, test_labels, dataset = Data_Loader.load_data(dataset)
+
+    # Perform Experiments
+    for client_num in clients:
+        experiment_federated(client_num, dataset, experiment, train_data, train_labels, test_data, test_labels, rounds,
+                             split='overlap', participants=10)
 
     experiment_centralized(dataset, experiment, train_data, train_labels, test_data, test_labels, rounds)
 
@@ -370,11 +463,42 @@ def experiment_4_split_digits(dataset, experiment, rounds, clients):
 # ------------------------------------------------------------------------------------------------------------------ #
 
 
+# ------------------------------------------------------------------------------------------------------------------ #
+# -------------------------------------------------- Experiments - 3 ----------------------------------------------- #
+
+def experiment_6_differential_federated_learning(dataset, experiment, rounds, clients, sigmas):
+    # Load data
+    train_data, train_labels, test_data, test_labels, dataset = Data_Loader.load_data(dataset)
+
+    # Perform Experiments
+    for sigma in sigmas:
+        experiment_differential_privacy(clients, dataset, experiment, train_data, train_labels, test_data,
+                                        test_labels, sigma=sigma, rounds=rounds, split='overlap', participants=10)
+
+    experiment_centralized(dataset, experiment, train_data, train_labels, test_data, test_labels, rounds)
+
+
+# ------------------------------------------------ End Experiments - 3 --------------------------------------------- #
+# ------------------------------------------------------------------------------------------------------------------ #
+
+
 if __name__ == '__main__':
-    # Experiment 4 - Number of clients
-    # clients = [2]
-    # experiment_1_number_of_clients(dataset="MNIST", experiment="CLIENTS", rounds=2, clients=clients)
-    num_clients = [100]
-    experiment_4_split_digits(dataset="MNIST", experiment="SPLIT_DIGITS", rounds=100, clients=num_clients)
-    # plot_results(dataset="MNIST", experiment="SPLIT_DIGITS", keys=num_clients, date="2019-06-25",
-    #              suffix=str(num_clients))
+    # Experiment 1 - Number of clients
+    # num_clients = [10]
+    # experiment_1_number_of_clients(dataset="MNIST", experiment="CLIENTS", rounds=10, clients=num_clients)
+    # Experiment 4 - Number of clients no overlap
+    # num_clients = [10]
+    # experiment_4_split_digits(dataset="MNIST", experiment="SPLIT_DIGITS", rounds=100, clients=num_clients)
+    # plot_results(dataset="MNIST", experiment="SPLIT_DIGITS", keys=num_clients, date="2019-07-10",
+    #              suffix=str(num_clients), move=True)
+
+    # Experiment 5
+    # num_clients = [100]
+    # experiment_5_split_digits_with_overlap(dataset="MNIST", experiment="SPLIT_DIGITS_OVERLAP", rounds=300,
+    #                                        clients=num_clients)
+    # plot_results(dataset="MNIST", experiment="SPLIT_DIGITS_OVERLAP", keys=num_clients, date="2019-07-10",
+    #              suffix=str(num_clients), move=True)
+
+    sigma_arr = [1]
+    experiment_6_differential_federated_learning(dataset="MNIST", experiment="DIFF_PRIV", rounds=200, clients=100,
+                                                 sigmas=sigma_arr)

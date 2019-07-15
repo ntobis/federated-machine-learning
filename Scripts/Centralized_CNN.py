@@ -69,10 +69,12 @@ def build_cnn(input_shape):
     model = models.Sequential()
 
     # Add layers, inspired by https://www.tensorflow.org/beta/tutorials/images/intro_to_cnns
-    model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape))
+    model.add(layers.Conv2D(32, (5, 5), input_shape=input_shape))
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Conv2D(64, (5, 5), input_shape=input_shape))
     model.add(layers.MaxPooling2D((2, 2)))
     model.add(layers.Flatten())
-    model.add(layers.Dense(32, activation='relu'))
+    model.add(layers.Dense(512, activation='relu'))
     model.add(layers.Dense(10, activation='softmax'))
 
     return model
@@ -92,7 +94,7 @@ def train_cnn(model, train_data, train_labels, epochs=30, callbacks=None):
          model              trained tensorflow model
     """
 
-    model.fit(train_data, train_labels, epochs=epochs, batch_size=32, validation_split=0, callbacks=callbacks)
+    model.fit(train_data, train_labels, epochs=epochs, batch_size=10, validation_split=0, callbacks=callbacks)
     return model
 
 
@@ -151,7 +153,7 @@ def main(plotting=False, training=True, loading=False, evaluating=True, max_samp
     # Build model
     model = build_cnn(input_shape=(28, 28, 1))
     # Compile the model
-    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     if loading:
         model.load_weights(CENTRALIZED_CHECK_POINT)

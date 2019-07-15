@@ -142,3 +142,10 @@ def load_data(dataset):
     test_data = test_data.astype('float32')
     test_labels = test_labels.astype('float32')
     return train_data, train_labels, test_data, test_labels, dataset
+
+
+def sort_data(data, labels):
+    sort_array = np.argsort(labels)
+    data = data[sort_array]
+    labels = labels[sort_array]
+    return data, labels

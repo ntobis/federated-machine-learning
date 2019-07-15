@@ -9,6 +9,7 @@ import Scripts.Data_Loader_Functions as Data_Loader
 from Scripts import Centralized_CNN as cNN
 from Scripts import Model_Reset as Reset
 from Scripts import Print_Functions as Output
+from Scripts.Weights_Accountant import WeightsAccountant
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 
@@ -27,24 +28,6 @@ FEDERATED_LOCAL_WEIGHTS = os.path.join(FEDERATED_LOCAL_WEIGHTS_PATH, "federated_
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------ Utility Functions ----------------------------------------------- #
-
-class WeightsAccountant:
-    def __init__(self, weights):
-        self.Global_Weights = weights
-        self.Local_Weights = []
-
-    def append_local_weights(self, weights):
-        self.Local_Weights.append(weights)
-
-    def average_local_weights(self):
-        self.Local_Weights = np.array(self.Local_Weights).T
-        self.Global_Weights = np.mean(self.Local_Weights, axis=1)
-        del self.Local_Weights
-        self.Local_Weights = []
-        return self.Global_Weights
-
-    def get_global_weights(self):
-        return self.Global_Weights
 
 
 def reset_federated_model():
@@ -74,8 +57,19 @@ def split_data_into_clients(num_of_clients, train_data, train_labels):
         train_data:                 numpy array (with additional dimension for N clients)
         train_labels:               numpy array (with additional dimension for N clients)
     """
-    train_data = np.array_split(train_data, num_of_clients)
-    train_labels = np.array_split(train_labels, num_of_clients)
+
+    # Split data into twice as many shards as clients
+    train_data = np.array_split(train_data, num_of_clients * 2)
+    train_labels = np.array_split(train_labels, num_of_clients * 2)
+
+    # Shuffle shards so that for sorted data, shards with different labels are adjacent
+    train = list(zip(train_data, train_labels))
+    np.random.shuffle(train)
+    train_data, train_labels = zip(*train)
+
+    # Concatenate adjacent shards
+    train_data = [np.concatenate(train_data[i:i+2]) for i in range(0, len(train_data), 2)]
+    train_labels = [np.concatenate(train_labels[i:i+2]) for i in range(0, len(train_labels), 2)]
 
     return train_data, train_labels
 
@@ -101,24 +95,30 @@ def create_client_index_array(num_of_clients, num_participating_clients=None):
     return clients
 
 
-def init_global_model():
+def init_global_model(input_shape=(28, 28, 1)):
     """
     Initializes a global "server-side" model.
+    :param input_shape:              tuple, input shape of one training example (default, MNIST shape)
 
     :return:
         model                       tensorflow-graph
     """
 
-    with open(FEDERATED_GLOBAL_MODEL) as json_file:
-        json_config = json_file.read()
-    model = models.model_from_json(json_config)
+    # Build the model
+    model = cNN.build_cnn(input_shape=input_shape)
 
     # Compile the model
-    model.compile(optimizer='adam',
+    model.compile(optimizer='sgd',
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
 
+    # Save initial model
+    json_config = model.to_json()
+    with open(FEDERATED_GLOBAL_MODEL, 'w') as json_file:
+        json_file.write(json_config)
+
     return model
+
 
 # ---------------------------------------------- End Utility Functions --------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
@@ -145,7 +145,8 @@ def client_learning(model, client, epochs, train_data, train_labels, weights_acc
     train_client_model(client, epochs, model, train_data, train_labels, weights_accountant)
 
 
-def communication_round(model, num_of_clients, train_data, train_labels, epochs, weights_accountant, num_participating_clients=None):
+def communication_round(model, num_of_clients, train_data, train_labels, epochs, weights_accountant,
+                        num_participating_clients=None):
     """
     One round of communication between a 'server' and the 'clients'. Each client 'downloads' a global model and trains
     a local model, updating its weights locally. When all clients have updated their weights, they are 'uploaded' to
@@ -197,24 +198,26 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
     # Initialize a random global model and store the weights
     model = init_global_model()
     weights = model.get_weights()
-    weights_accountant = WeightsAccountant(weights)
 
+    clients = num_participating_clients if num_participating_clients is not None else num_of_clients
+    weights_accountant = WeightsAccountant(weights, clients=clients)
     # Start communication rounds and save the results of each round to the data frame
     for _ in range(communication_rounds):
         Output.print_communication_round(_ + 1)
-        communication_round(model, num_of_clients, train_data, train_labels, epochs, weights_accountant, num_participating_clients)
-        test_loss, test_acc, train_loss, train_acc = evaluate_federated_cnn(test_data, test_labels, model, weights_accountant, train_data,
-                                                                            train_labels)
+        communication_round(model, num_of_clients, train_data, train_labels, epochs, weights_accountant,
+                            num_participating_clients)
+        test_loss, test_acc = evaluate_federated_cnn(test_data, test_labels, model, weights_accountant)
 
-        history = history.append(pd.Series([test_loss, test_acc, train_loss, train_acc],
-                                           index=['Train Loss', 'Train Accuracy', 'Test Loss', 'Test Accuracy']),
+        history = history.append(pd.Series([test_loss, test_acc],
+                                           index=['Test Loss', 'Test Accuracy']),
                                  ignore_index=True)
     weights = weights_accountant.get_global_weights()
     np.save(FEDERATED_GLOBAL_WEIGHTS, weights)
     return history
 
 
-def evaluate_federated_cnn(test_data, test_labels, model=None, weights_accountant=None, train_data=None, train_labels=None):
+def evaluate_federated_cnn(test_data, test_labels, model=None, weights_accountant=None, train_data=None,
+                           train_labels=None):
     """
     Evaluate the global CNN.
 
@@ -257,7 +260,7 @@ def evaluate_federated_cnn(test_data, test_labels, model=None, weights_accountan
 # ------------------------------------------------------------------------------------------------------------------ #
 
 
-def main(clients, rounds=2, participants=5, dataset="MNIST", training=True, evaluating=True, plotting=False,
+def main(clients, rounds=30, participants=5, dataset="MNIST", training=True, evaluating=True, plotting=False,
          max_samples=None):
     """
     Main function including a number of flags that can be set
@@ -294,7 +297,7 @@ def main(clients, rounds=2, participants=5, dataset="MNIST", training=True, eval
                                      train_labels=train_labels,
                                      test_data=test_data,
                                      test_labels=test_labels,
-                                     epochs=1,
+                                     epochs=5,
                                      num_participating_clients=participants)
 
         # Save history for plotting
@@ -320,4 +323,4 @@ def main(clients, rounds=2, participants=5, dataset="MNIST", training=True, eval
 
 
 if __name__ == '__main__':
-    main(clients=10, rounds=4, training=False, plotting=True, evaluating=False, participants=2)
+    main(clients=100, rounds=30, training=True, plotting=False, evaluating=True, participants=10)
