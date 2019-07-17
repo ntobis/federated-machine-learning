@@ -175,3 +175,61 @@ def split_data_into_clients(clients, split, train_data, train_labels):
         raise ValueError(
             "Invalid value for 'Split'. Value can be 'random', 'overlap', 'no_overlap', value was: {}".format(split))
     return train_data, train_labels
+
+
+def tf_load_image(path):
+    image = tf.io.read_file(path)
+    image = tf.image.decode_jpeg(image, channels=0)
+    return tf.image.convert_image_dtype(image, tf.float32)
+
+
+def get_image_paths(root_path):
+    image_paths = []
+    for dirpath, dirnames, filenames in os.walk(root_path):
+        for file in filenames:
+            image_paths.append(os.path.join(dirpath, file))
+    return image_paths
+
+
+def get_labels(image_paths, label_type='pain'):
+    label_types = {
+        'person': 0,
+        'session': 1,
+        'culture': 2,
+        'frame': 3,
+        'pain': 4,
+    }
+
+    labels = []
+    for path in image_paths:
+        filename = os.path.basename(path)
+        filename, extension = os.path.splitext(filename)
+        img_labels = filename.split("_")
+        label = int(img_labels[label_types[label_type]])
+        labels.append(label)
+    return labels
+
+
+def load_all_images_into_tf_dataset(path):
+    img_paths = get_image_paths(path)
+
+    path_ds = tf.data.Dataset.from_tensor_slices(img_paths)
+    image_ds = path_ds.map(tf_load_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+
+    labels = get_labels(img_paths)
+    label_ds = tf.data.Dataset.from_tensor_slices(tf.cast(labels, tf.int64))
+
+    image_label_ds = tf.data.Dataset.zip((image_ds, label_ds))
+    return image_label_ds, len(labels)
+
+
+def prepare_dataset_for_training(ds, batch_size, ds_size):
+    # Setting a shuffle buffer size as large as the dataset ensures that the data is
+    # completely shuffled.
+    ds = ds.cache()
+    ds = ds.shuffle(buffer_size=ds_size)
+    ds = ds.repeat()
+    ds = ds.batch(batch_size)
+    # `prefetch` lets the dataset fetch batches, in the background while the model is training.
+    ds = ds.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+    return ds
