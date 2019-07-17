@@ -42,7 +42,7 @@ def communication_round(model, num_of_clients, train_data, train_labels, epochs,
 
 
 def federated_learning(communication_rounds, num_of_clients, train_data, train_labels, test_data, test_labels,
-                       epochs, sigma, num_participating_clients=None):
+                       epochs, sigma, num_participating_clients=None, learning_rate=0.01):
     """
     Train a federated model for a specified number of rounds until convergence.
 
@@ -55,6 +55,7 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
     :param epochs:                          int, number of epochs each client will train in a given communication round
     :param sigma:                           float, sigma defining differential privacy level
     :param num_participating_clients:       int, number of participating clients in a given communication round
+    :param learning_rate:                   float, specifying the learning rate of the local algorithms
 
     :return:
         history                             pandas data-frame, contains the history of loss & accuracy values off all
@@ -65,7 +66,7 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
     history = pd.DataFrame(columns=['Train Loss', 'Train Accuracy', 'Test Loss', 'Test Accuracy'])
 
     # Initialize a random global model and store the weights
-    model = fedCNN.init_global_model()
+    model = fedCNN.init_global_model(learning_rate=learning_rate)
     weights = model.get_weights()
     clients = num_participating_clients if num_participating_clients is not None else num_of_clients
     weights_accountant = WeightsAccountant(weights, clients)

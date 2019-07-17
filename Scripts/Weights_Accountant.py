@@ -31,6 +31,34 @@ class WeightsAccountant:
             updates = [loc - glob for glob, loc in zip(self.Global_Weights, local_model)]
             self.Local_Updates.append(updates)
 
+        # layer_1 = 0
+        # layer_2 = 0
+        # layer_3 = 0
+        # layer_4 = 0
+        # layer_5 = 0
+        # layer_6 = 0
+        # layer_7 = 0
+        # layer_8 = 0
+        #
+        # for i, update in enumerate(self.Local_Updates):
+        #     layer_1 += update[0]
+        #     layer_2 += update[1]
+        #     layer_3 += update[2]
+        #     layer_4 += update[3]
+        #     layer_5 += update[4]
+        #     layer_6 += update[5]
+        #     layer_7 += update[6]
+        #     layer_8 += update[7]
+        #
+        # print(np.sum(layer_1))
+        # print(np.sum(layer_2))
+        # print(np.sum(layer_3))
+        # print(np.sum(layer_4))
+        # print(np.sum(layer_5))
+        # print(np.sum(layer_6))
+        # print(np.sum(layer_7))
+        # print(np.sum(layer_8))
+
     def compute_update_norm(self):
         self.Local_Norms = []
         for update in self.Local_Updates:
@@ -40,8 +68,6 @@ class WeightsAccountant:
 
     def clip_updates(self):
         self.median = np.median(self.Local_Norms, axis=0)
-        for med in self.median:
-            print("Median:", med)
         scaling_factor = np.divide(self.Local_Norms, self.median, where=self.median > 0)
         scaling_factor = np.maximum(scaling_factor, 1)
         self.Clipped_Updates = np.divide(self.Local_Updates, scaling_factor)
@@ -62,15 +88,8 @@ class WeightsAccountant:
         self.reset_local_parameters()
 
     def compute_noisy_global_weights(self, sigma):
-        # for weights, layer, median, in zip(self.Global_Weights, self.Global_Updates, self.median):
-            # noise = np.random.normal(loc=0, scale=sigma * median, size=layer.shape) / self.num_clients
-            # noise = 0
-            # weights = weights + layer + noise
-            # self.Global_Weights.append(noisy_update)
-            # pass
 
         for i in range(len(self.Global_Weights)):
             noise = np.random.normal(loc=0.0, scale=sigma * self.median[i], size=self.Global_Updates[i].shape) / self.num_clients
-            # noise = 0
             self.Global_Weights[i] = self.Global_Weights[i] + self.Global_Updates[i] + noise
 

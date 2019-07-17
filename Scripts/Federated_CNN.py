@@ -12,6 +12,7 @@ from Scripts import Print_Functions as Output
 from Scripts.Weights_Accountant import WeightsAccountant
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
+optimizer = tf.keras.optimizers
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
@@ -45,35 +46,6 @@ def reset_federated_model():
         os.mkdir(cNN.MODELS)
 
 
-def split_data_into_clients(num_of_clients, train_data, train_labels):
-    """
-    Splits a dataset into a provided number of clients to simulate a "federated" setting
-
-    :param num_of_clients:          integer specifying the number of clients the data should be split into
-    :param train_data:              numpy array
-    :param train_labels:            numpy array
-
-    :return:
-        train_data:                 numpy array (with additional dimension for N clients)
-        train_labels:               numpy array (with additional dimension for N clients)
-    """
-
-    # Split data into twice as many shards as clients
-    train_data = np.array_split(train_data, num_of_clients * 2)
-    train_labels = np.array_split(train_labels, num_of_clients * 2)
-
-    # Shuffle shards so that for sorted data, shards with different labels are adjacent
-    train = list(zip(train_data, train_labels))
-    np.random.shuffle(train)
-    train_data, train_labels = zip(*train)
-
-    # Concatenate adjacent shards
-    train_data = [np.concatenate(train_data[i:i+2]) for i in range(0, len(train_data), 2)]
-    train_labels = [np.concatenate(train_labels[i:i+2]) for i in range(0, len(train_labels), 2)]
-
-    return train_data, train_labels
-
-
 def create_client_index_array(num_of_clients, num_participating_clients=None):
     """
     Creates a random integer array used to select clients for a communication round, e.g. clients [2, 0, 7, 5].
@@ -95,10 +67,11 @@ def create_client_index_array(num_of_clients, num_participating_clients=None):
     return clients
 
 
-def init_global_model(input_shape=(28, 28, 1)):
+def init_global_model(input_shape=(28, 28, 1), learning_rate=0.01):
     """
     Initializes a global "server-side" model.
-    :param input_shape:              tuple, input shape of one training example (default, MNIST shape)
+    :param input_shape:             tuple, input shape of one training example (default, MNIST shape)
+    :param learning_rate:           float, specifying the learning rate of the training algorithm
 
     :return:
         model                       tensorflow-graph
@@ -108,7 +81,8 @@ def init_global_model(input_shape=(28, 28, 1)):
     model = cNN.build_cnn(input_shape=input_shape)
 
     # Compile the model
-    model.compile(optimizer='sgd',
+    sgd_optimizer = optimizer.SGD(learning_rate=learning_rate)
+    model.compile(optimizer=sgd_optimizer,
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
 
@@ -285,7 +259,7 @@ def main(clients, rounds=30, participants=5, dataset="MNIST", training=True, eva
         train_labels = train_labels[:max_samples]
 
     # Split training data
-    train_data, train_labels = split_data_into_clients(clients, train_data, train_labels)
+    train_data, train_labels = Data_Loader.split_train_data(clients, train_data, train_labels)
 
     if training:
         reset_federated_model()

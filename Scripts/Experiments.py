@@ -1,6 +1,7 @@
 import sys
 import os
 
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import time
@@ -21,30 +22,17 @@ pd.set_option('display.max_columns', 500)
 # ------------------------------------------------ Utility Functions ----------------------------------------------- #
 
 
-def split_data_into_clients(clients, split, train_data, train_labels):
-    # Split data
-    if split.lower() == 'random':
-        train_data, train_labels = fed_CNN.split_data_into_clients(clients, train_data, train_labels)
-    elif split.lower() == 'overlap':
-        train_data, train_labels = Data_Loader.sort_data(train_data, train_labels)
-        train_data, train_labels = fed_CNN.split_data_into_clients(clients, train_data, train_labels)
-        for idx in range(len(train_data)):
-            train_data[idx], train_labels[idx] = Data_Loader.unison_shuffled_copies(train_data[idx], train_labels[idx])
-    elif split.lower() == 'no_overlap':
-        split_data, split_labels = Data_Loader.split_by_label(train_data, train_labels)
-        train_data, train_labels = Data_Loader.allocate_data(clients,
-                                                             split_data,
-                                                             split_labels,
-                                                             categories_per_client=2,
-                                                             data_points_per_category=int(
-                                                                 len(train_data) / (clients * 2)))
-    else:
-        raise ValueError(
-            "Invalid value for 'Split'. Value can be 'random', 'overlap', 'no_overlap', value was: {}".format(split))
-    return train_data, train_labels
-
-
 def move_results(experiment, date, keys):
+    """
+    Utility function used to move results into a specified folder with a name of the format:
+    EXPERIMENT DATE KEYS
+
+    :param experiment:                  string, name of the experiment
+    :param date:                        string, date of the experiment
+    :param keys:                        list, type of experiment, e.g. number of clients: [2, 5, 10, 100]
+    :return:
+    """
+
     experiment_path = os.path.join(cNN.RESULTS, experiment + " " + date + " " + str(keys))
     if not os.path.isdir(experiment_path):
         os.mkdir(experiment_path)
@@ -212,7 +200,7 @@ def experiment_federated(clients, dataset, experiment, train_data, train_labels,
     :return:
     """
 
-    train_data, train_labels = split_data_into_clients(clients, split, train_data, train_labels)
+    train_data, train_labels = Data_Loader.split_data_into_clients(clients, split, train_data, train_labels)
 
     # Reset federated model
     fed_CNN.reset_federated_model()
@@ -239,7 +227,7 @@ def experiment_federated(clients, dataset, experiment, train_data, train_labels,
 
 
 def experiment_differential_privacy(clients, dataset, experiment, train_data, train_labels, test_data, test_labels,
-                                    sigma, rounds=5, epochs=1, split='random', participants=None):
+                                    sigma, rounds=5, epochs=1, split='random', participants=None, learning_rate=0.01):
     """
     Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
 
@@ -255,10 +243,11 @@ def experiment_differential_privacy(clients, dataset, experiment, train_data, tr
     :param epochs:                  int, number of epochs that the client CNN trains for
     :param split:                   Determine if split should occur randomly
     :param participants:            participants in a given communications round
+    :type learning_rate:            float, determining the learning rate for the training algorithm
     :return:
     """
 
-    train_data, train_labels = split_data_into_clients(clients, split, train_data, train_labels)
+    train_data, train_labels = Data_Loader.split_data_into_clients(clients, split, train_data, train_labels)
 
     # Reset federated model
     fed_CNN.reset_federated_model()
@@ -272,7 +261,8 @@ def experiment_differential_privacy(clients, dataset, experiment, train_data, tr
                                           test_labels=test_labels,
                                           epochs=epochs,
                                           sigma=sigma,
-                                          num_participating_clients=participants
+                                          num_participating_clients=participants,
+                                          learning_rate=learning_rate
                                           )
 
     # Save history for plotting
@@ -473,7 +463,8 @@ def experiment_6_differential_federated_learning(dataset, experiment, rounds, cl
     # Perform Experiments
     for sigma in sigmas:
         experiment_differential_privacy(clients, dataset, experiment, train_data, train_labels, test_data,
-                                        test_labels, sigma=sigma, rounds=rounds, split='overlap', participants=10)
+                                        test_labels, sigma=sigma, rounds=rounds, split='overlap', participants=50,
+                                        learning_rate=0.01)
 
     experiment_centralized(dataset, experiment, train_data, train_labels, test_data, test_labels, rounds)
 
