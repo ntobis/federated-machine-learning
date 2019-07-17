@@ -4,7 +4,7 @@ import pickle
 import numpy as np
 import tensorflow as tf
 
-from Scripts import Print_Functions as Output, Federated_CNN as fed_CNN
+from Scripts import Print_Functions as Output
 
 ROOT = os.path.dirname(os.path.dirname(__file__))
 AUTISM = os.path.join(ROOT, 'Data', 'Autism')

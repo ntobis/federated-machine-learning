@@ -1,7 +1,6 @@
 import sys
 import os
 
-
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import time
@@ -183,6 +182,51 @@ def experiment_centralized(dataset, experiment, train_data, train_labels, test_d
 
 def experiment_federated(clients, dataset, experiment, train_data, train_labels, test_data, test_labels,
                          rounds=5, epochs=1, split='random', participants=None):
+    """
+    Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
+
+    :param clients:                 int, the maximum number of clients participating in a communication round
+    :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
+    :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
+    :param train_data:              numpy array, the train data
+    :param train_labels:            numpy array, the train labels
+    :param test_data:               numpy array, the test data
+    :param test_labels:             numpy array, the test labels
+    :param rounds:                  int, number of communication rounds that the federated clients average results for
+    :param epochs:                  int, number of epochs that the client CNN trains for
+    :param split:                   Determine if split should occur randomly
+    :param participants:            participants in a given communications round
+    :return:
+    """
+
+    train_data, train_labels = Data_Loader.split_data_into_clients(clients, split, train_data, train_labels)
+
+    # Reset federated model
+    fed_CNN.reset_federated_model()
+
+    # Train Model
+    history = fed_CNN.federated_learning(communication_rounds=rounds,
+                                         num_of_clients=clients,
+                                         train_data=train_data,
+                                         train_labels=train_labels,
+                                         test_data=test_data,
+                                         test_labels=test_labels,
+                                         epochs=epochs,
+                                         num_participating_clients=participants
+                                         )
+
+    # Save history for plotting
+    file = time.strftime("%Y-%m-%d-%H%M%S") + r"_Federated_{}_{}_rounds_{}_clients_{}.csv".format(dataset, experiment,
+                                                                                                  rounds, clients)
+    history = history.rename(index=str, columns={"Train Loss": "Federated Train Loss",
+                                                 "Train Accuracy": "Federated Train Accuracy",
+                                                 "Test Loss": "Federated Test Loss",
+                                                 "Test Accuracy": "Federated Test Accuracy"})
+    history.to_csv(os.path.join(cNN.RESULTS, file))
+
+
+def experiment_federated_transfer(clients, dataset, experiment, train_data, train_labels, test_data, test_labels,
+                                  rounds=5, epochs=1, split='random', participants=None):
     """
     Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
 
