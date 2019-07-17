@@ -6,9 +6,6 @@ import tensorflow as tf
 
 from Scripts import Print_Functions as Output
 
-ROOT = os.path.dirname(os.path.dirname(__file__))
-AUTISM = os.path.join(ROOT, 'Data', 'Autism')
-
 
 def unison_shuffled_copies(a, b):
     assert len(a) == len(b)
@@ -29,39 +26,6 @@ def load_pickle(file_name):
     with open(file_name, 'rb') as f:
         file = pickle.load(f)
     return file
-
-
-def prepare_autism_data(file):
-    frame_number_col = 5
-    splits = 6, 257, 327, 354, 378, 393
-
-    frames = file[frame_number_col]
-    offset_file = file[:, splits[0]:]
-    face = np.expand_dims(offset_file[:, :splits[1]], axis=0)
-    body = np.expand_dims(offset_file[:, splits[1]:splits[2]], axis=0)
-    phy = np.expand_dims(offset_file[:, splits[2]:splits[3]], axis=0)
-    audio = np.expand_dims(offset_file[:, splits[3]:splits[4]], axis=0)
-    cars = np.expand_dims(offset_file[:, splits[4]:splits[5]], axis=0)
-    labels = np.expand_dims(offset_file[:, -1:], axis=0)
-    return frames, face, body, phy, audio, cars, labels
-
-
-def load_autism_data_into_clients(folder_path):
-    files = get_pickle_files(folder_path)
-    clients_frames, clients_face, clients_body, clients_phy, clients_audio, clients_cars, clients_labels = \
-        [], [], [], [], [], [], []
-
-    for file_name in files:
-        file = load_pickle(file_name)
-        frames, face, body, phy, audio, cars, labels = prepare_autism_data(file)
-        clients_frames.append(frames)
-        clients_face.append(face)
-        clients_body.append(body)
-        clients_phy.append(phy)
-        clients_audio.append(audio)
-        clients_cars.append(cars)
-        clients_labels.append(labels)
-    return clients_frames, clients_face, clients_body, clients_phy, clients_audio, clients_cars, clients_labels
 
 
 def train_test_split(features, labels, test_split=0.25, shuffle=False):
@@ -121,11 +85,6 @@ def allocate_data(num_clients, split_data, split_labels, categories_per_client, 
         clients.append(client)
         labels.append(label)
     return clients, labels
-
-
-def load_autism_data_body():
-    clients = load_autism_data_into_clients(AUTISM)
-    return clients[2], clients[-1]
 
 
 def load_data(dataset):
