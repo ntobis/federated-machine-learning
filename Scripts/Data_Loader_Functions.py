@@ -192,13 +192,14 @@ def get_image_paths(root_path):
     return image_paths
 
 
-def get_labels(image_paths, label_type='pain'):
+def get_labels(image_paths, label_type=None):
     label_types = {
         'person': 0,
         'session': 1,
         'culture': 2,
         'frame': 3,
         'pain': 4,
+        'augmented': 5,
     }
 
     labels = []
@@ -206,7 +207,12 @@ def get_labels(image_paths, label_type='pain'):
         filename = os.path.basename(path)
         filename, extension = os.path.splitext(filename)
         img_labels = filename.split("_")
-        label = int(img_labels[label_types[label_type]])
+
+        if label_type is None:
+            label = img_labels
+        else:
+            label = int(img_labels[label_types[label_type]])
+
         labels.append(label)
     return labels
 
@@ -251,3 +257,20 @@ def load_pain_data(train_path, test_path, label_type='pain'):
 
 def reduce_pain_label_categories(labels, max_pain):
     return np.minimum(labels, max_pain)
+
+
+def mirror_folder_structure(input_path, output_path):
+    """
+    Utility function mirroring the folder structure in one folder into another folder.
+
+    :param input_path:               string, input path
+    :param output_path:              string, output path
+    :return:
+    """
+
+    for dir_path, dir_names, filenames in os.walk(input_path):
+        structure = os.path.join(output_path, dir_path[len(input_path) + 1:])
+        if not os.path.isdir(structure):
+            os.mkdir(structure)
+        else:
+            print("Folder already exists!")
