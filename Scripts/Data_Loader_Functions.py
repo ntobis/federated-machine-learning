@@ -134,8 +134,8 @@ def split_train_data(num_of_clients, train_data, train_labels):
     train_data, train_labels = zip(*train)
 
     # Concatenate adjacent shards
-    train_data = [np.concatenate(train_data[i:i+2]) for i in range(0, len(train_data), 2)]
-    train_labels = [np.concatenate(train_labels[i:i+2]) for i in range(0, len(train_labels), 2)]
+    train_data = [np.concatenate(train_data[i:i + 2]) for i in range(0, len(train_data), 2)]
+    train_labels = [np.concatenate(train_labels[i:i + 2]) for i in range(0, len(train_labels), 2)]
 
     return train_data, train_labels
 
@@ -279,3 +279,13 @@ def mirror_folder_structure(input_path, output_path):
         structure = os.path.join(output_path, dir_path[len(input_path) + 1:])
         if not os.path.isdir(structure):
             os.mkdir(structure)
+
+
+def downsample_data(path):
+    img_paths = np.array(get_image_paths(path))
+    img_labels = np.array(get_labels(img_paths))
+    pain = img_paths[img_labels[:, 4] != str(0)]
+    zero_pain = img_paths[img_labels[:, 4] == str(0)]
+    np.random.shuffle(zero_pain)
+    delete = zero_pain[:len(zero_pain) - len(pain)]
+    [os.remove(file) for file in delete]
