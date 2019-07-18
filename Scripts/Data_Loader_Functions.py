@@ -242,16 +242,23 @@ def prepare_dataset_for_training(ds, batch_size, ds_size):
     return ds
 
 
-def load_greyscale_image_data(path, label_type='pain'):
+def load_greyscale_image_data(path, label_type=None):
     img_paths = get_image_paths(path)
+    data = []
+    for idx, path in enumerate(img_paths):
+        data.append(np.expand_dims(cv2.imread(path, 0), -1))
+        if not idx % 1000:
+            print("{} images processed".format(idx))
     data = np.array([np.expand_dims(cv2.imread(path, 0), -1) for path in img_paths])
     labels = np.array(get_labels(img_paths, label_type=label_type))
     return data, labels
 
 
-def load_pain_data(train_path, test_path, label_type='pain'):
+def load_pain_data(train_path, test_path, label_type=None):
     train_data, train_labels = load_greyscale_image_data(train_path, label_type)
     test_data, test_labels = load_greyscale_image_data(test_path, label_type)
+    train_data = np.divide(train_data, 255.0, dtype=np.float16)
+    test_data = np.divide(test_data, 255.0, dtype=np.float16)
     return train_data, train_labels, test_data, test_labels
 
 
@@ -272,5 +279,3 @@ def mirror_folder_structure(input_path, output_path):
         structure = os.path.join(output_path, dir_path[len(input_path) + 1:])
         if not os.path.isdir(structure):
             os.mkdir(structure)
-        else:
-            print("Folder already exists!")
