@@ -1,6 +1,7 @@
 import os
 import pickle
 
+import cv2
 import numpy as np
 import tensorflow as tf
 
@@ -233,3 +234,20 @@ def prepare_dataset_for_training(ds, batch_size, ds_size):
     # `prefetch` lets the dataset fetch batches, in the background while the model is training.
     ds = ds.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     return ds
+
+
+def load_greyscale_image_data(path, label_type='pain'):
+    img_paths = get_image_paths(path)
+    data = np.array([np.expand_dims(cv2.imread(path, 0), -1) for path in img_paths])
+    labels = np.array(get_labels(img_paths, label_type=label_type))
+    return data, labels
+
+
+def load_pain_data(train_path, test_path, label_type='pain'):
+    train_data, train_labels = load_greyscale_image_data(train_path, label_type)
+    test_data, test_labels = load_greyscale_image_data(test_path, label_type)
+    return train_data, train_labels, test_data, test_labels
+
+
+def reduce_pain_label_categories(labels, max_pain):
+    return np.minimum(labels, max_pain)
