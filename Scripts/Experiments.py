@@ -13,6 +13,7 @@ from Scripts import Federated_CNN as fed_CNN
 from Scripts import Differentially_Private_CNN as diff_CNN
 from Scripts import Print_Functions as Output
 from Scripts import Data_Loader_Functions as Data_Loader
+from Scripts import Centralized_Pain_CNN as painCNN
 
 pd.set_option('display.max_columns', 500)
 
@@ -534,6 +535,7 @@ if __name__ == '__main__':
     # plot_results(dataset="MNIST", experiment="SPLIT_DIGITS_OVERLAP", keys=num_clients, date="2019-07-10",
     #              suffix=str(num_clients), move=True)
 
-    sigma_arr = [1]
-    experiment_6_differential_federated_learning(dataset="MNIST", experiment="DIFF_PRIV", rounds=200, clients=100,
-                                                 sigmas=sigma_arr)
+    # sigma_arr = [1]
+    # experiment_6_differential_federated_learning(dataset="MNIST", experiment="DIFF_PRIV", rounds=200, clients=100,
+    #                                              sigmas=sigma_arr)
+    painCNN.main()

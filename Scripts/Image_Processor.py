@@ -1,6 +1,7 @@
 import math
 import os
 import cv2
+from PIL import Image
 import numpy as np
 
 from Scripts.Data_Loader_Functions import get_labels
@@ -76,6 +77,19 @@ def bulk_rename_files(input_path, output_path, suffix, new_suffix):
                 file = f_name + new_suffix + ext
                 dest = os.path.join(structure, file)
                 os.rename(src, dest)
+
+
+def bulk_crop_images(input_path, output_path, dims):
+    for dir_path, dir_names, filenames in os.walk(input_path):
+        structure = os.path.join(output_path, dir_path[len(input_path) + 1:])
+        for file in filenames:
+            src = os.path.join(dir_path, file)
+            width, height = Image.open(src).size
+            if width > dims[0] or height > dims[1]:
+                img = cv2.imread(src, 0)
+                img = crop_around_center(img, dims[0], dims[1])
+                dest = os.path.join(structure, file)
+                cv2.imwrite(dest, img)
 
 
 def rotate_image(image, angle):

@@ -184,15 +184,17 @@ def tf_load_image(path):
     return tf.image.convert_image_dtype(image, tf.float32)
 
 
-def get_image_paths(root_path):
+def get_image_paths(root_path, ext='.jpg'):
     image_paths = []
     for dirpath, dirnames, filenames in os.walk(root_path):
         for file in filenames:
-            image_paths.append(os.path.join(dirpath, file))
+            f_name, f_ext = os.path.splitext(file)
+            if f_ext == ext:
+                image_paths.append(os.path.join(dirpath, file))
     return image_paths
 
 
-def get_labels(image_paths, label_type=None):
+def get_labels(image_paths, label_type=None, ext='.jpg'):
     label_types = {
         'person': 0,
         'session': 1,
@@ -206,14 +208,15 @@ def get_labels(image_paths, label_type=None):
     for path in image_paths:
         filename = os.path.basename(path)
         filename, extension = os.path.splitext(filename)
-        img_labels = filename.split("_")
+        if extension == ext:
+            img_labels = filename.split("_")
 
-        if label_type is None:
-            label = img_labels
-        else:
-            label = int(img_labels[label_types[label_type]])
+            if label_type is None:
+                label = img_labels
+            else:
+                label = int(img_labels[label_types[label_type]])
 
-        labels.append(label)
+            labels.append(label)
     return labels
 
 
@@ -244,6 +247,7 @@ def prepare_dataset_for_training(ds, batch_size, ds_size):
 
 def load_greyscale_image_data(path, label_type=None):
     img_paths = get_image_paths(path)
+    np.random.shuffle(img_paths)
     data = []
     for idx, path in enumerate(img_paths):
         data.append(np.expand_dims(cv2.imread(path, 0), -1))
@@ -254,12 +258,14 @@ def load_greyscale_image_data(path, label_type=None):
     return data, labels
 
 
-def load_pain_data(train_path, test_path, label_type=None):
+def load_pain_data(train_path, test_path=None, label_type=None):
     train_data, train_labels = load_greyscale_image_data(train_path, label_type)
-    test_data, test_labels = load_greyscale_image_data(test_path, label_type)
     train_data = np.divide(train_data, 255.0, dtype=np.float16)
-    test_data = np.divide(test_data, 255.0, dtype=np.float16)
-    return train_data, train_labels, test_data, test_labels
+    if test_path:
+        test_data, test_labels = load_greyscale_image_data(test_path, label_type)
+        test_data = np.divide(test_data, 255.0, dtype=np.float16)
+        return train_data, train_labels, test_data, test_labels
+    return train_data, train_labels
 
 
 def reduce_pain_label_categories(labels, max_pain):
@@ -289,3 +295,28 @@ def downsample_data(path):
     np.random.shuffle(zero_pain)
     delete = zero_pain[:len(zero_pain) - len(pain)]
     [os.remove(file) for file in delete]
+
+
+def print_pain_label_dist(path):
+    train_subjects = [name for name in os.listdir(path) if os.path.isdir(os.path.join(path, name))]
+    for subject in train_subjects:
+        img_paths = get_image_paths(os.path.join(path, subject))
+        img_labels = np.array(get_labels(img_paths))
+        print("Subject:", subject)
+        print("Pain 0:", sum(img_labels[:, 4].astype(int) < 1))
+        print("Pain 0<:", sum(img_labels[:, 4].astype(int) >= 1))
+        print()
+
+
+def print_pain_split_per_client(labels):
+    pain_labels = labels[labels[:, 4].astype(int) > 0]
+    no_pain_labels = labels[labels[:, 4].astype(int) == 0]
+    pain_unique, pain_count = np.unique(pain_labels[:, 0], return_counts=True)
+    no_pain_unique, no_pain_count = np.unique(no_pain_labels[:, 0], return_counts=True)
+    for idx, client in enumerate(no_pain_unique):
+        for idx_p, client_p in enumerate(pain_unique):
+            if client_p == client:
+                print("Client:", client, "| Pain / No Pain: {:.2f}".format(pain_count[idx_p] / no_pain_count[idx]))
+                break
+            if idx_p == len(pain_unique) - 1:
+                print("Client:", client, "| Pain / No Pain: {:.2f}".format(0 / no_pain_count[idx]))
