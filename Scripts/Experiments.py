@@ -227,10 +227,12 @@ def experiment_federated(clients, dataset, experiment, train_data, train_labels,
 
 
 def experiment_centralized_pain(dataset, experiment, train_data, train_labels, test_data, test_labels, epochs=5,
-                                metrics=('accuracy',), model=None):
+                                model=None, people=None):
     """
     Sets up a centralized CNN that trains on a specified dataset. Saves the results to CSV.
 
+    :param model:
+    :param people:
     :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
     :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
     :param train_data:              numpy array, the train data
@@ -238,7 +240,6 @@ def experiment_centralized_pain(dataset, experiment, train_data, train_labels, t
     :param test_data:               numpy array, the test data
     :param test_labels:             numpy array, the test labels
     :param epochs:                  int, number of epochs that the centralized CNN trains for
-    :param metrics:                 array of tf-metrics, will be computed after every epoch
     :return:
     """
 
@@ -250,7 +251,7 @@ def experiment_centralized_pain(dataset, experiment, train_data, train_labels, t
         centralized_model = model
 
     centralized_model = painCNN.train_cnn(centralized_model, train_data, train_labels, test_data, test_labels,
-                                          metrics=metrics, epochs=epochs)
+                                          epochs=epochs, people=people)
 
     # Save full model
     f_name = time.strftime("%Y-%m-%d-%H%M%S") + r"_Centralized_{}_{}.h5".format(dataset, experiment)
@@ -444,7 +445,8 @@ def experiment_6_pain_centralized(dataset, experiment, rounds, split):
     # Load data
     train_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_1")
     test_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_2_test")
-    train_path_add_data = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_2_train")
+    train_path_add_data = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation",
+                                       "group_2_train")
     train_data, train_labels, test_data, test_labels = Data_Loader.load_pain_data(train_path, test_path)
 
     # Define labels for training
@@ -456,21 +458,9 @@ def experiment_6_pain_centralized(dataset, experiment, rounds, split):
     test_labels_ord = test_labels[:, label].astype(np.int)
     test_labels_bin = Data_Loader.reduce_pain_label_categories(test_labels_ord, max_pain=1)
 
-    # Define metrics
-    metrics = [
-        'accuracy',
-        tf.metrics.Recall(),
-        tf.metrics.Precision(),
-        tf.metrics.AUC(curve='PR'),
-        tf.metrics.TruePositives(),
-        tf.metrics.TrueNegatives(),
-        tf.metrics.FalsePositives(),
-        tf.metrics.FalseNegatives(),
-    ]
-
     # Perform pretraining
     model = experiment_centralized_pain(dataset, experiment, train_data, train_labels_bin, test_data, test_labels_bin,
-                                        rounds, metrics=metrics)
+                                        rounds)
 
     # Load additional data
     add_train_data, add_train_labels = Data_Loader.load_pain_data(train_path_add_data)
@@ -485,8 +475,53 @@ def experiment_6_pain_centralized(dataset, experiment, rounds, split):
     shard_counter = 1
     for data, labels in zip(add_train_data, train_labels_bin):
         experiment_new = experiment + "_shard-{}".format(shard_counter)
-        model = experiment_centralized_pain(dataset, experiment_new, data, labels, test_data, test_labels_bin,
-                                            rounds, metrics=metrics, model=model)
+        model = experiment_centralized_pain(dataset, experiment_new, data, labels, test_data, test_labels_bin, rounds,
+                                            model=model)
+        shard_counter += 1
+
+
+def experiment_7_pain_federated(dataset, experiment, rounds, split, cumulative=True):
+
+    # Load data
+    train_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_1")
+    test_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_2_test")
+    train_path_add_data = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation",
+                                       "group_2_train")
+    train_data, train_labels, test_data, test_labels = Data_Loader.load_pain_data(train_path, test_path)
+
+    # Define labels for training
+    person = 0
+    label = 4  # Labels: [person, session, culture, frame, pain, Trans_1, Trans_2]
+
+    # Prepare labels for training and evaluation
+    train_labels_ord = train_labels[:, label].astype(np.int)
+    train_labels_bin = Data_Loader.reduce_pain_label_categories(train_labels_ord, max_pain=1)
+    test_labels_ord = test_labels[:, label].astype(np.int)
+    test_labels_bin = Data_Loader.reduce_pain_label_categories(test_labels_ord, max_pain=1)
+    test_labels_people = test_labels[:, person].astype(np.int)
+
+    # Perform pretraining
+    model = experiment_centralized_pain(dataset, experiment, train_data, train_labels_bin, test_data,
+                                        test_labels_bin,
+                                        rounds, people=test_labels_people)
+
+    # Load additional data
+    add_train_data, add_train_labels = Data_Loader.load_pain_data(train_path_add_data)
+    add_train_labels_ord = add_train_labels[:, label].astype(np.int)
+    train_labels_bin = Data_Loader.reduce_pain_label_categories(add_train_labels_ord, max_pain=1)
+    add_test_labels_people = add_train_labels[:, person].astype(np.int)
+
+    # Split Data into shards
+    add_train_data = np.array_split(add_train_data, split)
+    train_labels_bin = np.array_split(train_labels_bin, split)
+    add_test_labels_people = np.array_split(add_test_labels_people, split)
+
+    # Train on additional shards and evaluate performance
+    shard_counter = 1
+    for data, labels in zip(add_train_data, train_labels_bin):
+        experiment_new = experiment + "_shard-{}".format(shard_counter)
+        model = experiment_centralized_pain(dataset, experiment_new, data, labels, test_data, test_labels_bin, rounds,
+                                            model=model, people=add_test_labels_people)
         shard_counter += 1
 
 
@@ -513,7 +548,4 @@ if __name__ == '__main__':
     # plot_results(dataset="MNIST", experiment="SPLIT_DIGITS_OVERLAP", keys=num_clients, date="2019-07-10",
     #              suffix=str(num_clients), move=True)
 
-    # sigma_arr = [1]
-    # experiment_6_differential_federated_learning(dataset="MNIST", experiment="DIFF_PRIV", rounds=200, clients=100,
-    #                                              sigmas=sigma_arr)
     experiment_6_pain_centralized('PAIN', 'Centralized-Training', 30, 6)
