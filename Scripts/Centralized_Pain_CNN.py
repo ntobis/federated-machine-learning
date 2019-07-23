@@ -6,6 +6,7 @@ import time
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
 import tensorflow as tf
 
 from Scripts import Data_Loader_Functions as dL
@@ -78,14 +79,22 @@ def train_cnn(model, train_data, train_labels, test_data, test_labels, metrics, 
         # Evaluating (Batch Size must be 1, otherwise TF throws an error)
         model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=metrics)
         epoch_results = model.evaluate(test_data, test_labels, batch_size=1)
-        results.append(epoch_results)
+        y_pred = np.argmax(model.predict(test_data), axis=1)
+        loss = epoch_results[0]
+        accuracy = accuracy_score(test_labels, y_pred)
+        recall = recall_score(test_labels, y_pred)
+        precision = precision_score(test_labels, y_pred)
+        tn, fp, fn, tp = confusion_matrix(test_labels, y_pred).ravel()
+        # f1_score = sklearn.metrics.f1_score(test_labels, y_pred)
+        res_arr = [loss, accuracy, recall, precision, tp, tn, fp, fn]
+        results.append(res_arr)
 
         # Create DF for Progress
         df = pd.DataFrame(results, columns=['Loss',
                                             'Accuracy',
                                             'Recall',
                                             'Precision',
-                                            'AUC',
+                                            # 'AUC',
                                             'TP',
                                             'TN',
                                             'FP',
@@ -96,8 +105,9 @@ def train_cnn(model, train_data, train_labels, test_data, test_labels, metrics, 
         df['F1_Score'] = f1_score
 
         # Save Progress
-        file = time.strftime("%Y-%m-%d-%H%M%S") + r'log_results_epoch-{}.csv'.format(epoch)
+        file = time.strftime("%Y-%m-%d-%H%M%S") + r'_log_results_epoch-{}.csv'.format(epoch)
         df.to_csv(os.path.join(cNN.RESULTS, file))
+    return model
 
 
 def main(flag="TRAIN"):
@@ -114,13 +124,13 @@ def main(flag="TRAIN"):
     # Define Metrics
     metrics = [
         tf.metrics.Accuracy(),
-        # tf.metrics.Recall(),
-        # tf.metrics.Precision(),
-        # tf.metrics.AUC(curve='PR'),
-        # tf.metrics.TruePositives(),
-        # tf.metrics.TrueNegatives(),
-        # tf.metrics.FalsePositives(),
-        # tf.metrics.FalseNegatives(),
+        tf.metrics.Recall(),
+        tf.metrics.Precision(),
+        tf.metrics.AUC(curve='PR'),
+        tf.metrics.TruePositives(),
+        tf.metrics.TrueNegatives(),
+        tf.metrics.FalsePositives(),
+        tf.metrics.FalseNegatives(),
     ]
 
     # 1. Cold start: Don't use train group
@@ -128,17 +138,17 @@ def main(flag="TRAIN"):
     # 3. Level up from 0 % - 60%
 
     if flag == 'TRAIN':
-        # # Load data
-        # print("Loading Data")
-        # data_1, labels_1, data_2, labels_2 = dL.load_pain_data(group_1, group_2)
-        #
-        # # Concatenate Data
-        # data = np.concatenate((data_1, data_2))
-        # labels = np.concatenate((labels_1, labels_2))
-        #
-        # # Reassign labels
-        # labels_ord = labels[:, label].astype(np.int)
-        # labels_bin = dL.reduce_pain_label_categories(labels_ord, max_pain=1)
+        # Load data
+        print("Loading Data")
+        data_1, labels_1, data_2, labels_2 = dL.load_pain_data(group_1, group_2)
+
+        # Concatenate Data
+        data = np.concatenate((data_1, data_2))
+        labels = np.concatenate((labels_1, labels_2))
+
+        # Reassign labels
+        labels_ord = labels[:, label].astype(np.int)
+        labels_bin = dL.reduce_pain_label_categories(labels_ord, max_pain=1)
 
         # Load data
         print("Loading Data")

@@ -5,6 +5,7 @@ import sys
 import time
 
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 from matplotlib import pyplot as plt
 
@@ -13,6 +14,7 @@ from matplotlib import pyplot as plt
 
 ROOT = os.path.dirname(os.path.dirname(__file__))
 FIGURES = os.path.join(ROOT, "Figures")
+RESULTS = os.path.join(ROOT, "Results")
 
 
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
@@ -20,7 +22,6 @@ FIGURES = os.path.join(ROOT, "Figures")
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # --------------------------------------------------- Parameters --------------------------------------------------- #
-
 
 class PlotParams:
     def __init__(self, dataset, experiment, metric='Accuracy', title='', x_label='', y_label='',
@@ -180,7 +181,8 @@ def plot_joint_metric(history, params):
 
     # Plot line
     try:
-        plt.plot((history.index + 1)[:max_epochs], history['Centralized {}'.format(metric)][:max_epochs], color=colors[0])
+        plt.plot((history.index + 1)[:max_epochs], history['Centralized {}'.format(metric)][:max_epochs],
+                 color=colors[0])
 
         # Plot labels
         for i, j in history['Centralized {}'.format(metric)][:max_epochs].items():
@@ -213,16 +215,15 @@ def plot_joint_metric(history, params):
     file = time.strftime("%Y-%m-%d-%H%M%S") + r"_{}_{}_{}_{}.png".format(dataset, experiment, metric, suffix)
     fig = plt.gcf()
     fig.set_size_inches((12, 8), forward=False)
-    # plt.savefig(os.path.join(FIGURES, file), dpi=300)
+    plt.savefig(os.path.join(FIGURES, file), dpi=300)
     plt.show()
     plt.clf()
 
 
-def display_images(train_data, train_labels, noise=None):
+def display_images(train_data, train_labels):
     """
     Display first 9 MNIST images
 
-    :param noise:           Noise level added
     :param train_data:      numpy array of shape (60000, 28, 28, 1)
     :param train_labels:    numpy array of shape (60000, )
 
@@ -240,5 +241,59 @@ def display_images(train_data, train_labels, noise=None):
         plt.yticks([])
     plt.show()
 
+
+def make_pain_plot(folder, params, final_epoch=29):
+    files = os.listdir(folder)
+    files = [os.path.join(folder, file) for file in files if file.endswith('{}.csv'.format(final_epoch))]
+    files = sorted(files)
+
+    legend = []
+    for idx, file in enumerate(files):
+        df = pd.read_csv(file)
+        plt.plot(df[params.metric], color=params.colors[idx + 1])
+        for i, j in df[params.metric][:params.max_epochs].items():
+            if not int(i) % params.label_spaces:
+                plt.text(i, j, params.num_format.format(j), color='black',
+                         bbox=dict(facecolor='white', edgecolor=params.colors[idx + 1], boxstyle='round'))
+
+        legend.append('Group 1 + {0:.0%}% Group 2'.format(0.1 * idx))
+
+    plt.legend(legend, loc=params.legend_loc)
+    plt.title('{} | {} | Group 1 + X% Group 2'.format(params.metric, params.experiment))
+    plt.yticks(np.arange(0.3, 1.05, step=0.05))
+    plt.ylabel('{}'.format(params.metric))
+    plt.xlabel('Epochs / Communication Rounds')
+    return plt
+
+
+def make_pain_plot_grid(folder, metrics, params, final_epoch=29):
+    for idx, metric in enumerate(metrics):
+        params.metric = metric
+        plt.subplot(2, 2, idx + 1)
+        make_pain_plot(folder, params=params, final_epoch=final_epoch)
+
+    plt.subplots_adjust(wspace=0.2, hspace=0.2)
+    file = time.strftime("%Y-%m-%d-%H%M%S") + r"_{}_{}_{}.png".format(params.dataset, params.experiment, str(metrics))
+    fig = plt.gcf()
+    fig.suptitle('Group 2 | 40% Test Set | Evaluation', fontsize=20)
+    fig.set_size_inches((24, 16), forward=False)
+    plt.savefig(os.path.join(FIGURES, file), dpi=300)
+    plt.show()
+
+
 # ----------------------------------------------- End Plot Functions ----------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
+
+if __name__ == '__main__':
+
+    parameters = PlotParams(
+        dataset='Pain',
+        experiment='Centralized',
+        metric='F1_Score',
+        legend_loc='lower right',
+        num_format="{:5.1%}",
+        max_epochs=None,
+        label_spaces=4
+    )
+    rep_metrics = ['Accuracy', 'Precision', 'Recall', 'F1_Score']
+    make_pain_plot_grid(RESULTS, rep_metrics, parameters)

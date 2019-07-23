@@ -9,12 +9,28 @@ from Scripts import Print_Functions as Output
 
 
 def unison_shuffled_copies(a, b):
+    """
+    Utility function shuffling two numpy arrays in unison.
+
+    :param a:               numpy array
+    :param b:               numpy array
+    :return:
+        a, b                tuple of shuffled numpy arrays
+    """
+
     assert len(a) == len(b)
     p = np.random.permutation(len(a))
     return a[p], b[p]
 
 
 def get_pickle_files(directory):
+    """
+    Utility function returning all pickle file paths in a directory.
+    :param directory:       string, directory path
+    :return:
+        files               sorted list of file paths to pickle files
+    """
+
     files = []
     for file in os.listdir(directory):
         if file.endswith(".pkl"):
@@ -24,12 +40,28 @@ def get_pickle_files(directory):
 
 
 def load_pickle(file_name):
+    """
+    Utility function loading a pickle file.
+    :param file_name:       string, file path
+    :return:
+        file                pickle file in read mode
+    """
     with open(file_name, 'rb') as f:
         file = pickle.load(f)
     return file
 
 
 def train_test_split(features, labels, test_split=0.25, shuffle=False):
+    """
+    Utility function splitting features and labels into train and test sets, with the option to shuffle.
+
+    :param features:        numpy array
+    :param labels:          numpy array
+    :param test_split:      float, indicating the test portion of the data
+    :param shuffle:         bool
+    :return:
+        train_data, train_labels, test_data, test_labels    tuple of numpy arrays
+    """
     if shuffle:
         features, labels = unison_shuffled_copies(features, labels)
     split_point = int(len(features) * test_split)
@@ -63,12 +95,34 @@ def load_mnist_data():
 
 
 def split_by_label(data, labels):
+    """
+    Utility function splitting a data set into as many shards as there are labels, by label
+    :param data:            numpy array
+    :param labels:          numpy array
+    :return:
+        split_data, split_labels:   tuple of numpy arrays, split into n-shards
+    """
+
     split_data = [data[labels == label] for label in np.unique(labels).tolist()]
     split_labels = [labels[labels == label] for label in np.unique(labels).tolist()]
     return split_data, split_labels
 
 
 def allocate_data(num_clients, split_data, split_labels, categories_per_client, data_points_per_category):
+    """
+    Utility function splitting taking a data set that has been split by label and allocates this data set to a certain
+    number of clients. It is possible to specify how many labels a client holds, and how many data point per label a
+    client holds.
+
+    :param num_clients:                     int, number of clients
+    :param split_data:                      numpy array, split and sorted by label
+    :param split_labels:                    numpy array, split and sorted by label
+    :param categories_per_client:           int, number of unique labels a client holds
+    :param data_points_per_category:        int, number of data point per label a client holds
+    :return:
+        clients:                            list of numpy arrays, each representing data for one client
+        labels:                             list of numpy arrays, each representing labels for one client
+    """
     clients = []
     labels = []
     it = 0
@@ -89,6 +143,18 @@ def allocate_data(num_clients, split_data, split_labels, categories_per_client, 
 
 
 def load_data(dataset):
+    """
+    Generic data load function.
+
+    :param dataset:                         string, name of dataset
+    :return:
+        train_data:                         numpy array
+        train_labels:                       numpy array
+        test_data:                          numpy array
+        test_labels:                        numpy array
+        dataset:                            string, name of dataset
+    """
+
     # Load data
     if dataset == "MNIST":
         train_data, train_labels, test_data, test_labels = load_mnist_data()
@@ -105,6 +171,15 @@ def load_data(dataset):
 
 
 def sort_data(data, labels):
+    """
+    Utility function sorting a dataset by labels.
+
+    :param data:                            numpy array
+    :param labels:                          numpy array
+    :return:
+        data, labels:                       tuple of sorted numpy arrays
+    """
+
     sort_array = np.argsort(labels)
     data = data[sort_array]
     labels = labels[sort_array]
@@ -179,12 +254,28 @@ def split_data_into_clients(clients, split, train_data, train_labels):
 
 
 def tf_load_image(path):
+    """
+    Load an image into a Tensor.
+
+    :param path:                         string, filepath
+    :return:
+    Tensor                               Tensorflow Tensor containing image data
+    """
+
     image = tf.io.read_file(path)
     image = tf.image.decode_jpeg(image, channels=0)
     return tf.image.convert_image_dtype(image, tf.float32)
 
 
 def get_image_paths(root_path, ext='.jpg'):
+    """
+    Utility function returning all image paths in a directory adn its sub-directories.
+
+    :param root_path:                   path from which to start the recursive search
+    :param ext:                         file extension to look for
+    :return:
+        image_paths:                    list of paths
+    """
     image_paths = []
     for dirpath, dirnames, filenames in os.walk(root_path):
         for file in filenames:
@@ -195,6 +286,16 @@ def get_image_paths(root_path, ext='.jpg'):
 
 
 def get_labels(image_paths, label_type=None, ext='.jpg'):
+    """
+    Utility function turning image paths into a 2D list of labels
+
+    :param image_paths:                 list of image paths
+    :param label_type:                  string, if not None, only a specific label per image will be returned
+    :param ext:                         string, file extension
+    :return:
+        labels                          2D list of labels
+    """
+
     label_types = {
         'person': 0,
         'session': 1,
@@ -221,6 +322,14 @@ def get_labels(image_paths, label_type=None, ext='.jpg'):
 
 
 def load_all_images_into_tf_dataset(path):
+    """
+    Utility function loading images in a directory into a Tensorflow Dataset.
+
+    :param path:                    string, root directory path
+    :return:
+        image_label_ds, len(labels) tuple of Tensorflow dataset and number of data points
+    """
+
     img_paths = get_image_paths(path)
 
     path_ds = tf.data.Dataset.from_tensor_slices(img_paths)
@@ -234,6 +343,16 @@ def load_all_images_into_tf_dataset(path):
 
 
 def prepare_dataset_for_training(ds, batch_size, ds_size):
+    """
+    Utility function preparing a Tensorflow Dataset for training.
+
+    :param ds:                  Tensorflow Dataset
+    :param batch_size:          int
+    :param ds_size:             int, setting the number of images to be cached
+
+    :return:
+        ds                      Tensorflow Dataset
+    """
     # Setting a shuffle buffer size as large as the dataset ensures that the data is
     # completely shuffled.
     ds = ds.cache()
@@ -246,6 +365,15 @@ def prepare_dataset_for_training(ds, batch_size, ds_size):
 
 
 def load_greyscale_image_data(path, label_type=None):
+    """
+    Utility function, loading all images in a directory and its sub-directories into a numpy array, labeled
+
+    :param path:                string, root directory
+    :param label_type:          string, if not None, only a specific label will be attached to each image
+    :return:
+        data, labels:           tuple of numpy arrays, holding images and labels
+    """
+
     img_paths = get_image_paths(path)
     np.random.shuffle(img_paths)
     data = []
@@ -259,6 +387,15 @@ def load_greyscale_image_data(path, label_type=None):
 
 
 def load_pain_data(train_path, test_path=None, label_type=None):
+    """
+    Load function, loading pain dataset into numpy arrays with labels. Either just loads train data, or train and test.
+
+    :param train_path:          string, root directory
+    :param test_path:           string, optional, root test directory
+    :param label_type:          string, if not None, only a specific label will be attached to each image
+    :return:
+    """
+
     train_data, train_labels = load_greyscale_image_data(train_path, label_type)
     train_data = np.divide(train_data, 255.0, dtype=np.float16)
     if test_path:
@@ -269,6 +406,13 @@ def load_pain_data(train_path, test_path=None, label_type=None):
 
 
 def reduce_pain_label_categories(labels, max_pain):
+    """
+    Utility function reducing ordinal labels to a specified number of labels, e.g. [0,1] binary
+    :param labels:              numpy array
+    :param max_pain:            int, max label, e.g. if 1 then labels will reduce to [0,1]
+    :return:
+        labels_reduced          numpy array
+    """
     return np.minimum(labels, max_pain)
 
 
@@ -288,6 +432,14 @@ def mirror_folder_structure(input_path, output_path):
 
 
 def downsample_data(path):
+    """
+    Utility function downsampling the number of "no pain" images to the number of "pain images". "No Pain" images are
+    randomly deleted.
+
+    :param path:                    string, root filepath
+    :return:
+    """
+
     img_paths = np.array(get_image_paths(path))
     img_labels = np.array(get_labels(img_paths))
     pain = img_paths[img_labels[:, 4] != str(0)]
@@ -298,6 +450,13 @@ def downsample_data(path):
 
 
 def print_pain_label_dist(path):
+    """
+    Utility function, printing the distribution of "Pain" to "no Pain" data.
+
+    :param path:                    string, root filepath
+    :return:
+    """
+
     train_subjects = [name for name in os.listdir(path) if os.path.isdir(os.path.join(path, name))]
     for subject in train_subjects:
         img_paths = get_image_paths(os.path.join(path, subject))
@@ -309,6 +468,13 @@ def print_pain_label_dist(path):
 
 
 def print_pain_split_per_client(labels):
+    """
+    Utility function, printing per test subject how many pain/no pain images there are
+
+    :param labels:                  list, list of labels, where the index 4 is the pain label
+    :return:
+    """
+
     pain_labels = labels[labels[:, 4].astype(int) > 0]
     no_pain_labels = labels[labels[:, 4].astype(int) == 0]
     pain_unique, pain_count = np.unique(pain_labels[:, 0], return_counts=True)
@@ -320,3 +486,36 @@ def print_pain_split_per_client(labels):
                 break
             if idx_p == len(pain_unique) - 1:
                 print("Client:", client, "| Pain / No Pain: {:.2f}".format(0 / no_pain_count[idx]))
+
+
+def move_train_test_data(df, origin_path, train_path, test_path):
+    """
+    Randomly samples a Pandas DataFrame into a 40/60 split for each "Person". Then allocates the 40% to a "Test" folder,
+    and the 60% to a "Train" folder. To be used with the "Pain Data Preparation Notebook".
+
+    :param df:                      Pandas Dataframe. Must have columns "Person" and "img_paths"
+    :param origin_path:             string, path where images lie
+    :param train_path:              string, path where the train images go
+    :param test_path:               string, path where the test images go
+    :return:
+    """
+
+    if not os.path.isdir(train_path):
+        os.mkdir(train_path)
+    if not os.path.isdir(test_path):
+        os.mkdir(test_path)
+    mirror_folder_structure(origin_path, train_path)
+    mirror_folder_structure(origin_path, test_path)
+
+    for person in df['Person'].unique():
+        df_client = df[df['Person'] == person]
+        train = df_client.sample(frac=0.6, random_state=123)
+        test = df_client.drop(train.index)
+        for path in train['img_path']:
+            folder = os.path.basename(os.path.dirname(path))
+            file = os.path.basename(path)
+            os.rename(path, os.path.join(train_path, folder, file))
+        for path in test['img_path']:
+            folder = os.path.basename(os.path.dirname(path))
+            file = os.path.basename(path)
+            os.rename(path, os.path.join(test_path, folder, file))

@@ -7,10 +7,10 @@ import time
 
 import pandas as pd
 import numpy as np
+import tensorflow as tf
 
 from Scripts import Centralized_CNN as cNN
 from Scripts import Federated_CNN as fed_CNN
-from Scripts import Differentially_Private_CNN as diff_CNN
 from Scripts import Print_Functions as Output
 from Scripts import Data_Loader_Functions as Data_Loader
 from Scripts import Centralized_Pain_CNN as painCNN
@@ -226,98 +226,37 @@ def experiment_federated(clients, dataset, experiment, train_data, train_labels,
     history.to_csv(os.path.join(cNN.RESULTS, file))
 
 
-def experiment_federated_transfer(clients, dataset, experiment, train_data, train_labels, test_data, test_labels,
-                                  rounds=5, epochs=1, split='random', participants=None):
+def experiment_centralized_pain(dataset, experiment, train_data, train_labels, test_data, test_labels, epochs=5,
+                                metrics=('accuracy',), model=None):
     """
-    Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
+    Sets up a centralized CNN that trains on a specified dataset. Saves the results to CSV.
 
-    :param clients:                 int, the maximum number of clients participating in a communication round
     :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
     :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
     :param train_data:              numpy array, the train data
     :param train_labels:            numpy array, the train labels
     :param test_data:               numpy array, the test data
     :param test_labels:             numpy array, the test labels
-    :param rounds:                  int, number of communication rounds that the federated clients average results for
-    :param epochs:                  int, number of epochs that the client CNN trains for
-    :param split:                   Determine if split should occur randomly
-    :param participants:            participants in a given communications round
+    :param epochs:                  int, number of epochs that the centralized CNN trains for
+    :param metrics:                 array of tf-metrics, will be computed after every epoch
     :return:
     """
 
-    train_data, train_labels = Data_Loader.split_data_into_clients(clients, split, train_data, train_labels)
+    # Train Centralized CNN
+    if model is None:
+        centralized_model = painCNN.build_cnn(input_shape=train_data[0].shape)
+        centralized_model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    else:
+        centralized_model = model
 
-    # Reset federated model
-    fed_CNN.reset_federated_model()
+    centralized_model = painCNN.train_cnn(centralized_model, train_data, train_labels, test_data, test_labels,
+                                          metrics=metrics, epochs=epochs)
 
-    # Train Model
-    history = fed_CNN.federated_learning(communication_rounds=rounds,
-                                         num_of_clients=clients,
-                                         train_data=train_data,
-                                         train_labels=train_labels,
-                                         test_data=test_data,
-                                         test_labels=test_labels,
-                                         epochs=epochs,
-                                         num_participating_clients=participants
-                                         )
+    # Save full model
+    f_name = time.strftime("%Y-%m-%d-%H%M%S") + r"_Centralized_{}_{}.h5".format(dataset, experiment)
+    centralized_model.save(os.path.join(painCNN.PAIN_MODELS, f_name))
 
-    # Save history for plotting
-    file = time.strftime("%Y-%m-%d-%H%M%S") + r"_Federated_{}_{}_rounds_{}_clients_{}.csv".format(dataset, experiment,
-                                                                                                  rounds, clients)
-    history = history.rename(index=str, columns={"Train Loss": "Federated Train Loss",
-                                                 "Train Accuracy": "Federated Train Accuracy",
-                                                 "Test Loss": "Federated Test Loss",
-                                                 "Test Accuracy": "Federated Test Accuracy"})
-    history.to_csv(os.path.join(cNN.RESULTS, file))
-
-
-def experiment_differential_privacy(clients, dataset, experiment, train_data, train_labels, test_data, test_labels,
-                                    sigma, rounds=5, epochs=1, split='random', participants=None, learning_rate=0.01):
-    """
-    Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
-
-    :param clients:                 int, the maximum number of clients participating in a communication round
-    :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
-    :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
-    :param train_data:              numpy array, the train data
-    :param train_labels:            numpy array, the train labels
-    :param test_data:               numpy array, the test data
-    :param test_labels:             numpy array, the test labels
-    :param sigma:                   float, determining the level of differential privacy
-    :param rounds:                  int, number of communication rounds that the federated clients average results for
-    :param epochs:                  int, number of epochs that the client CNN trains for
-    :param split:                   Determine if split should occur randomly
-    :param participants:            participants in a given communications round
-    :type learning_rate:            float, determining the learning rate for the training algorithm
-    :return:
-    """
-
-    train_data, train_labels = Data_Loader.split_data_into_clients(clients, split, train_data, train_labels)
-
-    # Reset federated model
-    fed_CNN.reset_federated_model()
-
-    # Train Model
-    history = diff_CNN.federated_learning(communication_rounds=rounds,
-                                          num_of_clients=clients,
-                                          train_data=train_data,
-                                          train_labels=train_labels,
-                                          test_data=test_data,
-                                          test_labels=test_labels,
-                                          epochs=epochs,
-                                          sigma=sigma,
-                                          num_participating_clients=participants,
-                                          learning_rate=learning_rate
-                                          )
-
-    # Save history for plotting
-    file = time.strftime("%Y-%m-%d-%H%M%S") + r"_Federated_{}_{}_rounds_{}_clients_{}.csv".format(dataset, experiment,
-                                                                                                  rounds, clients)
-    history = history.rename(index=str, columns={"Train Loss": "Federated Train Loss",
-                                                 "Train Accuracy": "Federated Train Accuracy",
-                                                 "Test Loss": "Federated Test Loss",
-                                                 "Test Accuracy": "Federated Test Accuracy"})
-    history.to_csv(os.path.join(cNN.RESULTS, file))
+    return centralized_model
 
 
 # ---------------------------------------------- End Experiment Runners -------------------------------------------- #
@@ -501,17 +440,54 @@ def experiment_5_split_digits_with_overlap(dataset, experiment, rounds, clients)
 # ------------------------------------------------------------------------------------------------------------------ #
 # -------------------------------------------------- Experiments - 3 ----------------------------------------------- #
 
-def experiment_6_differential_federated_learning(dataset, experiment, rounds, clients, sigmas):
+def experiment_6_pain_centralized(dataset, experiment, rounds, split):
     # Load data
-    train_data, train_labels, test_data, test_labels, dataset = Data_Loader.load_data(dataset)
+    train_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_1")
+    test_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_2_test")
+    train_path_add_data = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_2_train")
+    train_data, train_labels, test_data, test_labels = Data_Loader.load_pain_data(train_path, test_path)
 
-    # Perform Experiments
-    for sigma in sigmas:
-        experiment_differential_privacy(clients, dataset, experiment, train_data, train_labels, test_data,
-                                        test_labels, sigma=sigma, rounds=rounds, split='overlap', participants=50,
-                                        learning_rate=0.01)
+    # Define labels for training
+    label = 4  # Labels: [person, session, culture, frame, pain, Trans_1, Trans_2]
 
-    experiment_centralized(dataset, experiment, train_data, train_labels, test_data, test_labels, rounds)
+    # Prepare labels for training and evaluation
+    train_labels_ord = train_labels[:, label].astype(np.int)
+    train_labels_bin = Data_Loader.reduce_pain_label_categories(train_labels_ord, max_pain=1)
+    test_labels_ord = test_labels[:, label].astype(np.int)
+    test_labels_bin = Data_Loader.reduce_pain_label_categories(test_labels_ord, max_pain=1)
+
+    # Define metrics
+    metrics = [
+        'accuracy',
+        tf.metrics.Recall(),
+        tf.metrics.Precision(),
+        tf.metrics.AUC(curve='PR'),
+        tf.metrics.TruePositives(),
+        tf.metrics.TrueNegatives(),
+        tf.metrics.FalsePositives(),
+        tf.metrics.FalseNegatives(),
+    ]
+
+    # Perform pretraining
+    model = experiment_centralized_pain(dataset, experiment, train_data, train_labels_bin, test_data, test_labels_bin,
+                                        rounds, metrics=metrics)
+
+    # Load additional data
+    add_train_data, add_train_labels = Data_Loader.load_pain_data(train_path_add_data)
+    add_train_labels_ord = add_train_labels[:, label].astype(np.int)
+    train_labels_bin = Data_Loader.reduce_pain_label_categories(add_train_labels_ord, max_pain=1)
+
+    # Split Data into shards
+    add_train_data = np.array_split(add_train_data, split)
+    train_labels_bin = np.array_split(train_labels_bin, split)
+
+    # Train on additional shards and evaluate performance
+    shard_counter = 1
+    for data, labels in zip(add_train_data, train_labels_bin):
+        experiment_new = experiment + "_shard-{}".format(shard_counter)
+        model = experiment_centralized_pain(dataset, experiment_new, data, labels, test_data, test_labels_bin,
+                                            rounds, metrics=metrics, model=model)
+        shard_counter += 1
 
 
 # ------------------------------------------------ End Experiments - 3 --------------------------------------------- #
@@ -519,6 +495,8 @@ def experiment_6_differential_federated_learning(dataset, experiment, rounds, cl
 
 
 if __name__ == '__main__':
+    tf.random.set_seed(123)
+    np.random.seed(123)
     # Experiment 1 - Number of clients
     # num_clients = [10]
     # experiment_1_number_of_clients(dataset="MNIST", experiment="CLIENTS", rounds=10, clients=num_clients)
@@ -538,4 +516,4 @@ if __name__ == '__main__':
     # sigma_arr = [1]
     # experiment_6_differential_federated_learning(dataset="MNIST", experiment="DIFF_PRIV", rounds=200, clients=100,
     #                                              sigmas=sigma_arr)
-    painCNN.main()
+    experiment_6_pain_centralized('PAIN', 'Centralized-Training', 30, 6)

@@ -103,12 +103,36 @@ def init_global_model(input_shape=(28, 28, 1), learning_rate=0.01):
 
 
 def train_client_model(client, epochs, model, train_data, train_labels, weights_accountant):
+    """
+    Utility function training a simple CNN for 1 client in a federated setting and adding those weights to the
+    weights_accountant. Call this function in a federated loop that then makes the weights_accountant average the
+    weights to send to a global model.
+
+    :param client:                      int, index for a specific client to be trained
+    :param epochs:                      int, local epochs to be trained
+    :param model:                       Tensorflow Graph
+    :param train_data:                  numpy array, partitioned into a number of clients
+    :param train_labels:                numpy array, partitioned into a number of clients
+    :param weights_accountant:          WeightsAccountant object
+    :return:
+    """
     model = cNN.train_cnn(model, train_data[client], train_labels[client], epochs=epochs)
     weights = model.get_weights()
     weights_accountant.append_local_weights(weights)
 
 
 def client_learning(model, client, epochs, train_data, train_labels, weights_accountant):
+    """
+    Initializes a client model and kicks off the training of that client by calling "train_client_model".
+
+    :param model:                       Tensorflow graph
+    :param client:                      int, index for a specific client to be trained
+    :param epochs:                      int, local epochs to be trained
+    :param train_data:                  numpy array, partitioned into a number of clients
+    :param train_labels:                numpy array, partitioned into a number of clients
+    :param weights_accountant:          WeightsAccountant object
+    :return:
+    """
     Output.print_client_id(client)
 
     # Initialize model structure and load weights
