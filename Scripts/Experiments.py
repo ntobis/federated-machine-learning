@@ -576,6 +576,9 @@ def experiment_7_pain_federated(dataset, experiment, rounds, split, clients, mod
 
 if __name__ == '__main__':
     # Training setup
+    print("GPU Available: ", tf.test.is_gpu_available())
+    tf.debugging.set_log_device_placement(True)
+
     tf.random.set_seed(123)
     np.random.seed(123)
     parser = argparse.ArgumentParser()
@@ -608,7 +611,7 @@ if __name__ == '__main__':
                                     "2019-07-23-051453_Centralized_PAIN_Centralized-Training.h5")
     shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
 
-    experiment_7_pain_federated('PAIN', 'Federated-Training', rounds=30, split=shards, clients=10,
+    experiment_7_pain_federated('PAIN', 'Federated-Training', rounds=30, split=shards, clients=12,
                                 model_path=pretrained_model, cumulative=True)
     client.messages.create(to="+447768521069", from_="+441469727038", body="Training Complete")
 
