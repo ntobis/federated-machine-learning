@@ -20,14 +20,15 @@ optimizers = tf.keras.optimizers  # like 'from tensorflow.keras import optimizer
 ROOT = os.path.dirname(os.path.dirname(__file__))
 DATA = os.path.join(ROOT, "Data")
 MODELS = os.path.join(ROOT, "Models")
-PAIN_MODELS = os.path.join(MODELS, "Centralized Pain")
-
+CENTRAL_PAIN_MODELS = os.path.join(MODELS, "Pain", "Centralized")
+FEDERATED_PAIN_MODELS = os.path.join(MODELS, "Pain", "Federated")
 
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ----------------------------------------------- Model Configuration ---------------------------------------------- #
+
 
 def build_cnn(input_shape):
     """
@@ -64,62 +65,66 @@ def build_cnn(input_shape):
     return model
 
 
-def train_cnn(model, train_data, train_labels, test_data, test_labels, epochs, people=None):
-
+def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labels=None, people=None, evaluate=True):
     # Set up data frames for logging
-    df_individual = pd.DataFrame(columns=['Epoch', 'Loss', 'Person', 'TN', 'FP', 'FN', 'TP',
-                                          'Individual Avg. Precision', 'Aggregate Avg. Precision',
-                                          'Individual Accuracy', 'Individual Precision', 'Individual Recall',
-                                          'Individual F1-Score', 'Aggregate Accuracy', 'Aggregate Precision',
-                                          'Aggregate Recall', 'Aggregate F1-Score'])
-
-    df_aggregate = pd.DataFrame(columns=['Epoch', 'Loss', 'Aggregate Accuracy', 'Aggregate Recall',
-                                         'Aggregate Precision', 'Aggregate Avg. Precision', 'TP', 'TN', 'FP',
-                                         'FN', 'Aggregate F1_Score'])
+    history = history_set_up(people)
 
     # Start training
     for epoch in range(epochs):
 
         # Training
-        model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
         model.fit(train_data, train_labels, epochs=1, batch_size=32, use_multiprocessing=True)
 
-        # Evaluating (get predictions and loss)
-        model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-        predictions = model.predict(test_data)
-        loss = tf.keras.losses.SparseCategoricalCrossentropy()
-        loss = loss(
-            tf.convert_to_tensor(tf.cast(test_labels, tf.float32)),
-            tf.convert_to_tensor(tf.cast(predictions, tf.float32))
-        ).numpy()
-        y_pred = np.argmax(predictions, axis=1)
+        # Evaluating
+        if evaluate:
+            print('Evaluating')
+            history = evaluate_pain_cnn(model, epoch, test_data, test_labels, history, people)
 
-        # If people were passed, compute metrics on a per person basis as well as aggregate
-        # Else just compute aggregate
-        if people is not None:
-            df = compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predictions)
-            df_individual.append(df)
+    return model, history
 
-        else:
-            df = compute_aggregate_metrics(epoch, loss, test_labels, y_pred, predictions)
-            df_aggregate.append(df)
 
-        # Save logs
-        if people is not None:
-            file = r'logs_individual.csv'
-            df_individual.to_csv(os.path.join(cNN.RESULTS, file))
-        else:
-            file = r'logs_aggregate.csv'
-            df_aggregate.to_csv(os.path.join(cNN.RESULTS, file))
-
-    # Save Final Results
+def history_set_up(people):
     if people is not None:
-        file = time.strftime("%Y-%m-%d-%H%M%S") + r'_final_results_individual.csv'
-        df_individual.to_csv(os.path.join(cNN.RESULTS, file))
+        history = pd.DataFrame(columns=['Epoch', 'Loss', 'Person', 'TN', 'FP', 'FN', 'TP',
+                                        'Individual Avg. Precision', 'Aggregate Avg. Precision',
+                                        'Individual Accuracy', 'Individual Precision', 'Individual Recall',
+                                        'Individual F1-Score', 'Aggregate Accuracy', 'Aggregate Precision',
+                                        'Aggregate Recall', 'Aggregate F1_Score'])
     else:
-        file = time.strftime("%Y-%m-%d-%H%M%S") + r'_final_results_aggregate.csv'
-        df_individual.to_csv(os.path.join(cNN.RESULTS, file))
-    return model
+        history = pd.DataFrame(columns=['Epoch', 'Loss', 'Aggregate Accuracy', 'Aggregate Recall',
+                                        'Aggregate Precision', 'Aggregate Avg. Precision', 'TP', 'TN', 'FP',
+                                        'FN', 'Aggregate F1_Score'])
+    return history
+
+
+def evaluate_pain_cnn(model, epoch, test_data, test_labels, history=None, people=None):
+    if history is None:
+        history = history_set_up(people)
+
+    predictions = model.predict(test_data)
+    loss = tf.keras.losses.SparseCategoricalCrossentropy()
+    loss = loss(
+        tf.convert_to_tensor(tf.cast(test_labels, tf.float32)),
+        tf.convert_to_tensor(tf.cast(predictions, tf.float32))
+    ).numpy()
+    y_pred = np.argmax(predictions, axis=1)
+    # If people were passed, compute metrics on a per person basis as well as aggregate
+    # Else just compute aggregate
+    if people is not None:
+        df = compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predictions)
+        history = history.append(df, ignore_index=True)
+    else:
+        df = compute_aggregate_metrics(epoch, loss, test_labels, y_pred, predictions)
+        history = history.append(df, ignore_index=True)
+
+    # Save logs
+    if people is not None:
+        file = r'logs_individual.csv'
+        history.to_csv(os.path.join(cNN.RESULTS, file))
+    else:
+        file = r'logs_aggregate.csv'
+        history.to_csv(os.path.join(cNN.RESULTS, file))
+    return history
 
 
 def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predictions):
@@ -164,7 +169,6 @@ def compute_aggregate_metrics(epoch, loss, test_labels, y_pred, predictions):
     tn, fp, fn, tp = confusion_matrix(test_labels, y_pred).ravel()
     aggregate_avg_precision = average_precision_score(test_labels, predictions)
     results = [epoch, loss, accuracy, recall, precision, aggregate_avg_precision, tp, tn, fp, fn]
-    print(results)
 
     # Create DF for Progress
     df = pd.DataFrame([results], columns=['Epoch', 'Loss', 'Aggregate Accuracy', 'Aggregate Recall',

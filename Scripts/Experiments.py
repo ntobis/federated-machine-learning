@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
@@ -14,6 +14,7 @@ from Scripts import Federated_CNN as fed_CNN
 from Scripts import Print_Functions as Output
 from Scripts import Data_Loader_Functions as Data_Loader
 from Scripts import Centralized_Pain_CNN as painCNN
+from Scripts import Federated_Transfer_Learning_CNN as fedTransCNN
 
 pd.set_option('display.max_columns', 500)
 
@@ -163,7 +164,7 @@ def experiment_centralized(dataset, experiment, train_data, train_labels, test_d
     """
 
     # Train Centralized CNN
-    centralized_model = cNN.build_cnn(input_shape=(28, 28, 1))
+    centralized_model = cNN.build_cnn(input_shape=train_data[0].shape)
     centralized_model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     centralized_model = cNN.train_cnn(centralized_model, train_data, train_labels, epochs=epochs)
 
@@ -179,6 +180,46 @@ def experiment_centralized(dataset, experiment, train_data, train_labels, test_d
     history = history.rename(index=str, columns={"loss": "Centralized Loss", "accuracy": "Centralized Accuracy"})
     file = time.strftime("%Y-%m-%d-%H%M%S") + r"_Centralized_{}_{}.csv".format(dataset, experiment)
     history.to_csv(os.path.join(cNN.RESULTS, file))
+
+
+def experiment_centralized_pain(dataset, experiment, train_data, train_labels, test_data, test_labels, epochs=5,
+                                model=None, people=None):
+    """
+    Sets up a centralized CNN that trains on a specified dataset. Saves the results to CSV.
+
+    :param model:
+    :param people:
+    :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
+    :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
+    :param train_data:              numpy array, the train data
+    :param train_labels:            numpy array, the train labels
+    :param test_data:               numpy array, the test data
+    :param test_labels:             numpy array, the test labels
+    :param epochs:                  int, number of epochs that the centralized CNN trains for
+    :return:
+    """
+
+    # Train Centralized CNN
+    if model is None:
+        centralized_model = painCNN.build_cnn(input_shape=train_data[0].shape)
+        centralized_model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    else:
+        centralized_model = model
+
+    centralized_model, history = painCNN.train_cnn(centralized_model, epochs=epochs, train_data=train_data,
+                                                   train_labels=train_labels, test_data=test_data,
+                                                   test_labels=test_labels, people=people)
+
+    # Save full model
+    f_name = time.strftime("%Y-%m-%d-%H%M%S") + r"_Centralized_{}_{}.h5".format(dataset, experiment)
+    centralized_model.save(os.path.join(painCNN.CENTRAL_PAIN_MODELS, f_name))
+
+    # Save Final Results
+    date = time.strftime("%Y-%m-%d-%H%M%S")
+    file = date + r'_final_results_individual.csv' if people is not None else date + r'_final_results_aggregate.csv'
+    history.to_csv(os.path.join(cNN.RESULTS, file))
+
+    return centralized_model
 
 
 def experiment_federated(clients, dataset, experiment, train_data, train_labels, test_data, test_labels,
@@ -226,38 +267,49 @@ def experiment_federated(clients, dataset, experiment, train_data, train_labels,
     history.to_csv(os.path.join(cNN.RESULTS, file))
 
 
-def experiment_centralized_pain(dataset, experiment, train_data, train_labels, test_data, test_labels, epochs=5,
-                                model=None, people=None):
+def experiment_federated_pain(clients, dataset, experiment, train_data, train_labels, test_data, test_labels,
+                              rounds=5, epochs=1, split='random', participants=None, people=None, model=None):
     """
-    Sets up a centralized CNN that trains on a specified dataset. Saves the results to CSV.
+    Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
 
-    :param model:
-    :param people:
+    :param clients:                 int, the maximum number of clients participating in a communication round
     :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
     :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
     :param train_data:              numpy array, the train data
     :param train_labels:            numpy array, the train labels
     :param test_data:               numpy array, the test data
     :param test_labels:             numpy array, the test labels
-    :param epochs:                  int, number of epochs that the centralized CNN trains for
+    :param rounds:                  int, number of communication rounds that the federated clients average results for
+    :param epochs:                  int, number of epochs that the client CNN trains for
+    :param split:                   Determine if split should occur randomly
+    :param participants:            participants in a given communications round
+    :param people:                  numpy array of len test_labels, enabling individual client metrics
+    :param model:                   A compiled tensorflow model
     :return:
     """
 
-    # Train Centralized CNN
-    if model is None:
-        centralized_model = painCNN.build_cnn(input_shape=train_data[0].shape)
-        centralized_model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    else:
-        centralized_model = model
+    train_data, train_labels = Data_Loader.split_data_into_clients(clients, split, train_data, train_labels)
 
-    centralized_model = painCNN.train_cnn(centralized_model, train_data, train_labels, test_data, test_labels,
-                                          epochs=epochs, people=people)
+    # Reset federated model
+    fedTransCNN.reset_federated_model()
 
-    # Save full model
-    f_name = time.strftime("%Y-%m-%d-%H%M%S") + r"_Centralized_{}_{}.h5".format(dataset, experiment)
-    centralized_model.save(os.path.join(painCNN.PAIN_MODELS, f_name))
+    # Train Model
+    history = fedTransCNN.federated_learning(communication_rounds=rounds,
+                                             num_of_clients=clients,
+                                             train_data=train_data,
+                                             train_labels=train_labels,
+                                             test_data=test_data,
+                                             test_labels=test_labels,
+                                             epochs=epochs,
+                                             num_participating_clients=participants,
+                                             people=people,
+                                             model=model
+                                             )
 
-    return centralized_model
+    # Save history for plotting
+    file = time.strftime("%Y-%m-%d-%H%M%S") + r"_Federated_{}_{}_rounds_{}_clients_{}.csv".format(dataset, experiment,
+                                                                                                  rounds, clients)
+    history.to_csv(os.path.join(cNN.RESULTS, file))
 
 
 # ---------------------------------------------- End Experiment Runners -------------------------------------------- #
@@ -451,47 +503,7 @@ def experiment_6_pain_centralized(dataset, experiment, rounds, split):
 
     # Define labels for training
     label = 4  # Labels: [person, session, culture, frame, pain, Trans_1, Trans_2]
-
-    # Prepare labels for training and evaluation
-    train_labels_ord = train_labels[:, label].astype(np.int)
-    train_labels_bin = Data_Loader.reduce_pain_label_categories(train_labels_ord, max_pain=1)
-    test_labels_ord = test_labels[:, label].astype(np.int)
-    test_labels_bin = Data_Loader.reduce_pain_label_categories(test_labels_ord, max_pain=1)
-
-    # Perform pretraining
-    model = experiment_centralized_pain(dataset, experiment, train_data, train_labels_bin, test_data, test_labels_bin,
-                                        rounds)
-
-    # Load additional data
-    add_train_data, add_train_labels = Data_Loader.load_pain_data(train_path_add_data)
-    add_train_labels_ord = add_train_labels[:, label].astype(np.int)
-    train_labels_bin = Data_Loader.reduce_pain_label_categories(add_train_labels_ord, max_pain=1)
-
-    # Split Data into shards
-    add_train_data = np.array_split(add_train_data, split)
-    train_labels_bin = np.array_split(train_labels_bin, split)
-
-    # Train on additional shards and evaluate performance
-    shard_counter = 1
-    for data, labels in zip(add_train_data, train_labels_bin):
-        experiment_new = experiment + "_shard-{}".format(shard_counter)
-        model = experiment_centralized_pain(dataset, experiment_new, data, labels, test_data, test_labels_bin, rounds,
-                                            model=model)
-        shard_counter += 1
-
-
-def experiment_7_pain_federated(dataset, experiment, rounds, split, cumulative=True):
-
-    # Load data
-    train_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_1")
-    test_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_2_test")
-    train_path_add_data = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation",
-                                       "group_2_train")
-    train_data, train_labels, test_data, test_labels = Data_Loader.load_pain_data(train_path, test_path)
-
-    # Define labels for training
     person = 0
-    label = 4  # Labels: [person, session, culture, frame, pain, Trans_1, Trans_2]
 
     # Prepare labels for training and evaluation
     train_labels_ord = train_labels[:, label].astype(np.int)
@@ -501,28 +513,61 @@ def experiment_7_pain_federated(dataset, experiment, rounds, split, cumulative=T
     test_labels_people = test_labels[:, person].astype(np.int)
 
     # Perform pretraining
-    model = experiment_centralized_pain(dataset, experiment, train_data, train_labels_bin, test_data,
-                                        test_labels_bin,
+    model = experiment_centralized_pain(dataset, experiment, train_data, train_labels_bin, test_data, test_labels_bin,
                                         rounds, people=test_labels_people)
 
     # Load additional data
     add_train_data, add_train_labels = Data_Loader.load_pain_data(train_path_add_data)
     add_train_labels_ord = add_train_labels[:, label].astype(np.int)
     train_labels_bin = Data_Loader.reduce_pain_label_categories(add_train_labels_ord, max_pain=1)
-    add_test_labels_people = add_train_labels[:, person].astype(np.int)
 
     # Split Data into shards
     add_train_data = np.array_split(add_train_data, split)
     train_labels_bin = np.array_split(train_labels_bin, split)
-    add_test_labels_people = np.array_split(add_test_labels_people, split)
 
     # Train on additional shards and evaluate performance
-    shard_counter = 1
-    for data, labels in zip(add_train_data, train_labels_bin):
-        experiment_new = experiment + "_shard-{}".format(shard_counter)
+    for idx, (data, labels) in enumerate(zip(add_train_data, train_labels_bin)):
+        Output.print_shard(idx)
+        experiment_new = experiment + "_shard-{}".format(idx)
         model = experiment_centralized_pain(dataset, experiment_new, data, labels, test_data, test_labels_bin, rounds,
-                                            model=model, people=add_test_labels_people)
-        shard_counter += 1
+                                            model=model, people=test_labels_people)
+
+
+def experiment_7_pain_federated(dataset, experiment, rounds, split, clients, model_path):
+    # Load data
+    test_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_2_test")
+    train_path_add_data = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation",
+                                       "group_2_train")
+    test_data, test_labels = Data_Loader.load_pain_data(test_path)
+
+    # Define labels for training
+    person = 0
+    label = 4  # Labels: [person, session, culture, frame, pain, Trans_1, Trans_2]
+
+    # Prepare labels for training and evaluation
+    test_labels_ord = test_labels[:, label].astype(np.int)
+    test_labels_bin = Data_Loader.reduce_pain_label_categories(test_labels_ord, max_pain=1)
+    test_labels_people = test_labels[:, person].astype(np.int)
+
+    # Load Pretrained model
+    model = tf.keras.models.load_model(model_path)
+    model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+    # Load additional data
+    add_train_data, add_train_labels = Data_Loader.load_pain_data(train_path_add_data)
+    add_train_labels_ord = add_train_labels[:, label].astype(np.int)
+    train_labels_bin = Data_Loader.reduce_pain_label_categories(add_train_labels_ord, max_pain=1)
+
+    # Split Data into shards
+    add_train_data = np.array_split(add_train_data, split)
+    train_labels_bin = np.array_split(train_labels_bin, split)
+
+    # Train on additional shards and evaluate performance
+    for idx, (data, labels) in enumerate(zip(add_train_data, train_labels_bin)):
+        Output.print_shard(idx)
+        experiment_new = experiment + "_shard-{}".format(idx + 1)
+        experiment_federated_pain(clients, dataset, experiment_new, data, labels, test_data, test_labels_bin, rounds,
+                                  people=test_labels_people, model=model)
 
 
 # ------------------------------------------------ End Experiments - 3 --------------------------------------------- #
@@ -548,4 +593,7 @@ if __name__ == '__main__':
     # plot_results(dataset="MNIST", experiment="SPLIT_DIGITS_OVERLAP", keys=num_clients, date="2019-07-10",
     #              suffix=str(num_clients), move=True)
 
-    experiment_6_pain_centralized('PAIN', 'Centralized-Training', 30, 6)
+    # experiment_6_pain_centralized('PAIN', 'Centralized-Training', 1, 6)
+    pretrained_model = "/Users/nico/PycharmProjects/FederatedLearning/Models/Pain/Centralized/" \
+                       "2019-07-23 Centralized Pain/2019-07-23-051453_Centralized_PAIN_Centralized-Training.h5"
+    experiment_7_pain_federated('PAIN', 'Federated-Training', 1, 6, clients=2, model_path=pretrained_model)

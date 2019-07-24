@@ -1,11 +1,9 @@
 import os
-import time
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-import Scripts.Data_Loader_Functions as Data_Loader
 from Scripts import Centralized_CNN as cNN
 from Scripts import Model_Reset as Reset
 from Scripts import Print_Functions as Output

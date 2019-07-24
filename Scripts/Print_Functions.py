@@ -297,3 +297,8 @@ if __name__ == '__main__':
     )
     rep_metrics = ['Accuracy', 'Precision', 'Recall', 'F1_Score']
     make_pain_plot_grid(RESULTS, rep_metrics, parameters)
+
+
+def print_shard(idx):
+    print("\n\n\033[1m--------------------------------------------------------------- Shard {} ----------------------"
+          "-----------------------------------------\033[0m".format(idx + 1))
