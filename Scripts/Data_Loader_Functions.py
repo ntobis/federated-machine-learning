@@ -374,7 +374,7 @@ def load_greyscale_image_data(path, label_type=None):
         data, labels:           tuple of numpy arrays, holding images and labels
     """
 
-    img_paths = get_image_paths(path)[:500]
+    img_paths = get_image_paths(path)
     np.random.shuffle(img_paths)
     data = []
     for idx, path in enumerate(img_paths):
@@ -519,3 +519,27 @@ def move_train_test_data(df, origin_path, train_path, test_path):
             folder = os.path.basename(os.path.dirname(path))
             file = os.path.basename(path)
             os.rename(path, os.path.join(test_path, folder, file))
+
+
+def split_data_into_shards(data, labels, split, cumulative=True):
+    """
+    Utility function, splitting data into specified subsets of shards. Scales the split array to 100%.
+
+    :param data:                numpy arrray
+    :param labels:              numpy array
+    :param split:               list of percentage split points, e.g. [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+    :param cumulative:          bool, checks if concatenation should be cumulative, e.g. [0], [0, 1] or not [0], [1]
+    :return:
+    """
+    split = [int(x / max(split) * len(data)) for x in split]
+    data = np.array_split(data, split)
+    labels = np.array_split(labels, split)
+    if cumulative:
+        data, labels = cumconc(data), cumconc(labels)
+    return data, labels
+
+
+def cumconc(array):
+    total = np.concatenate(array)
+    # noinspection PyTypeChecker
+    return np.array([*map(total.__getitem__, map(slice, np.fromiter(map(len, array), int, len(array)).cumsum()))])

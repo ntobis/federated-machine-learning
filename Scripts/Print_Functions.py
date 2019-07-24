@@ -71,6 +71,11 @@ def print_loss_accuracy(accuracy, loss, data_type="Test"):
     print()
 
 
+def print_shard(percentage):
+    print("\n\n\033[1m--------------------------------------------------------------- Shard {0:.0%} -------------------"
+          "--------------------------------------------\033[0m".format(percentage))
+
+
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
@@ -297,8 +302,3 @@ if __name__ == '__main__':
     )
     rep_metrics = ['Accuracy', 'Precision', 'Recall', 'F1_Score']
     make_pain_plot_grid(RESULTS, rep_metrics, parameters)
-
-
-def print_shard(idx):
-    print("\n\n\033[1m--------------------------------------------------------------- Shard {} ----------------------"
-          "-----------------------------------------\033[0m".format(idx + 1))

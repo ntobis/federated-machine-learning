@@ -142,7 +142,7 @@ def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predict
     df = pd.DataFrame(results, columns=['Epoch', 'Loss', 'Person', 'TN', 'FP', 'FN', 'TP', 'Individual Avg. Precision',
                                         'Aggregate Avg. Precision'])
 
-    df['Individual Accuracy'] = df['TP'] / (df['TN'] + df['FP'] + df['FN'] + df['TP'])
+    df['Individual Accuracy'] = (df['TP'] + df['TN']) / (df['TN'] + df['FP'] + df['FN'] + df['TP'])
     df['Individual Precision'] = df['TP'] / (df['FP'] + df['TP'])
     df['Individual Recall'] = df['TP'] / (df['FN'] + df['TP'])
     df['Individual F1-Score'] = 2 * ((df['Individual Precision'] * df['Individual Recall']) / (
@@ -151,7 +151,7 @@ def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predict
     fp_g = df.groupby('Epoch')['FP'].transform(sum)
     fn_g = df.groupby('Epoch')['FN'].transform(sum)
     tp_g = df.groupby('Epoch')['TP'].transform(sum)
-    df['Aggregate Accuracy'] = tp_g / (tn_g + fp_g + fn_g + tp_g)
+    df['Aggregate Accuracy'] = (tp_g + tn_g) / (tn_g + fp_g + fn_g + tp_g)
     df['Aggregate Precision'] = tp_g / (fp_g + tp_g)
     df['Aggregate Recall'] = tp_g / (fn_g + tp_g)
     df['Aggregate F1_Score'] = 2 * ((df['Aggregate Precision'] * df['Aggregate Recall']) / (

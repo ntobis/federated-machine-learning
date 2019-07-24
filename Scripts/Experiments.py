@@ -12,7 +12,7 @@ import tensorflow as tf
 from Scripts import Centralized_CNN as cNN
 from Scripts import Federated_CNN as fed_CNN
 from Scripts import Print_Functions as Output
-from Scripts import Data_Loader_Functions as Data_Loader
+from Scripts import Data_Loader_Functions as dL
 from Scripts import Centralized_Pain_CNN as painCNN
 from Scripts import Federated_Transfer_Learning_CNN as fedTransCNN
 
@@ -241,7 +241,7 @@ def experiment_federated(clients, dataset, experiment, train_data, train_labels,
     :return:
     """
 
-    train_data, train_labels = Data_Loader.split_data_into_clients(clients, split, train_data, train_labels)
+    train_data, train_labels = dL.split_data_into_clients(clients, split, train_data, train_labels)
 
     # Reset federated model
     fed_CNN.reset_federated_model()
@@ -288,7 +288,7 @@ def experiment_federated_pain(clients, dataset, experiment, train_data, train_la
     :return:
     """
 
-    train_data, train_labels = Data_Loader.split_data_into_clients(clients, split, train_data, train_labels)
+    train_data, train_labels = dL.split_data_into_clients(clients, split, train_data, train_labels)
 
     # Reset federated model
     fedTransCNN.reset_federated_model()
@@ -332,7 +332,7 @@ def experiment_1_number_of_clients(dataset, experiment, rounds, clients):
     """
 
     # Load data
-    train_data, train_labels, test_data, test_labels, dataset = Data_Loader.load_data(dataset)
+    train_data, train_labels, test_data, test_labels, dataset = dL.load_data(dataset)
 
     # Perform Experiments
     for client_num in clients:
@@ -355,7 +355,7 @@ def experiment_2_limited_digits(dataset, experiment, rounds, digit_array):
     """
 
     # Load data
-    train_data, train_labels, test_data, test_labels, dataset = Data_Loader.load_data(dataset)
+    train_data, train_labels, test_data, test_labels, dataset = dL.load_data(dataset)
 
     # Perform Experiments
     for digit in digit_array:
@@ -385,7 +385,7 @@ def experiment_3_add_noise(dataset, experiment, rounds, std_devs):
     """
 
     # Load data
-    train_data, train_labels, test_data, test_labels, dataset = Data_Loader.load_data(dataset)
+    train_data, train_labels, test_data, test_labels, dataset = dL.load_data(dataset)
 
     # Perform Experiments
     for std_dv in std_devs:
@@ -454,7 +454,7 @@ def experiment_4_split_digits(dataset, experiment, rounds, clients):
     """
 
     # Load data
-    train_data, train_labels, test_data, test_labels, dataset = Data_Loader.load_data(dataset)
+    train_data, train_labels, test_data, test_labels, dataset = dL.load_data(dataset)
 
     # Perform Experiments
     for client_num in clients:
@@ -476,7 +476,7 @@ def experiment_5_split_digits_with_overlap(dataset, experiment, rounds, clients)
     """
 
     # Load data
-    train_data, train_labels, test_data, test_labels, dataset = Data_Loader.load_data(dataset)
+    train_data, train_labels, test_data, test_labels, dataset = dL.load_data(dataset)
 
     # Perform Experiments
     for client_num in clients:
@@ -493,13 +493,13 @@ def experiment_5_split_digits_with_overlap(dataset, experiment, rounds, clients)
 # ------------------------------------------------------------------------------------------------------------------ #
 # -------------------------------------------------- Experiments - 3 ----------------------------------------------- #
 
-def experiment_6_pain_centralized(dataset, experiment, rounds, split):
+def experiment_6_pain_centralized(dataset, experiment, rounds, split, cumulative=True):
     # Load data
     train_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_1")
     test_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_2_test")
     train_path_add_data = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation",
                                        "group_2_train")
-    train_data, train_labels, test_data, test_labels = Data_Loader.load_pain_data(train_path, test_path)
+    train_data, train_labels, test_data, test_labels = dL.load_pain_data(train_path, test_path)
 
     # Define labels for training
     label = 4  # Labels: [person, session, culture, frame, pain, Trans_1, Trans_2]
@@ -507,9 +507,9 @@ def experiment_6_pain_centralized(dataset, experiment, rounds, split):
 
     # Prepare labels for training and evaluation
     train_labels_ord = train_labels[:, label].astype(np.int)
-    train_labels_bin = Data_Loader.reduce_pain_label_categories(train_labels_ord, max_pain=1)
+    train_labels_bin = dL.reduce_pain_label_categories(train_labels_ord, max_pain=1)
     test_labels_ord = test_labels[:, label].astype(np.int)
-    test_labels_bin = Data_Loader.reduce_pain_label_categories(test_labels_ord, max_pain=1)
+    test_labels_bin = dL.reduce_pain_label_categories(test_labels_ord, max_pain=1)
     test_labels_people = test_labels[:, person].astype(np.int)
 
     # Perform pretraining
@@ -517,28 +517,27 @@ def experiment_6_pain_centralized(dataset, experiment, rounds, split):
                                         rounds, people=test_labels_people)
 
     # Load additional data
-    add_train_data, add_train_labels = Data_Loader.load_pain_data(train_path_add_data)
+    add_train_data, add_train_labels = dL.load_pain_data(train_path_add_data)
     add_train_labels_ord = add_train_labels[:, label].astype(np.int)
-    train_labels_bin = Data_Loader.reduce_pain_label_categories(add_train_labels_ord, max_pain=1)
+    train_labels_bin = dL.reduce_pain_label_categories(add_train_labels_ord, max_pain=1)
 
     # Split Data into shards
-    add_train_data = np.array_split(add_train_data, split)
-    train_labels_bin = np.array_split(train_labels_bin, split)
+    add_train_data, train_labels_bin = dL.split_data_into_shards(add_train_data, train_labels_bin, split, cumulative)
 
     # Train on additional shards and evaluate performance
-    for idx, (data, labels) in enumerate(zip(add_train_data, train_labels_bin)):
-        Output.print_shard(idx)
-        experiment_new = experiment + "_shard-{}".format(idx)
+    for percentage, data, labels in zip(split, add_train_data, train_labels_bin):
+        Output.print_shard(percentage)
+        experiment_new = experiment + "_shard-{}".format(percentage)
         model = experiment_centralized_pain(dataset, experiment_new, data, labels, test_data, test_labels_bin, rounds,
                                             model=model, people=test_labels_people)
 
 
-def experiment_7_pain_federated(dataset, experiment, rounds, split, clients, model_path):
+def experiment_7_pain_federated(dataset, experiment, rounds, split, clients, model_path, cumulative=True):
     # Load data
     test_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_2_test")
     train_path_add_data = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation",
                                        "group_2_train")
-    test_data, test_labels = Data_Loader.load_pain_data(test_path)
+    test_data, test_labels = dL.load_pain_data(test_path)
 
     # Define labels for training
     person = 0
@@ -546,7 +545,7 @@ def experiment_7_pain_federated(dataset, experiment, rounds, split, clients, mod
 
     # Prepare labels for training and evaluation
     test_labels_ord = test_labels[:, label].astype(np.int)
-    test_labels_bin = Data_Loader.reduce_pain_label_categories(test_labels_ord, max_pain=1)
+    test_labels_bin = dL.reduce_pain_label_categories(test_labels_ord, max_pain=1)
     test_labels_people = test_labels[:, person].astype(np.int)
 
     # Load Pretrained model
@@ -554,18 +553,17 @@ def experiment_7_pain_federated(dataset, experiment, rounds, split, clients, mod
     model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     # Load additional data
-    add_train_data, add_train_labels = Data_Loader.load_pain_data(train_path_add_data)
+    add_train_data, add_train_labels = dL.load_pain_data(train_path_add_data)
     add_train_labels_ord = add_train_labels[:, label].astype(np.int)
-    train_labels_bin = Data_Loader.reduce_pain_label_categories(add_train_labels_ord, max_pain=1)
+    train_labels_bin = dL.reduce_pain_label_categories(add_train_labels_ord, max_pain=1)
 
     # Split Data into shards
-    add_train_data = np.array_split(add_train_data, split)
-    train_labels_bin = np.array_split(train_labels_bin, split)
+    add_train_data, train_labels_bin = dL.split_data_into_shards(add_train_data, train_labels_bin, split, cumulative)
 
     # Train on additional shards and evaluate performance
-    for idx, (data, labels) in enumerate(zip(add_train_data, train_labels_bin)):
-        Output.print_shard(idx)
-        experiment_new = experiment + "_shard-{}".format(idx + 1)
+    for percentage, data, labels in zip(split, add_train_data, train_labels_bin):
+        Output.print_shard(percentage)
+        experiment_new = experiment + "_shard-{}".format(percentage)
         experiment_federated_pain(clients, dataset, experiment_new, data, labels, test_data, test_labels_bin, rounds,
                                   people=test_labels_people, model=model)
 
@@ -593,7 +591,13 @@ if __name__ == '__main__':
     # plot_results(dataset="MNIST", experiment="SPLIT_DIGITS_OVERLAP", keys=num_clients, date="2019-07-10",
     #              suffix=str(num_clients), move=True)
 
-    # experiment_6_pain_centralized('PAIN', 'Centralized-Training', 1, 6)
+    # shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+    # experiment_6_pain_centralized('PAIN', 'Centralized-Training', rounds=1, split=shards, cumulative=True)
+
+    # Experiment 7
     pretrained_model = "/Users/nico/PycharmProjects/FederatedLearning/Models/Pain/Centralized/" \
                        "2019-07-23 Centralized Pain/2019-07-23-051453_Centralized_PAIN_Centralized-Training.h5"
-    experiment_7_pain_federated('PAIN', 'Federated-Training', 1, 6, clients=2, model_path=pretrained_model)
+    shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+
+    experiment_7_pain_federated('PAIN', 'Federated-Training', rounds=30, split=shards, clients=2,
+                                model_path=pretrained_model, cumulative=True)
