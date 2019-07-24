@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 
@@ -8,6 +9,7 @@ import time
 import pandas as pd
 import numpy as np
 import tensorflow as tf
+from twilio.rest import Client
 
 from Scripts import Centralized_CNN as cNN
 from Scripts import Federated_CNN as fed_CNN
@@ -573,8 +575,15 @@ def experiment_7_pain_federated(dataset, experiment, rounds, split, clients, mod
 
 
 if __name__ == '__main__':
+    # Training setup
     tf.random.set_seed(123)
     np.random.seed(123)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--sms_acc", help="Enter Twilio Account Here")
+    parser.add_argument("--sms_pw", help="Enter Twilio Account Here")
+    args = parser.parse_args()
+    client = Client(args.sms_acc, args.sms_pw)
+
     # Experiment 1 - Number of clients
     # num_clients = [10]
     # experiment_1_number_of_clients(dataset="MNIST", experiment="CLIENTS", rounds=10, clients=num_clients)
@@ -595,9 +604,11 @@ if __name__ == '__main__':
     # experiment_6_pain_centralized('PAIN', 'Centralized-Training', rounds=1, split=shards, cumulative=True)
 
     # Experiment 7
-    pretrained_model = "/Users/nico/PycharmProjects/FederatedLearning/Models/Pain/Centralized/" \
-                       "2019-07-23 Centralized Pain/2019-07-23-051453_Centralized_PAIN_Centralized-Training.h5"
+    pretrained_model = os.path.join(painCNN.CENTRAL_PAIN_MODELS, "2019-07-23 Centralized Pain",
+                                    "2019-07-23-051453_Centralized_PAIN_Centralized-Training.h5")
     shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
 
     experiment_7_pain_federated('PAIN', 'Federated-Training', rounds=30, split=shards, clients=2,
                                 model_path=pretrained_model, cumulative=True)
+    client.messages.create(to="+447768521069", from_="+441469727038", body="Training Complete")
+
