@@ -600,47 +600,27 @@ if __name__ == '__main__':
     tf.random.set_seed(123)
     np.random.seed(123)
 
-    # # Parse Commandline Arguments
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("--sms_acc", help="Enter Twilio Account Here")
-    # parser.add_argument("--sms_pw", help="Enter Twilio Account Here")
-    # args = parser.parse_args()
-    # client = Client(args.sms_acc, args.sms_pw)
-    #
-    # # Experiment 7
-    # pretrained_model = os.path.join(painCNN.CENTRAL_PAIN_MODELS, "2019-07-23 Centralized Pain",
-    #                                 "2019-07-23-051453_Centralized_PAIN_Centralized-Training.h5")
-    # shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
-    #
-    # experiment_7_pain_federated('PAIN', 'Federated-Training', rounds=30, split=shards, clients=12,
-    #                             model_path=pretrained_model, cumulative=True)
+    # Parse Commandline Arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--sms_acc", help="Enter Twilio Account Here")
+    parser.add_argument("--sms_pw", help="Enter Twilio Account Here")
+    args = parser.parse_args()
+    client = Client(args.sms_acc, args.sms_pw)
 
+    # Experiment 7
+    pretrained_model = os.path.join(painCNN.CENTRAL_PAIN_MODELS, "2019-07-23 Centralized Pain",
+                                    "2019-07-23-051453_Centralized_PAIN_Centralized-Training.h5")
+    shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+
+    experiment_7_pain_federated('PAIN', 'Federated-Training', rounds=30, split=shards, clients=12,
+                                model_path=pretrained_model, cumulative=True)
+
+    # Shut down Google Instance
     request = service.instances().stop(project=project, zone=zone, instance=instance)
     response = request.execute()
 
-    # client.messages.create(to="+447768521069", from_="+441469727038", body="Training Complete")
-
-    # Experiment 1 - Number of clients
-    # num_clients = [10]
-    # experiment_1_number_of_clients(dataset="MNIST", experiment="CLIENTS", rounds=10, clients=num_clients)
-    # Experiment 4 - Number of clients no overlap
-    # num_clients = [10]
-    # experiment_4_split_digits(dataset="MNIST", experiment="SPLIT_DIGITS", rounds=100, clients=num_clients)
-    # plot_results(dataset="MNIST", experiment="SPLIT_DIGITS", keys=num_clients, date="2019-07-10",
-    #              suffix=str(num_clients), move=True)
-
-    # Experiment 5
-    # num_clients = [100]
-    # experiment_5_split_digits_with_overlap(dataset="MNIST", experiment="SPLIT_DIGITS_OVERLAP", rounds=300,
-    #                                        clients=num_clients)
-    # plot_results(dataset="MNIST", experiment="SPLIT_DIGITS_OVERLAP", keys=num_clients, date="2019-07-10",
-    #              suffix=str(num_clients), move=True)
-
-    # shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
-    # experiment_6_pain_centralized('PAIN', 'Centralized-Training', rounds=1, split=shards, cumulative=True)
-
-
-
+    # Notify that training is complete
+    client.messages.create(to="+447768521069", from_="+441469727038", body="Training Complete")
 
 
 
