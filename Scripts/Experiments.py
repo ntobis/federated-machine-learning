@@ -580,8 +580,9 @@ def experiment_7_pain_federated(dataset, experiment, rounds, split, clients, mod
 
 
 if __name__ == '__main__':
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(cNN.ROOT, "Credentials", "Federated Learning.json")
+    # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(cNN.ROOT, "Credentials", "Federated Learning.json")
     # Google Credentials Set Up
+    print("Let's go!")
     credentials = GoogleCredentials.get_application_default()
     service = discovery.build('compute', 'v1', credentials=credentials)
 
