@@ -11,6 +11,11 @@ import numpy as np
 import tensorflow as tf
 from twilio.rest import Client
 
+from pprint import pprint
+
+from googleapiclient import discovery
+from oauth2client.client import GoogleCredentials
+
 from Scripts import Centralized_CNN as cNN
 from Scripts import Federated_CNN as fed_CNN
 from Scripts import Print_Functions as Output
@@ -575,17 +580,45 @@ def experiment_7_pain_federated(dataset, experiment, rounds, split, clients, mod
 
 
 if __name__ == '__main__':
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(cNN.ROOT, "Credentials", "Federated Learning.json")
+    # Google Credentials Set Up
+    credentials = GoogleCredentials.get_application_default()
+    service = discovery.build('compute', 'v1', credentials=credentials)
+
+    # Project ID for this request.
+    project = 'federated-learning-244811'
+
+    # The name of the zone for this request.
+    zone = 'us-west1-b'
+
+    # Name of the instance resource to stop.
+    instance = 'federated-learning'
+
     # Training setup
     print("GPU Available: ", tf.test.is_gpu_available())
     tf.debugging.set_log_device_placement(True)
-
     tf.random.set_seed(123)
     np.random.seed(123)
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--sms_acc", help="Enter Twilio Account Here")
-    parser.add_argument("--sms_pw", help="Enter Twilio Account Here")
-    args = parser.parse_args()
-    client = Client(args.sms_acc, args.sms_pw)
+
+    # # Parse Commandline Arguments
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("--sms_acc", help="Enter Twilio Account Here")
+    # parser.add_argument("--sms_pw", help="Enter Twilio Account Here")
+    # args = parser.parse_args()
+    # client = Client(args.sms_acc, args.sms_pw)
+    #
+    # # Experiment 7
+    # pretrained_model = os.path.join(painCNN.CENTRAL_PAIN_MODELS, "2019-07-23 Centralized Pain",
+    #                                 "2019-07-23-051453_Centralized_PAIN_Centralized-Training.h5")
+    # shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+    #
+    # experiment_7_pain_federated('PAIN', 'Federated-Training', rounds=30, split=shards, clients=12,
+    #                             model_path=pretrained_model, cumulative=True)
+
+    request = service.instances().stop(project=project, zone=zone, instance=instance)
+    response = request.execute()
+
+    # client.messages.create(to="+447768521069", from_="+441469727038", body="Training Complete")
 
     # Experiment 1 - Number of clients
     # num_clients = [10]
@@ -606,12 +639,8 @@ if __name__ == '__main__':
     # shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
     # experiment_6_pain_centralized('PAIN', 'Centralized-Training', rounds=1, split=shards, cumulative=True)
 
-    # Experiment 7
-    pretrained_model = os.path.join(painCNN.CENTRAL_PAIN_MODELS, "2019-07-23 Centralized Pain",
-                                    "2019-07-23-051453_Centralized_PAIN_Centralized-Training.h5")
-    shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
 
-    experiment_7_pain_federated('PAIN', 'Federated-Training', rounds=30, split=shards, clients=12,
-                                model_path=pretrained_model, cumulative=True)
-    client.messages.create(to="+447768521069", from_="+441469727038", body="Training Complete")
+
+
+
 

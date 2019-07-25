@@ -38,7 +38,8 @@ class PlotParams:
         self.max_epochs = max_epochs
         self.label_spaces = label_spaces
         self.suffix = suffix
-        self.colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+        self.colors = ['#CD6155', '#EC7063', '#AF7AC5', '#A569BD', '#5499C7', '#5DADE2', '#48C9B0', '#45B39D', '#52BE80'
+                       '#58D68D', '#F4D03F', '#F5B041', '#F5B041', '#DC7633']
 
 
 # ------------------------------------------------- End Parameters ------------------------------------------------- #
