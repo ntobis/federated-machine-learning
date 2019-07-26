@@ -57,12 +57,14 @@ class Twilio(Client):
         self.args = parser.parse_args()
         super(Twilio, self).__init__(self.args.sms_acc, self.args.sms_pw)
 
-    def send_training_complete_message(self):
+    def send_training_complete_message(self, msg=None):
         body = ['Sir, this is Google speaking. Your Federated model trained like a boss. Google out.',
                 "Nico you garstige Schlange. What a training session. I'm going to sleep",
                 "Wow, what a ride. Training complete.",
                 "This was wild. But I trained like crazy. We're done here."]
-        self.messages.create(to=self.args.receiver, from_=self.args.sender, body=np.random.choice(body))
+        if msg is None:
+            msg = np.random.choice(body)
+        self.messages.create(to=self.args.receiver, from_=self.args.sender, body=msg)
 
 
 def training_setup():
@@ -669,25 +671,30 @@ if __name__ == '__main__':
     # Experiment 6 - Centralized without pre-training
     Output.print_experiment("6 - Centralized without pre-training")
     experiment_pain_centralized('PAIN', 'Centralized-no-pre-training', 30, shards, pretraining=False, cumulative=True)
+    twilio.send_training_complete_message("Experiment 6 Complete")
 
     # Experiment 7 - Centralized with pre-training
     Output.print_experiment("7 - Centralized with pre-training")
     experiment_pain_centralized('PAIN', 'Centralized-pre-training', 30, shards, pretraining=True, cumulative=True)
+    twilio.send_training_complete_message("Experiment 7 Complete")
 
     # Experiment 8 - Federated without pre-training
     Output.print_experiment("8 - Federated without pre-training")
     experiment_pain_federated('PAIN', 'Federated-no-pre-training', 30, shards, 12, pretraining=None, cumulative=True)
+    twilio.send_training_complete_message("Experiment 8 Complete")
 
     # Experiment 9 - Federated with centralized pretraining
     Output.print_experiment("9 - Federated with centralized pretraining")
     centralized_model_path = find_newest_model_path(painCNN.CENTRAL_PAIN_MODELS, "training.h5")
     experiment_pain_federated('PAIN', 'Federated-central-pre-training', 30, shards, 12,
                               model_path=centralized_model_path, pretraining='centralized', cumulative=True)
+    twilio.send_training_complete_message("Experiment 9 Complete")
 
     # Experiment 10 - Federated with federated pretraining
     Output.print_experiment("10 - Federated with federated pretraining")
     experiment_pain_federated('PAIN', 'Federated-federated-pre-training', 30, shards, 12, pretraining='federated',
                               cumulative=True)
+    twilio.send_training_complete_message("Experiment 10 Complete")
 
     # Notify that training is complete and shut down Google server
     twilio.send_training_complete_message()
