@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import math
 import os
 import sys
 import time
@@ -39,7 +40,8 @@ class PlotParams:
         self.label_spaces = label_spaces
         self.suffix = suffix
         self.colors = ['#CD6155', '#EC7063', '#AF7AC5', '#A569BD', '#5499C7', '#5DADE2', '#48C9B0', '#45B39D', '#52BE80'
-                       '#58D68D', '#F4D03F', '#F5B041', '#F5B041', '#DC7633']
+                                                                                                               '#58D68D',
+                       '#F4D03F', '#F5B041', '#F5B041', '#DC7633']
 
 
 # ------------------------------------------------- End Parameters ------------------------------------------------- #
@@ -50,18 +52,15 @@ class PlotParams:
 
 def print_communication_round(com_round):
     print()
-    print("------------------------------------------------------------------------------------------------------------"
-          "----------------------------")
-    print("-------------------------------------------------------- Communication Round {} ----------------------------"
-          "----------------------------".format(com_round))
+    print("-" * 131)
+    print("{} Communication Round {} {}".format("-" * math.floor((130 - 21 - len(str(com_round))) / 2), com_round,
+                                                "-" * math.ceil((130 - 21 - len(str(com_round))) / 2)))
 
 
 def print_client_id(client_id):
     print()
-    print("------------------------------------------------------------------------------------------------------------"
-          "----------------------------")
-    print("--------------------------------------------------------------- Client {} ----------------------------------"
-          "----------------------------".format(client_id))
+    print("{} Client {} {}".format("-" * math.floor((130 - 8 - len(str(client_id))) / 2), client_id,
+                                   "-" * math.ceil((130 - 8 - len(str(client_id))) / 2)))
 
 
 def print_loss_accuracy(accuracy, loss, data_type="Test"):
@@ -73,8 +72,14 @@ def print_loss_accuracy(accuracy, loss, data_type="Test"):
 
 
 def print_shard(percentage):
-    print("\n\n\033[1m--------------------------------------------------------------- Shard {0:.0%} -------------------"
-          "--------------------------------------------\033[0m".format(percentage))
+    print("\n\n\033[1m{} Shard {:.0%} {}\033[0m".format("-" * math.floor((130 - 7 - len(str(percentage))) / 2),
+                                                        percentage,
+                                                        "-" * math.ceil((130 - 7 - len(str(percentage))) / 2)))
+
+
+def print_experiment(experiment):
+    print("\n\n\033[1m{} Experiment {} {}\033[0m".format("-" * math.floor((130 - 12 - len(experiment)) / 2), experiment,
+                                                         "-" * math.ceil((130 - 12 - len(experiment)) / 2)))
 
 
 def eprint(*args, **kwargs):
@@ -291,7 +296,6 @@ def make_pain_plot_grid(folder, metrics, params, final_epoch=29):
 # ------------------------------------------------------------------------------------------------------------------ #
 
 if __name__ == '__main__':
-
     parameters = PlotParams(
         dataset='Pain',
         experiment='Centralized',

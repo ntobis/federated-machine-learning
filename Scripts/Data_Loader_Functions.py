@@ -512,13 +512,11 @@ def move_train_test_data(df, origin_path, train_path, test_path):
         train = df_client.sample(frac=0.6, random_state=123)
         test = df_client.drop(train.index)
         for path in train['img_path']:
-            folder = os.path.basename(os.path.dirname(path))
             file = os.path.basename(path)
-            os.rename(path, os.path.join(train_path, folder, file))
+            os.rename(path, os.path.join(train_path, file))
         for path in test['img_path']:
-            folder = os.path.basename(os.path.dirname(path))
             file = os.path.basename(path)
-            os.rename(path, os.path.join(test_path, folder, file))
+            os.rename(path, os.path.join(test_path, file))
 
 
 def split_data_into_shards(data, labels, split, cumulative=True):
@@ -540,6 +538,44 @@ def split_data_into_shards(data, labels, split, cumulative=True):
 
 
 def cumconc(array):
+    """
+    Utiliy function creating a cumulatively split view on a split numpy array, e.g. [[0], [1]] to [[0] , [0, 1]]
+    :param array:               numpy array
+    :return:
+        array                   cumulative numpy array
+    """
     total = np.concatenate(array)
     # noinspection PyTypeChecker
     return np.array([*map(total.__getitem__, map(slice, np.fromiter(map(len, array), int, len(array)).cumsum()))])
+
+
+def reset_to_raw(root_path, dest_dir='raw', ext='.jpg'):
+    """
+    Utility function taking all files of a given type in a specified root folder and moving them to a specified
+    destination folder.
+
+    :param root_path:           string, root_path
+    :param dest_dir:            string, destination folder name
+    :param ext:                 string, file extension to look for
+    :return:
+    """
+    if not os.path.isdir(os.path.join(root_path, dest_dir)):
+        os.mkdir(os.path.join(root_path, dest_dir))
+    for dir_path, dir_names, filenames in os.walk(root_path):
+        for file in filenames:
+            if os.path.splitext(file)[1] == ext:
+                src = os.path.join(dir_path, file)
+                dest = os.path.join(root_path, dest_dir, file)
+                os.rename(src, dest)
+
+
+def delete_empty_folders(root_path):
+    """
+    Utility function deleting all empty folder in a directory and its subdirectories.
+
+    :param root_path:           string, root path
+    :return:
+    """
+    for dir_path, dir_names, filenames in os.walk(root_path):
+        if not dir_names and not filenames:
+            os.rmdir(dir_path)

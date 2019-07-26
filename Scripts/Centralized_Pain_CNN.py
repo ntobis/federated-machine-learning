@@ -108,6 +108,7 @@ def evaluate_pain_cnn(model, epoch, test_data, test_labels, history=None, people
         tf.convert_to_tensor(tf.cast(predictions, tf.float32))
     ).numpy()
     y_pred = np.argmax(predictions, axis=1)
+
     # If people were passed, compute metrics on a per person basis as well as aggregate
     # Else just compute aggregate
     if people is not None:
@@ -128,7 +129,7 @@ def evaluate_pain_cnn(model, epoch, test_data, test_labels, history=None, people
 
 
 def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predictions):
-    predictions = np.max(predictions, axis=1)
+    predictions = predictions[:, 1]
     data = np.concatenate([np.expand_dims(x, 1) for x in [people, y_pred, test_labels, predictions]], axis=1)
     df = pd.DataFrame(data, columns=['Person', 'Y_Pred', 'Y_True', 'Predictions'])
 
@@ -160,7 +161,7 @@ def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predict
 
 
 def compute_aggregate_metrics(epoch, loss, test_labels, y_pred, predictions):
-    predictions = np.max(predictions, axis=1)
+    predictions = predictions[:, 1]
 
     # Getting relevant metrics
     accuracy = accuracy_score(test_labels, y_pred)

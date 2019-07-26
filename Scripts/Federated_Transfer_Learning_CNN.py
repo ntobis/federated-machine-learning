@@ -200,6 +200,7 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
 
     weights = weights_accountant.get_global_weights()
     np.save(FEDERATED_GLOBAL_WEIGHTS, weights)
+
     return history
 
 

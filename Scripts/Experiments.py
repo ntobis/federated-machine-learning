@@ -11,8 +11,6 @@ import numpy as np
 import tensorflow as tf
 from twilio.rest import Client
 
-from pprint import pprint
-
 from googleapiclient import discovery
 from oauth2client.client import GoogleCredentials
 
@@ -28,6 +26,51 @@ pd.set_option('display.max_columns', 500)
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------ Utility Functions ----------------------------------------------- #
+class GoogleCloudMonitor:
+    def __init__(self, project='federated-learning-244811', zone='us-west1-b', instance='federated-learning'):
+        # Google Credentials Set Up
+        self.credentials = GoogleCredentials.get_application_default()
+        self.service = discovery.build('compute', 'v1', credentials=self.credentials)
+
+        # Project ID for this request.
+        self.project = project
+
+        # The name of the zone for this request.
+        self.zone = zone
+
+        # Name of the instance resource to stop.
+        self.instance = instance
+
+    def shutdown(self):
+        request = self.service.instances().stop(project=self.project, zone=self.zone, instance=self.instance)
+        return request.execute()
+
+
+class Twilio(Client):
+    def __init__(self):
+        # Parse Commandline Arguments
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--sms_acc", help="Enter Twilio Account Here")
+        parser.add_argument("--sms_pw", help="Enter Twilio Password Here")
+        parser.add_argument("--sender", help="Sender Number")
+        parser.add_argument("--receiver", help="Sender Number")
+        self.args = parser.parse_args()
+        super(Twilio, self).__init__(self.args.sms_acc, self.args.sms_pw)
+
+    def send_training_complete_message(self):
+        body = ['Sir, this is Google speaking. Your Federated model trained like a boss. Google out.',
+                "Nico you garstige Schlange. What a training session. I'm going to sleep",
+                "Wow, what a ride. Training complete.",
+                "This was wild. But I trained like crazy. We're done here."]
+        self.messages.create(to=self.args.receiver, from_=self.args.sender, body=np.random.choice(body))
+
+
+def training_setup():
+    # Training setup
+    print("GPU Available: ", tf.test.is_gpu_available())
+    # tf.debugging.set_log_device_placement(True)
+    tf.random.set_seed(123)
+    np.random.seed(123)
 
 
 def move_results(experiment, date, keys):
@@ -95,6 +138,14 @@ def combine_results(experiment, keys, sub_folder=None):
     return history
 
 
+def find_newest_model_path(path, sub_string):
+    files = []
+    for dir_path, dirname, filenames in os.walk(path):
+        files.extend([os.path.join(dir_path, f_name) for f_name in filenames])
+    pre_train = [file for file in files if sub_string in file]
+    pre_train.sort(key=os.path.getmtime)
+    return pre_train[-1]
+
 # ---------------------------------------------- End Utility Functions --------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
@@ -156,7 +207,7 @@ def plot_results(dataset, experiment, keys, date, suffix, move=False):
     Output.plot_joint_metric(history, params)
 
 
-def experiment_centralized(dataset, experiment, train_data, train_labels, test_data, test_labels, epochs=5):
+def runner_centralized_mnist(dataset, experiment, train_data, train_labels, test_data, test_labels, epochs=5):
     """
     Sets up a centralized CNN that trains on a specified dataset. Saves the results to CSV.
 
@@ -189,8 +240,8 @@ def experiment_centralized(dataset, experiment, train_data, train_labels, test_d
     history.to_csv(os.path.join(cNN.RESULTS, file))
 
 
-def experiment_centralized_pain(dataset, experiment, train_data, train_labels, test_data, test_labels, epochs=5,
-                                model=None, people=None):
+def runner_centralized_pain(dataset, experiment, train_data, train_labels, test_data, test_labels, epochs=5,
+                            model=None, people=None):
     """
     Sets up a centralized CNN that trains on a specified dataset. Saves the results to CSV.
 
@@ -218,19 +269,26 @@ def experiment_centralized_pain(dataset, experiment, train_data, train_labels, t
                                                    test_labels=test_labels, people=people)
 
     # Save full model
-    f_name = time.strftime("%Y-%m-%d-%H%M%S") + r"_Centralized_{}_{}.h5".format(dataset, experiment)
-    centralized_model.save(os.path.join(painCNN.CENTRAL_PAIN_MODELS, f_name))
+    folder = os.path.join(painCNN.CENTRAL_PAIN_MODELS, time.strftime("%Y-%m-%d"))
+    if not os.path.isdir(folder):
+        os.mkdir(folder)
+    f_name = time.strftime("%Y-%m-%d-%H%M%S") + r"_{}_{}.h5".format(dataset, experiment)
+    centralized_model.save(os.path.join(folder, f_name))
 
     # Save Final Results
-    date = time.strftime("%Y-%m-%d-%H%M%S")
-    file = date + r'_final_results_individual.csv' if people is not None else date + r'_final_results_aggregate.csv'
-    history.to_csv(os.path.join(cNN.RESULTS, file))
+    folder = os.path.join(cNN.RESULTS, time.strftime("%Y-%m-%d") + "_{}_{}".format(dataset,
+                                                                                   experiment.split("_shard")[0]))
+    if not os.path.isdir(folder):
+        os.mkdir(folder)
+    suffix = r'_final_results_individual.csv' if people is not None else r'_final_results_aggregate.csv'
+    f_name = time.strftime("%Y-%m-%d-%H%M%S") + "_{}_{}".format(dataset, experiment) + suffix
+    history.to_csv(os.path.join(folder, f_name))
 
     return centralized_model
 
 
-def experiment_federated(clients, dataset, experiment, train_data, train_labels, test_data, test_labels,
-                         rounds=5, epochs=1, split='random', participants=None):
+def runner_federated_mnist(clients, dataset, experiment, train_data, train_labels, test_data, test_labels,
+                           rounds=5, epochs=1, split='random', participants=None):
     """
     Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
 
@@ -274,8 +332,8 @@ def experiment_federated(clients, dataset, experiment, train_data, train_labels,
     history.to_csv(os.path.join(cNN.RESULTS, file))
 
 
-def experiment_federated_pain(clients, dataset, experiment, train_data, train_labels, test_data, test_labels,
-                              rounds=5, epochs=1, split='random', participants=None, people=None, model=None):
+def runner_federated_pain(clients, dataset, experiment, train_data, train_labels, test_data, test_labels,
+                          rounds=5, epochs=1, split='random', participants=None, people=None, model=None):
     """
     Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
 
@@ -314,9 +372,24 @@ def experiment_federated_pain(clients, dataset, experiment, train_data, train_la
                                              )
 
     # Save history for plotting
-    file = time.strftime("%Y-%m-%d-%H%M%S") + r"_Federated_{}_{}_rounds_{}_clients_{}.csv".format(dataset, experiment,
-                                                                                                  rounds, clients)
-    history.to_csv(os.path.join(cNN.RESULTS, file))
+    folder = os.path.join(cNN.RESULTS, time.strftime("%Y-%m-%d") + "_{}_{}".format(dataset,
+                                                                                   experiment.split("_shard")[0]))
+    if not os.path.isdir(folder):
+        os.mkdir(folder)
+    suffix = r'_final_results_individual.csv' if people is not None else r'_final_results_aggregate.csv'
+    f_name = time.strftime("%Y-%m-%d-%H%M%S") + "_{}_{}_clients-{}".format(dataset, experiment, clients) + suffix
+    history.to_csv(os.path.join(folder, f_name))
+
+    # Save model
+    folder = os.path.join(cNN.MODELS, "Pain", "Federated", time.strftime("%Y-%m-%d"))
+    if not os.path.isdir(folder):
+        os.mkdir(folder)
+    f_name = time.strftime("%Y-%m-%d-%H%M%S") + r"_{}_{}.h5".format(dataset, experiment)
+    with open(fedTransCNN.FEDERATED_GLOBAL_MODEL, 'r') as model_json:
+        current_model = tf.keras.models.model_from_json(model_json.read())
+        weights = np.load(fedTransCNN.FEDERATED_GLOBAL_WEIGHTS, allow_pickle=True)
+        current_model.set_weights(weights)
+        current_model.save(os.path.join(folder, f_name))
 
 
 # ---------------------------------------------- End Experiment Runners -------------------------------------------- #
@@ -324,7 +397,7 @@ def experiment_federated_pain(clients, dataset, experiment, train_data, train_la
 
 
 # ------------------------------------------------------------------------------------------------------------------ #
-# -------------------------------------------------- Experiments - 1 ----------------------------------------------- #
+# ------------------------------------------------ Experiments - MNIST --------------------------------------------- #
 
 
 def experiment_1_number_of_clients(dataset, experiment, rounds, clients):
@@ -343,9 +416,10 @@ def experiment_1_number_of_clients(dataset, experiment, rounds, clients):
 
     # Perform Experiments
     for client_num in clients:
-        experiment_federated(client_num, dataset, experiment, train_data, train_labels, test_data, test_labels, rounds)
+        runner_federated_mnist(client_num, dataset, experiment, train_data, train_labels, test_data, test_labels,
+                               rounds)
 
-    experiment_centralized(dataset, experiment, train_data, train_labels, test_data, test_labels, rounds)
+    runner_centralized_mnist(dataset, experiment, train_data, train_labels, test_data, test_labels, rounds)
 
 
 def experiment_2_limited_digits(dataset, experiment, rounds, digit_array):
@@ -372,11 +446,11 @@ def experiment_2_limited_digits(dataset, experiment, rounds, digit_array):
         test_data_filtered = test_data[np.in1d(test_labels, digit)]
         test_labels_filtered = test_labels[np.in1d(test_labels, digit)]
 
-        experiment_federated(10, dataset, experiment, train_data_filtered, train_labels_filtered, test_data_filtered,
-                             test_labels_filtered, rounds)
-
-        experiment_centralized(dataset, experiment, train_data_filtered, train_labels_filtered, test_data_filtered,
+        runner_federated_mnist(10, dataset, experiment, train_data_filtered, train_labels_filtered, test_data_filtered,
                                test_labels_filtered, rounds)
+
+        runner_centralized_mnist(dataset, experiment, train_data_filtered, train_labels_filtered, test_data_filtered,
+                                 test_labels_filtered, rounds)
 
 
 def experiment_3_add_noise(dataset, experiment, rounds, std_devs):
@@ -399,55 +473,12 @@ def experiment_3_add_noise(dataset, experiment, rounds, std_devs):
         this_experiment = experiment + "_" + str(std_dv)
         train_data_noise = train_data + np.random.normal(loc=0, scale=std_dv, size=train_data.shape)
         Output.display_images(train_data_noise, train_labels)
-        experiment_federated(10, dataset, this_experiment, train_data_noise, train_labels, test_data, test_labels,
-                             rounds)
+        runner_federated_mnist(10, dataset, this_experiment, train_data_noise, train_labels, test_data, test_labels,
+                               rounds)
 
-        experiment_centralized(dataset, this_experiment, train_data_noise, train_labels, test_data, test_labels, rounds)
+        runner_centralized_mnist(dataset, this_experiment, train_data_noise, train_labels, test_data, test_labels,
+                                 rounds)
 
-
-# ------------------------------------------------ End Experiments - 1 --------------------------------------------- #
-# ------------------------------------------------------------------------------------------------------------------ #
-
-def experiment_main_1():
-    """
-    Main function running the first 3 experiments.
-    :return:
-    """
-
-    # Experiment 1 - Number of clients
-    clients = [2, 5, 10, 20, 50, 100]
-    experiment_1_number_of_clients(dataset="MNIST", experiment="CLIENTS", rounds=30, clients=clients)
-
-    # Plot results
-    plot_results(dataset="MNIST", experiment="CLIENTS", keys=clients, date="2019-06-25",
-                 suffix=str(clients))
-
-    # Experiment 2 - Digits
-    digits_arr = [
-        [0, 5],
-        [0, 2, 5, 9],
-        [0, 2, 4, 5, 7, 9],
-        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    ]
-    experiment_2_limited_digits(dataset="MNIST", experiment="DIGITS", rounds=30, digit_array=digits_arr)
-
-    # Plot results
-    for digits in digits_arr:
-        plot_results(dataset="MNIST", experiment="DIGITS", keys=[digits], date="2019-06-26",
-                     suffix=str(digits))
-
-    # Experiment 3 - Adding Noise
-    std_dev_arr = [0.1, 0.25, 0.5]
-    experiment_3_add_noise(dataset="MNIST", experiment="NOISE", rounds=30, std_devs=std_dev_arr)
-
-    # Plot results
-    for std_dev in std_dev_arr:
-        plot_results(dataset="MNIST", experiment="NOISE", keys=[std_dev], date="2019-06-26",
-                     suffix=str(std_dev))
-
-
-# ------------------------------------------------------------------------------------------------------------------ #
-# -------------------------------------------------- Experiments - 2 ----------------------------------------------- #
 
 def experiment_4_split_digits(dataset, experiment, rounds, clients):
     """
@@ -465,10 +496,11 @@ def experiment_4_split_digits(dataset, experiment, rounds, clients):
 
     # Perform Experiments
     for client_num in clients:
-        experiment_federated(client_num, dataset, experiment, train_data, train_labels, test_data, test_labels, rounds,
-                             split='no_overlap')
+        runner_federated_mnist(client_num, dataset, experiment, train_data, train_labels, test_data, test_labels,
+                               rounds,
+                               split='no_overlap')
 
-    experiment_centralized(dataset, experiment, train_data, train_labels, test_data, test_labels, rounds)
+    runner_centralized_mnist(dataset, experiment, train_data, train_labels, test_data, test_labels, rounds)
 
 
 def experiment_5_split_digits_with_overlap(dataset, experiment, rounds, clients):
@@ -487,92 +519,138 @@ def experiment_5_split_digits_with_overlap(dataset, experiment, rounds, clients)
 
     # Perform Experiments
     for client_num in clients:
-        experiment_federated(client_num, dataset, experiment, train_data, train_labels, test_data, test_labels, rounds,
-                             split='overlap', participants=10)
+        runner_federated_mnist(client_num, dataset, experiment, train_data, train_labels, test_data, test_labels,
+                               rounds,
+                               split='overlap', participants=10)
 
-    experiment_centralized(dataset, experiment, train_data, train_labels, test_data, test_labels, rounds)
+    runner_centralized_mnist(dataset, experiment, train_data, train_labels, test_data, test_labels, rounds)
 
 
-# ------------------------------------------------ End Experiments - 2 --------------------------------------------- #
+# ---------------------------------------------- End Experiments - MNIST ------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
 
 # ------------------------------------------------------------------------------------------------------------------ #
-# -------------------------------------------------- Experiments - 3 ----------------------------------------------- #
+# ------------------------------------------------ Experiments - PAIN ---------------------------------------------- #
 
-def experiment_6_pain_centralized(dataset, experiment, rounds, split, cumulative=True):
-    # Load data
-    train_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_1")
-    test_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_2_test")
-    train_path_add_data = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation",
-                                       "group_2_train")
-    train_data, train_labels, test_data, test_labels = dL.load_pain_data(train_path, test_path)
+def experiment_pain_centralized(dataset, experiment, rounds, split, pretraining, cumulative=True):
+    # Define data paths
+    group_1_train_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_1")
+    group_2_train_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_2_train")
+    group_2_test_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_2_test")
 
     # Define labels for training
     label = 4  # Labels: [person, session, culture, frame, pain, Trans_1, Trans_2]
     person = 0
 
-    # Prepare labels for training and evaluation
-    train_labels_ord = train_labels[:, label].astype(np.int)
-    train_labels_bin = dL.reduce_pain_label_categories(train_labels_ord, max_pain=1)
-    test_labels_ord = test_labels[:, label].astype(np.int)
-    test_labels_bin = dL.reduce_pain_label_categories(test_labels_ord, max_pain=1)
+    # Load test data
+    test_data, test_labels = dL.load_pain_data(group_2_test_path)
+    test_labels_ordinal = test_labels[:, label].astype(np.int)
+    test_labels_binary = dL.reduce_pain_label_categories(test_labels_ordinal, max_pain=1)
     test_labels_people = test_labels[:, person].astype(np.int)
 
-    # Perform pretraining
-    model = experiment_centralized_pain(dataset, experiment, train_data, train_labels_bin, test_data, test_labels_bin,
-                                        rounds, people=test_labels_people)
+    # Perform pre-training on group 1
+    if pretraining:
+        # Load data
+        train_data, train_labels = dL.load_pain_data(group_1_train_path)
 
-    # Load additional data
-    add_train_data, add_train_labels = dL.load_pain_data(train_path_add_data)
-    add_train_labels_ord = add_train_labels[:, label].astype(np.int)
-    train_labels_bin = dL.reduce_pain_label_categories(add_train_labels_ord, max_pain=1)
+        # Prepare labels for training and evaluation
+        train_labels_ord = train_labels[:, label].astype(np.int)
+        train_labels_bin = dL.reduce_pain_label_categories(train_labels_ord, max_pain=1)
 
-    # Split Data into shards
-    add_train_data, train_labels_bin = dL.split_data_into_shards(add_train_data, train_labels_bin, split, cumulative)
+        # Train
+        model = runner_centralized_pain(dataset, experiment, train_data, train_labels_bin, test_data,
+                                        test_labels_binary, rounds, people=test_labels_people)
+    else:
+        # Initialize random model
+        model = painCNN.build_cnn(test_data[0].shape)
+        model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
-    # Train on additional shards and evaluate performance
-    for percentage, data, labels in zip(split, add_train_data, train_labels_bin):
+    # Load group 2 training data
+    group_2_train_data, group_2_train_labels = dL.load_pain_data(group_2_train_path)
+    group_2_train_labels_ordinal = group_2_train_labels[:, label].astype(np.int)
+    group_2_train_labels_binary = dL.reduce_pain_label_categories(group_2_train_labels_ordinal, max_pain=1)
+
+    # Split group 2 training data into shards
+    group_2_train_data, group_2_train_labels_binary = dL.split_data_into_shards(group_2_train_data,
+                                                                                group_2_train_labels_binary,
+                                                                                split,
+                                                                                cumulative)
+
+    # Train on group 2 shards and evaluate performance
+    for percentage, data, labels in zip(split, group_2_train_data, group_2_train_labels_binary):
         Output.print_shard(percentage)
-        experiment_new = experiment + "_shard-{}".format(percentage)
-        model = experiment_centralized_pain(dataset, experiment_new, data, labels, test_data, test_labels_bin, rounds,
-                                            model=model, people=test_labels_people)
+        experiment_current = experiment + "_shard-{}".format(percentage)
+        model = runner_centralized_pain(dataset, experiment_current, data, labels, test_data, test_labels_binary,
+                                        rounds, model=model, people=test_labels_people)
 
 
-def experiment_7_pain_federated(dataset, experiment, rounds, split, clients, model_path, cumulative=True):
-    # Load data
-    test_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation", "group_2_test")
-    train_path_add_data = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Pain Two-Step Augmentation",
-                                       "group_2_train")
-    test_data, test_labels = dL.load_pain_data(test_path)
+def experiment_pain_federated(dataset, experiment, rounds, split, clients, model_path=None, pretraining=None,
+                              cumulative=True):
+    # Define data paths
+    group_1_train_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_1")
+    group_2_train_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_2_train")
+    group_2_test_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_2_test")
 
     # Define labels for training
-    person = 0
     label = 4  # Labels: [person, session, culture, frame, pain, Trans_1, Trans_2]
+    person = 0
 
-    # Prepare labels for training and evaluation
-    test_labels_ord = test_labels[:, label].astype(np.int)
-    test_labels_bin = dL.reduce_pain_label_categories(test_labels_ord, max_pain=1)
+    # Load test data
+    test_data, test_labels = dL.load_pain_data(group_2_test_path)
+    test_labels_ordinal = test_labels[:, label].astype(np.int)
+    test_labels_binary = dL.reduce_pain_label_categories(test_labels_ordinal, max_pain=1)
     test_labels_people = test_labels[:, person].astype(np.int)
 
-    # Load Pretrained model
-    model = tf.keras.models.load_model(model_path)
-    model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    # Perform pre-training on group 1
+    if pretraining == 'federated':
+        if model_path is not None:
+            model = tf.keras.models.load_model(model_path)
+            model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+        else:
+            # Load data
+            train_data, train_labels = dL.load_pain_data(group_1_train_path)
 
-    # Load additional data
-    add_train_data, add_train_labels = dL.load_pain_data(train_path_add_data)
-    add_train_labels_ord = add_train_labels[:, label].astype(np.int)
-    train_labels_bin = dL.reduce_pain_label_categories(add_train_labels_ord, max_pain=1)
+            # Prepare labels for training and evaluation
+            train_labels_ordinal = train_labels[:, label].astype(np.int)
+            train_labels_binary = dL.reduce_pain_label_categories(train_labels_ordinal, max_pain=1)
 
-    # Split Data into shards
-    add_train_data, train_labels_bin = dL.split_data_into_shards(add_train_data, train_labels_bin, split, cumulative)
+            # Train
+            runner_federated_pain(clients, dataset, experiment, train_data, train_labels_binary,
+                                  test_data, test_labels_binary, rounds, people=test_labels_people)
 
-    # Train on additional shards and evaluate performance
-    for percentage, data, labels in zip(split, add_train_data, train_labels_bin):
+        # Load trained model into memory
+        model_path = find_newest_model_path(os.path.join(cNN.MODELS, "Pain", "Federated"), "training.h5")
+        model = tf.keras.models.load_model(model_path)
+        model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+    elif pretraining == 'centralized':
+        model = tf.keras.models.load_model(model_path)
+        model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+    elif pretraining is None:
+        model = None
+    else:
+        raise ValueError("Invalid Argument. Arguments allowed are 'federated', 'centralized', and None. Argument was {}"
+                         .format(pretraining))
+
+    # Load group 2 training data
+    group_2_train_data, group_2_train_labels = dL.load_pain_data(group_2_train_path)
+    group_2_train_labels_ordinal = group_2_train_labels[:, label].astype(np.int)
+    group_2_train_labels_binary = dL.reduce_pain_label_categories(group_2_train_labels_ordinal, max_pain=1)
+
+    # Split group 2 training data into shards
+    group_2_train_data, group_2_train_labels_binary = dL.split_data_into_shards(group_2_train_data,
+                                                                                group_2_train_labels_binary,
+                                                                                split,
+                                                                                cumulative)
+
+    # Train on group 2 shards and evaluate performance
+    for percentage, data, labels in zip(split, group_2_train_data, group_2_train_labels_binary):
         Output.print_shard(percentage)
-        experiment_new = experiment + "_shard-{}".format(percentage)
-        experiment_federated_pain(clients, dataset, experiment_new, data, labels, test_data, test_labels_bin, rounds,
-                                  people=test_labels_people, model=model)
+        experiment_current = experiment + "_shard-{}".format(percentage)
+        runner_federated_pain(clients, dataset, experiment_current, data, labels, test_data, test_labels_binary,
+                              rounds, people=test_labels_people, model=model)
 
 
 # ------------------------------------------------ End Experiments - 3 --------------------------------------------- #
@@ -580,48 +658,37 @@ def experiment_7_pain_federated(dataset, experiment, rounds, split, clients, mod
 
 
 if __name__ == '__main__':
-    # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(cNN.ROOT, "Credentials", "Federated Learning.json")
-    # Google Credentials Set Up
-    print("Let's go!")
-    credentials = GoogleCredentials.get_application_default()
-    service = discovery.build('compute', 'v1', credentials=credentials)
+    # Setup functions
+    training_setup()
+    g_monitor = GoogleCloudMonitor()
+    twilio = Twilio()
 
-    # Project ID for this request.
-    project = 'federated-learning-244811'
-
-    # The name of the zone for this request.
-    zone = 'us-west1-b'
-
-    # Name of the instance resource to stop.
-    instance = 'federated-learning'
-
-    # Training setup
-    print("GPU Available: ", tf.test.is_gpu_available())
-    tf.debugging.set_log_device_placement(True)
-    tf.random.set_seed(123)
-    np.random.seed(123)
-
-    # Parse Commandline Arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--sms_acc", help="Enter Twilio Account Here")
-    parser.add_argument("--sms_pw", help="Enter Twilio Account Here")
-    args = parser.parse_args()
-    client = Client(args.sms_acc, args.sms_pw)
-
-    # Experiment 7
-    pretrained_model = os.path.join(painCNN.CENTRAL_PAIN_MODELS, "2019-07-23 Centralized Pain",
-                                    "2019-07-23-051453_Centralized_PAIN_Centralized-Training.h5")
+    # Define shards
     shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
 
-    experiment_7_pain_federated('PAIN', 'Federated-Training', rounds=30, split=shards, clients=12,
-                                model_path=pretrained_model, cumulative=True)
+    # Experiment 6 - Centralized without pre-training
+    Output.print_experiment("6 - Centralized without pre-training")
+    experiment_pain_centralized('PAIN', 'Centralized-no-pre-training', 2, shards, pretraining=False, cumulative=True)
 
-    # Shut down Google Instance
-    request = service.instances().stop(project=project, zone=zone, instance=instance)
-    response = request.execute()
+    # Experiment 7 - Centralized with pre-training
+    Output.print_experiment("7 - Centralized with pre-training")
+    experiment_pain_centralized('PAIN', 'Centralized-pre-training', 2, shards, pretraining=True, cumulative=True)
 
-    # Notify that training is complete
-    client.messages.create(to="+447768521069", from_="+441469727038", body="Training Complete")
+    # Experiment 8 - Federated without pre-training
+    Output.print_experiment("8 - Federated without pre-training")
+    experiment_pain_federated('PAIN', 'Federated-no-pre-training', 2, shards, 3, pretraining=None, cumulative=True)
 
+    # Experiment 9 - Federated with centralized pretraining
+    Output.print_experiment("9 - Federated with centralized pretraining")
+    centralized_model_path = find_newest_model_path(painCNN.CENTRAL_PAIN_MODELS, "training.h5")
+    experiment_pain_federated('PAIN', 'Federated-central-pre-training', 2, shards, 3,
+                              model_path=centralized_model_path, pretraining='centralized', cumulative=True)
 
+    # Experiment 10 - Federated with federated pretraining
+    Output.print_experiment("10 - Federated with federated pretraining")
+    experiment_pain_federated('PAIN', 'Federated-federated-pre-training', 2, shards, 3, pretraining='federated',
+                              cumulative=True)
 
+    # Notify that training is complete and shut down Google server
+    twilio.send_training_complete_message()
+    g_monitor.shutdown()
