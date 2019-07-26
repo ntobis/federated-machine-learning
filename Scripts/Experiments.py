@@ -668,25 +668,25 @@ if __name__ == '__main__':
 
     # Experiment 6 - Centralized without pre-training
     Output.print_experiment("6 - Centralized without pre-training")
-    experiment_pain_centralized('PAIN', 'Centralized-no-pre-training', 2, shards, pretraining=False, cumulative=True)
+    experiment_pain_centralized('PAIN', 'Centralized-no-pre-training', 30, shards, pretraining=False, cumulative=True)
 
     # Experiment 7 - Centralized with pre-training
     Output.print_experiment("7 - Centralized with pre-training")
-    experiment_pain_centralized('PAIN', 'Centralized-pre-training', 2, shards, pretraining=True, cumulative=True)
+    experiment_pain_centralized('PAIN', 'Centralized-pre-training', 30, shards, pretraining=True, cumulative=True)
 
     # Experiment 8 - Federated without pre-training
     Output.print_experiment("8 - Federated without pre-training")
-    experiment_pain_federated('PAIN', 'Federated-no-pre-training', 2, shards, 3, pretraining=None, cumulative=True)
+    experiment_pain_federated('PAIN', 'Federated-no-pre-training', 30, shards, 12, pretraining=None, cumulative=True)
 
     # Experiment 9 - Federated with centralized pretraining
     Output.print_experiment("9 - Federated with centralized pretraining")
     centralized_model_path = find_newest_model_path(painCNN.CENTRAL_PAIN_MODELS, "training.h5")
-    experiment_pain_federated('PAIN', 'Federated-central-pre-training', 2, shards, 3,
+    experiment_pain_federated('PAIN', 'Federated-central-pre-training', 30, shards, 12,
                               model_path=centralized_model_path, pretraining='centralized', cumulative=True)
 
     # Experiment 10 - Federated with federated pretraining
     Output.print_experiment("10 - Federated with federated pretraining")
-    experiment_pain_federated('PAIN', 'Federated-federated-pre-training', 2, shards, 3, pretraining='federated',
+    experiment_pain_federated('PAIN', 'Federated-federated-pre-training', 30, shards, 12, pretraining='federated',
                               cumulative=True)
 
     # Notify that training is complete and shut down Google server
