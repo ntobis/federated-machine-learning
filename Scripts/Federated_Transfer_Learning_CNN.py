@@ -199,9 +199,9 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
         history = evaluate_federated_cnn(test_data, test_labels, comm_round, model, weights_accountant, history, people)
 
     weights = weights_accountant.get_global_weights()
-    np.save(FEDERATED_GLOBAL_WEIGHTS, weights)
+    model.set_weights(weights)
 
-    return history
+    return history, model
 
 
 def evaluate_federated_cnn(test_data, test_labels, comm_round, model=None, weights_accountant=None, history=None,

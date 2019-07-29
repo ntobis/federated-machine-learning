@@ -148,6 +148,7 @@ def find_newest_model_path(path, sub_string):
     pre_train.sort(key=os.path.getmtime)
     return pre_train[-1]
 
+
 # ---------------------------------------------- End Utility Functions --------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
@@ -361,17 +362,17 @@ def runner_federated_pain(clients, dataset, experiment, train_data, train_labels
     fedTransCNN.reset_federated_model()
 
     # Train Model
-    history = fedTransCNN.federated_learning(communication_rounds=rounds,
-                                             num_of_clients=clients,
-                                             train_data=train_data,
-                                             train_labels=train_labels,
-                                             test_data=test_data,
-                                             test_labels=test_labels,
-                                             epochs=epochs,
-                                             num_participating_clients=participants,
-                                             people=people,
-                                             model=model
-                                             )
+    history, model = fedTransCNN.federated_learning(communication_rounds=rounds,
+                                                    num_of_clients=clients,
+                                                    train_data=train_data,
+                                                    train_labels=train_labels,
+                                                    test_data=test_data,
+                                                    test_labels=test_labels,
+                                                    epochs=epochs,
+                                                    num_participating_clients=participants,
+                                                    people=people,
+                                                    model=model
+                                                    )
 
     # Save history for plotting
     folder = os.path.join(cNN.RESULTS, time.strftime("%Y-%m-%d") + "_{}_{}".format(dataset,
@@ -387,11 +388,9 @@ def runner_federated_pain(clients, dataset, experiment, train_data, train_labels
     if not os.path.isdir(folder):
         os.mkdir(folder)
     f_name = time.strftime("%Y-%m-%d-%H%M%S") + r"_{}_{}.h5".format(dataset, experiment)
-    with open(fedTransCNN.FEDERATED_GLOBAL_MODEL, 'r') as model_json:
-        current_model = tf.keras.models.model_from_json(model_json.read())
-        weights = np.load(fedTransCNN.FEDERATED_GLOBAL_WEIGHTS, allow_pickle=True)
-        current_model.set_weights(weights)
-        current_model.save(os.path.join(folder, f_name))
+    model.save(os.path.join(folder, f_name))
+
+    return model
 
 
 # ---------------------------------------------- End Experiment Runners -------------------------------------------- #
@@ -561,7 +560,7 @@ def experiment_pain_centralized(dataset, experiment, rounds, split, pretraining,
         train_labels_bin = dL.reduce_pain_label_categories(train_labels_ord, max_pain=1)
 
         # Train
-        model = runner_centralized_pain(dataset, experiment, train_data, train_labels_bin, test_data,
+        model = runner_centralized_pain(dataset, experiment + "_shard-0.00", train_data, train_labels_bin, test_data,
                                         test_labels_binary, rounds, people=test_labels_people)
     else:
         # Initialize random model
@@ -618,7 +617,7 @@ def experiment_pain_federated(dataset, experiment, rounds, split, clients, model
             train_labels_binary = dL.reduce_pain_label_categories(train_labels_ordinal, max_pain=1)
 
             # Train
-            runner_federated_pain(clients, dataset, experiment, train_data, train_labels_binary,
+            runner_federated_pain(clients, dataset, experiment + "_shard-0.00", train_data, train_labels_binary,
                                   test_data, test_labels_binary, rounds, people=test_labels_people)
 
         # Load trained model into memory
@@ -651,8 +650,8 @@ def experiment_pain_federated(dataset, experiment, rounds, split, clients, model
     for percentage, data, labels in zip(split, group_2_train_data, group_2_train_labels_binary):
         Output.print_shard(percentage)
         experiment_current = experiment + "_shard-{}".format(percentage)
-        runner_federated_pain(clients, dataset, experiment_current, data, labels, test_data, test_labels_binary,
-                              rounds, people=test_labels_people, model=model)
+        model = runner_federated_pain(clients, dataset, experiment_current, data, labels, test_data, test_labels_binary,
+                                      rounds, people=test_labels_people, model=model)
 
 
 # ------------------------------------------------ End Experiments - 3 --------------------------------------------- #
@@ -668,19 +667,19 @@ if __name__ == '__main__':
     # Define shards
     shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
 
-    # Experiment 6 - Centralized without pre-training
-    Output.print_experiment("6 - Centralized without pre-training")
-    experiment_pain_centralized('PAIN', 'Centralized-no-pre-training', 30, shards, pretraining=False, cumulative=True)
-    twilio.send_training_complete_message("Experiment 6 Complete")
-
-    # Experiment 7 - Centralized with pre-training
-    Output.print_experiment("7 - Centralized with pre-training")
-    experiment_pain_centralized('PAIN', 'Centralized-pre-training', 30, shards, pretraining=True, cumulative=True)
-    twilio.send_training_complete_message("Experiment 7 Complete")
-
+    # # Experiment 6 - Centralized without pre-training
+    # Output.print_experiment("6 - Centralized without pre-training")
+    # experiment_pain_centralized('PAIN', 'Centralized-no-pre-training', 30, shards, pretraining=False, cumulative=True)
+    # twilio.send_training_complete_message("Experiment 6 Complete")
+    #
+    # # Experiment 7 - Centralized with pre-training
+    # Output.print_experiment("7 - Centralized with pre-training")
+    # experiment_pain_centralized('PAIN', 'Centralized-pre-training', 30, shards, pretraining=True, cumulative=True)
+    # twilio.send_training_complete_message("Experiment 7 Complete")
+    #
     # Experiment 8 - Federated without pre-training
     Output.print_experiment("8 - Federated without pre-training")
-    experiment_pain_federated('PAIN', 'Federated-no-pre-training', 30, shards, 12, pretraining=None, cumulative=True)
+    experiment_pain_federated('PAIN', 'Federated-no-pre-training', 3, shards, 2, pretraining=None, cumulative=True)
     twilio.send_training_complete_message("Experiment 8 Complete")
 
     # Experiment 9 - Federated with centralized pretraining
