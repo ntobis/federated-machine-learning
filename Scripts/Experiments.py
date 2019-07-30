@@ -269,7 +269,7 @@ def runner_centralized_pain(dataset, experiment, train_data, train_labels, test_
 
     centralized_model, history = painCNN.train_cnn(centralized_model, epochs=epochs, train_data=train_data,
                                                    train_labels=train_labels, test_data=test_data,
-                                                   test_labels=test_labels, people=people, evaluate=True)
+                                                   test_labels=test_labels, people=people, evaluate=False)
 
     # Save full model
     folder = os.path.join(painCNN.CENTRAL_PAIN_MODELS, time.strftime("%Y-%m-%d"))
