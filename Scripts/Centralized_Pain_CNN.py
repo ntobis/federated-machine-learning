@@ -60,7 +60,7 @@ def build_cnn(input_shape):
     model.add(layers.Conv2D(filters=128, kernel_size=(5, 5), strides=(2, 2)))
     model.add(layers.Flatten())
     model.add(layers.Dense(units=128, activation='relu'))
-    model.add(layers.Dense(units=2, activation='softmax'))
+    model.add(layers.Dense(units=2, activation='softmax'))  # TODO sigmoid / binary cross entropy loss / adam
 
     return model
 
