@@ -27,7 +27,7 @@ pd.set_option('display.max_columns', 500)
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------ Utility Functions ----------------------------------------------- #
 class GoogleCloudMonitor:
-    def __init__(self, project='federated-learning-244811', zone='us-west1-b', instance='federated-learning'):
+    def __init__(self, project='smooth-drive-248209', zone='us-west1-b', instance=' federated-imperial-vm'):
         # Google Credentials Set Up
         self.credentials = GoogleCredentials.get_application_default()
         self.service = discovery.build('compute', 'v1', credentials=self.credentials)
