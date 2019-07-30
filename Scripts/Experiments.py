@@ -541,8 +541,8 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
     group_2_test_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_2_test")
 
     # Define labels for training
-    person = 0 # Labels: [person, session, culture, frame, pain, Trans_1, Trans_2]
-    session = 1
+    person = 0  # Labels: [person, session, culture, frame, pain, Trans_1, Trans_2]
+    # session = 1
     pain = 4
 
     # Load test data
@@ -566,7 +566,7 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
     else:
         # Initialize random model
         model = painCNN.build_cnn(test_data[0].shape)
-        model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     # Load group 2 training data
     group_2_train_data, group_2_train_labels = dL.load_pain_data(group_2_train_path)
@@ -589,11 +589,9 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
             model = runner_centralized_pain(dataset, experiment_current, data, labels, test_data, test_labels_binary,
                                             rounds, model=model, people=test_labels_people)
 
-    else:
-        group_2_train_data, group_2_train_labels = dL.split_data_into_labels(session, group_2_train_data,
-                                                                             group_2_train_labels, cumulative)
-
-
+    # else:
+    #     group_2_train_data, group_2_train_labels = dL.split_data_into_labels(session, group_2_train_data,
+    #                                                                          group_2_train_labels, cumulative)
 
 
 def experiment_pain_federated(dataset, experiment, rounds, shards, clients, model_path=None, pretraining=None,
@@ -706,7 +704,8 @@ if __name__ == '__main__':
     # # Experiment 10 - Federated with federated pretraining
     # Output.print_experiment("10 - Federated with federated pretraining")
     # new_model_path = find_newest_model_path(os.path.join(cNN.MODELS, "Pain", "Federated"), "_shard-0.00.h5")
-    # experiment_pain_federated('PAIN', 'Unbalanced-Federated-federated-pre-training', 30, test_shards, 12, pretraining='federated',
+    # experiment_pain_federated('PAIN', 'Unbalanced-Federated-federated-pre-training', 30, test_shards, 12,
+    #                           pretraining='federated',
     #                           cumulative=True, model_path=new_model_path)
     # twilio.send_training_complete_message("Experiment 10 Complete")
 
