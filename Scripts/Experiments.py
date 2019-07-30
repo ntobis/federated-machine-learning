@@ -263,7 +263,7 @@ def runner_centralized_pain(dataset, experiment, train_data, train_labels, test_
     # Train Centralized CNN
     if model is None:
         centralized_model = painCNN.build_cnn(input_shape=train_data[0].shape)
-        centralized_model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+        centralized_model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     else:
         centralized_model = model
 
@@ -566,7 +566,7 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
     else:
         # Initialize random model
         model = painCNN.build_cnn(test_data[0].shape)
-        model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     # Load group 2 training data
     group_2_train_data, group_2_train_labels = dL.load_pain_data(group_2_train_path)
