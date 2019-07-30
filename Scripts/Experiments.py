@@ -684,7 +684,8 @@ if __name__ == '__main__':
 
     # Experiment 9 - Federated with centralized pretraining
     Output.print_experiment("9 - Federated with centralized pretraining")
-    centralized_model_path = find_newest_model_path(painCNN.CENTRAL_PAIN_MODELS, "training.h5")
+    centralized_model_path = find_newest_model_path(os.path.join(painCNN.CENTRAL_PAIN_MODELS, "2019-07-27"),
+                                                    "training.h5")
     experiment_pain_federated('PAIN', 'Federated-central-pre-training', 30, shards, 12,
                               model_path=centralized_model_path, pretraining='centralized', cumulative=True)
     twilio.send_training_complete_message("Experiment 9 Complete")
