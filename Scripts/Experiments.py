@@ -534,7 +534,7 @@ def experiment_5_split_digits_with_overlap(dataset, experiment, rounds, clients)
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------ Experiments - PAIN ---------------------------------------------- #
 
-def experiment_pain_centralized(dataset, experiment, rounds, split, pretraining, cumulative=True):
+def experiment_pain_centralized(dataset, experiment, rounds, shards, pretraining, cumulative=True):
     # Define data paths
     group_1_train_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_1")
     group_2_train_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_2_train")
@@ -575,18 +575,18 @@ def experiment_pain_centralized(dataset, experiment, rounds, split, pretraining,
     # Split group 2 training data into shards
     group_2_train_data, group_2_train_labels_binary = dL.split_data_into_shards(group_2_train_data,
                                                                                 group_2_train_labels_binary,
-                                                                                split,
+                                                                                shards,
                                                                                 cumulative)
 
     # Train on group 2 shards and evaluate performance
-    for percentage, data, labels in zip(split, group_2_train_data, group_2_train_labels_binary):
+    for percentage, data, labels in zip(shards, group_2_train_data, group_2_train_labels_binary):
         Output.print_shard(percentage)
         experiment_current = experiment + "_shard-{}".format(percentage)
         model = runner_centralized_pain(dataset, experiment_current, data, labels, test_data, test_labels_binary,
                                         rounds, model=model, people=test_labels_people)
 
 
-def experiment_pain_federated(dataset, experiment, rounds, split, clients, model_path=None, pretraining=None,
+def experiment_pain_federated(dataset, experiment, rounds, shards, clients, model_path=None, pretraining=None,
                               cumulative=True):
     # Define data paths
     group_1_train_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_1")
@@ -643,11 +643,11 @@ def experiment_pain_federated(dataset, experiment, rounds, split, clients, model
     # Split group 2 training data into shards
     group_2_train_data, group_2_train_labels_binary = dL.split_data_into_shards(group_2_train_data,
                                                                                 group_2_train_labels_binary,
-                                                                                split,
+                                                                                shards,
                                                                                 cumulative)
 
     # Train on group 2 shards and evaluate performance
-    for percentage, data, labels in zip(split, group_2_train_data, group_2_train_labels_binary):
+    for percentage, data, labels in zip(shards, group_2_train_data, group_2_train_labels_binary):
         Output.print_shard(percentage)
         experiment_current = experiment + "_shard-{}".format(percentage)
         model = runner_federated_pain(clients, dataset, experiment_current, data, labels, test_data, test_labels_binary,
@@ -665,34 +665,37 @@ if __name__ == '__main__':
     twilio = Twilio()
 
     # Define shards
-    shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+    test_shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
 
     # # Experiment 6 - Centralized without pre-training
     # Output.print_experiment("6 - Centralized without pre-training")
-    # experiment_pain_centralized('PAIN', 'Centralized-no-pre-training', 30, shards, pretraining=False, cumulative=True)
+    # experiment_pain_centralized('PAIN', 'Centralized-no-pre-training', 30, test_shards, pretraining=False,
+    #                             cumulative=True)
     # twilio.send_training_complete_message("Experiment 6 Complete")
     #
     # # Experiment 7 - Centralized with pre-training
     # Output.print_experiment("7 - Centralized with pre-training")
-    # experiment_pain_centralized('PAIN', 'Centralized-pre-training', 30, shards, pretraining=True, cumulative=True)
+    # experiment_pain_centralized('PAIN', 'Centralized-pre-training', 30, test_shards, pretraining=True,
+    #                             cumulative=True)
     # twilio.send_training_complete_message("Experiment 7 Complete")
     #
-    # Experiment 8 - Federated without pre-training
-    Output.print_experiment("8 - Federated without pre-training")
-    experiment_pain_federated('PAIN', 'Federated-no-pre-training', 30, shards, 12, pretraining=None, cumulative=True)
-    twilio.send_training_complete_message("Experiment 8 Complete")
-
-    # Experiment 9 - Federated with centralized pretraining
-    Output.print_experiment("9 - Federated with centralized pretraining")
-    centralized_model_path = find_newest_model_path(os.path.join(painCNN.CENTRAL_PAIN_MODELS, "2019-07-27"),
-                                                    "training.h5")
-    experiment_pain_federated('PAIN', 'Federated-central-pre-training', 30, shards, 12,
-                              model_path=centralized_model_path, pretraining='centralized', cumulative=True)
-    twilio.send_training_complete_message("Experiment 9 Complete")
-
+    # # Experiment 8 - Federated without pre-training
+    # Output.print_experiment("8 - Federated without pre-training")
+    # experiment_pain_federated('PAIN', 'Federated-no-pre-training', 30, test_shards, 12, pretraining=None,
+    #                           cumulative=True)
+    # twilio.send_training_complete_message("Experiment 8 Complete")
+    #
+    # # Experiment 9 - Federated with centralized pretraining
+    # Output.print_experiment("9 - Federated with centralized pretraining")
+    # centralized_model_path = find_newest_model_path(os.path.join(painCNN.CENTRAL_PAIN_MODELS, "2019-07-27"),
+    #                                                 "training.h5")
+    # experiment_pain_federated('PAIN', 'Federated-central-pre-training', 30, test_shards, 12,
+    #                           model_path=centralized_model_path, pretraining='centralized', cumulative=True)
+    # twilio.send_training_complete_message("Experiment 9 Complete")
+    #
     # Experiment 10 - Federated with federated pretraining
     Output.print_experiment("10 - Federated with federated pretraining")
-    experiment_pain_federated('PAIN', 'Federated-federated-pre-training', 30, shards, 12, pretraining='federated',
+    experiment_pain_federated('PAIN', 'Federated-federated-pre-training', 30, test_shards, 12, pretraining='federated',
                               cumulative=True)
     twilio.send_training_complete_message("Experiment 10 Complete")
 
