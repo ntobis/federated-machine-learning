@@ -679,7 +679,7 @@ if __name__ == '__main__':
     #
     # Experiment 8 - Federated without pre-training
     Output.print_experiment("8 - Federated without pre-training")
-    experiment_pain_federated('PAIN', 'Federated-no-pre-training', 3, shards, 2, pretraining=None, cumulative=True)
+    experiment_pain_federated('PAIN', 'Federated-no-pre-training', 30, shards, 12, pretraining=None, cumulative=True)
     twilio.send_training_complete_message("Experiment 8 Complete")
 
     # Experiment 9 - Federated with centralized pretraining
