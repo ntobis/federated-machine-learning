@@ -542,7 +542,7 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
 
     # Define labels for training
     person = 0  # Labels: [person, session, culture, frame, pain, Trans_1, Trans_2]
-    # session = 1
+    session = 1
     pain = 4
 
     # Load test data
@@ -566,7 +566,7 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
     else:
         # Initialize random model
         model = painCNN.build_cnn(test_data[0].shape)
-        model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     # Load group 2 training data
     group_2_train_data, group_2_train_labels = dL.load_pain_data(group_2_train_path)
@@ -581,17 +581,14 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
                                                                                     cumulative)
         # Train on group 2 shards and evaluate performance
         for percentage, data, labels in zip(shards, group_2_train_data, group_2_train_labels_binary):
-            if percentage > 0.05:
-                break
-
             Output.print_shard(percentage)
             experiment_current = experiment + "_shard-{}".format(percentage)
             model = runner_centralized_pain(dataset, experiment_current, data, labels, test_data, test_labels_binary,
                                             rounds, model=model, people=test_labels_people)
 
-    # else:
-    #     group_2_train_data, group_2_train_labels = dL.split_data_into_labels(session, group_2_train_data,
-    #                                                                          group_2_train_labels, cumulative)
+    else:
+        group_2_train_data, group_2_train_labels = dL.split_data_into_labels(session, group_2_train_data,
+                                                                             group_2_train_labels, cumulative)
 
 
 def experiment_pain_federated(dataset, experiment, rounds, shards, clients, model_path=None, pretraining=None,
@@ -669,18 +666,18 @@ def experiment_pain_federated(dataset, experiment, rounds, shards, clients, mode
 if __name__ == '__main__':
     # Setup functions
     training_setup()
-    # g_monitor = GoogleCloudMonitor()
-    twilio = Twilio()
-
-    # Define shards
-    test_shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
-
-    # Experiment 6 - Centralized without pre-training
-    Output.print_experiment("6 - Centralized without pre-training")
-    experiment_pain_centralized('PAIN', 'Unbalanced-Centralized-no-pre-training', 30, test_shards, pretraining=False,
-                                cumulative=True)
-    twilio.send_training_complete_message("Experiment 6 Complete")
-
+    g_monitor = GoogleCloudMonitor()
+    # twilio = Twilio()
+    #
+    # # Define shards
+    # test_shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+    #
+    # # Experiment 6 - Centralized without pre-training
+    # Output.print_experiment("6 - Centralized without pre-training")
+    # experiment_pain_centralized('PAIN', 'Unbalanced-Centralized-no-pre-training', 30, test_shards, pretraining=False,
+    #                             cumulative=True)
+    # twilio.send_training_complete_message("Experiment 6 Complete")
+    #
     # # Experiment 7 - Centralized with pre-training
     # Output.print_experiment("7 - Centralized with pre-training")
     # experiment_pain_centralized('PAIN', 'Unbalanced-Centralized-pre-training', 30, test_shards, pretraining=True,
@@ -708,7 +705,7 @@ if __name__ == '__main__':
     #                           pretraining='federated',
     #                           cumulative=True, model_path=new_model_path)
     # twilio.send_training_complete_message("Experiment 10 Complete")
-
-    # Notify that training is complete and shut down Google server
-    twilio.send_training_complete_message()
-    # g_monitor.shutdown()
+    #
+    # # Notify that training is complete and shut down Google server
+    # twilio.send_training_complete_message()
+    g_monitor.shutdown()
