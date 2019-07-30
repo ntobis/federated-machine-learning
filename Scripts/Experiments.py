@@ -269,7 +269,7 @@ def runner_centralized_pain(dataset, experiment, train_data, train_labels, test_
 
     centralized_model, history = painCNN.train_cnn(centralized_model, epochs=epochs, train_data=train_data,
                                                    train_labels=train_labels, test_data=test_data,
-                                                   test_labels=test_labels, people=people)
+                                                   test_labels=test_labels, people=people, evaluate=False)
 
     # Save full model
     folder = os.path.join(painCNN.CENTRAL_PAIN_MODELS, time.strftime("%Y-%m-%d"))
@@ -580,11 +580,9 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
                                                                                     shards,
                                                                                     cumulative)
         # Train on group 2 shards and evaluate performance
-        print("Positive Share Test:", np.sum(test_labels_binary) / len(test_labels_binary))
         for percentage, data, labels in zip(shards, group_2_train_data, group_2_train_labels_binary):
             if percentage > 0.05:
                 break
-            print("Positive Share Train:", np.sum(labels) / len(labels))
 
             Output.print_shard(percentage)
             experiment_current = experiment + "_shard-{}".format(percentage)
