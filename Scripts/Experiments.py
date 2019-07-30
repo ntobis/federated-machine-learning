@@ -566,7 +566,7 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
     else:
         # Initialize random model
         model = painCNN.build_cnn(test_data[0].shape)
-        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     # Load group 2 training data
     group_2_train_data, group_2_train_labels = dL.load_pain_data(group_2_train_path)
@@ -669,7 +669,7 @@ def experiment_pain_federated(dataset, experiment, rounds, shards, clients, mode
 if __name__ == '__main__':
     # Setup functions
     training_setup()
-    g_monitor = GoogleCloudMonitor()
+    # g_monitor = GoogleCloudMonitor()
     twilio = Twilio()
 
     # Define shards
@@ -711,4 +711,4 @@ if __name__ == '__main__':
 
     # Notify that training is complete and shut down Google server
     twilio.send_training_complete_message()
-    g_monitor.shutdown()
+    # g_monitor.shutdown()
