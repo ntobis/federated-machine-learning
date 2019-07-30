@@ -537,6 +537,14 @@ def split_data_into_shards(data, labels, split, cumulative=True):
     return data, labels
 
 
+def split_data_into_labels(label, data, labels, cumulative=True):
+    data = np.array([data[labels[:, label] == k] for k in np.unique(labels[:, label])])
+    labels = np.array([labels[labels[:, label] == k] for k in np.unique(labels[:, label])])
+    if cumulative:
+        data, labels = cumconc(data), cumconc(labels)
+    return data, labels
+
+
 def cumconc(array):
     """
     Utiliy function creating a cumulatively split view on a split numpy array, e.g. [[0], [1]] to [[0] , [0, 1]]

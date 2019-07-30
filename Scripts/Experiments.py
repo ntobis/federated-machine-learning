@@ -621,7 +621,7 @@ def experiment_pain_federated(dataset, experiment, rounds, shards, clients, mode
                                   test_data, test_labels_binary, rounds, people=test_labels_people)
 
         # Load trained model into memory
-        model_path = find_newest_model_path(os.path.join(cNN.MODELS, "Pain", "Federated"), "training.h5")
+        model_path = find_newest_model_path(os.path.join(cNN.MODELS, "Pain", "Federated"), "_shard-0.00.h5")
         model = tf.keras.models.load_model(model_path)
         model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
@@ -695,8 +695,9 @@ if __name__ == '__main__':
     #
     # Experiment 10 - Federated with federated pretraining
     Output.print_experiment("10 - Federated with federated pretraining")
+    new_model_path = find_newest_model_path(os.path.join(cNN.MODELS, "Pain", "Federated"), "_shard-0.00.h5")
     experiment_pain_federated('PAIN', 'Federated-federated-pre-training', 30, test_shards, 12, pretraining='federated',
-                              cumulative=True)
+                              cumulative=True, model_path=new_model_path)
     twilio.send_training_complete_message("Experiment 10 Complete")
 
     # Notify that training is complete and shut down Google server
