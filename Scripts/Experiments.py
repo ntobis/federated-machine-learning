@@ -566,7 +566,7 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
     else:
         # Initialize random model
         model = painCNN.build_cnn(test_data[0].shape)
-        model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     # Load group 2 training data
     group_2_train_data, group_2_train_labels = dL.load_pain_data(group_2_train_path)
@@ -580,9 +580,12 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
                                                                                     shards,
                                                                                     cumulative)
         # Train on group 2 shards and evaluate performance
+        print("Positive Share Test:", np.sum(test_labels_binary) / len(test_labels_binary))
         for percentage, data, labels in zip(shards, group_2_train_data, group_2_train_labels_binary):
             if percentage > 0.05:
                 break
+            print("Positive Share Train:", np.sum(labels) / len(labels))
+
             Output.print_shard(percentage)
             experiment_current = experiment + "_shard-{}".format(percentage)
             model = runner_centralized_pain(dataset, experiment_current, data, labels, test_data, test_labels_binary,
