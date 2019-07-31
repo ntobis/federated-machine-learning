@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+import traceback
 
 import sklearn
 
@@ -747,8 +748,11 @@ def main():
 
         twilio.send_message()
 
-    except:
-        twilio.send_message("Attention, an error occurred!")
+    except Exception as e:
+        tb = traceback.extract_tb(e.__traceback__)
+        tb = traceback.format_list(tb)
+        twilio.send_message("Attention, an error occurred:\n{}\nTraceback:\n{}".format(e, tb))
+        traceback.print_tb(e.__traceback__)
 
     # Notify that training is complete and shut down Google server
     g_monitor.shutdown()
