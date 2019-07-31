@@ -59,7 +59,7 @@ class Twilio(Client):
         self.args = parser.parse_args()
         super(Twilio, self).__init__(self.args.sms_acc, self.args.sms_pw)
 
-    def send_training_complete_message(self, msg=None):
+    def send_message(self, msg=None):
         body = ['Sir, this is Google speaking. Your Federated model trained like a boss. Google out.',
                 "Nico you garstige Schlange. What a training session. I'm going to sleep",
                 "Wow, what a ride. Training complete.",
@@ -69,12 +69,12 @@ class Twilio(Client):
         self.messages.create(to=self.args.receiver, from_=self.args.sender, body=msg)
 
 
-def training_setup():
+def training_setup(seed):
     # Training setup
     print("GPU Available: ", tf.test.is_gpu_available())
     # tf.debugging.set_log_device_placement(True)
-    tf.random.set_seed(123)
-    np.random.seed(123)
+    tf.random.set_seed(seed)
+    np.random.seed(seed)
 
 
 def move_results(experiment, date, keys):
@@ -695,53 +695,63 @@ def experiment_pain_federated(dataset, experiment, rounds, shards, clients, mode
 def main():
 
     # Setup functions
-    training_setup()
-    # g_monitor = GoogleCloudMonitor()
+    seed = 123
+    g_monitor = GoogleCloudMonitor()
     twilio = Twilio()
     optimizer = tf.keras.optimizers.SGD()
     loss = tf.keras.losses.BinaryCrossentropy()
     metrics = ['accuracy']
 
-    # Define shards
-    test_shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+    try:
+        # Define shards
+        test_shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
 
-    # Experiment 6 - Centralized without pre-training
-    Output.print_experiment("6 - Centralized without pre-training")
-    experiment_pain_centralized('PAIN', 'Unbalanced-Centralized-no-pre-training', 30, test_shards, pretraining=False,
-                                cumulative=True, optimizer=optimizer, loss=loss, metrics=metrics)
-    twilio.send_training_complete_message("Experiment 6 Complete")
+        # Experiment 1 - Centralized without pre-training
+        training_setup(seed)
+        Output.print_experiment("1 - Centralized without pre-training")
+        experiment_pain_centralized('PAIN', '1-unbalanced-Centralized-no-pre-training', 30, test_shards,
+                                    pretraining=False, cumulative=True, optimizer=optimizer, loss=loss, metrics=metrics)
+        twilio.send_message("Experiment 1 Complete")
 
-    # Experiment 7 - Centralized with pre-training
-    Output.print_experiment("7 - Centralized with pre-training")
-    experiment_pain_centralized('PAIN', 'Unbalanced-Centralized-pre-training', 30, test_shards, pretraining=True,
-                                cumulative=True, optimizer=optimizer, loss=loss, metrics=metrics)
-    twilio.send_training_complete_message("Experiment 7 Complete")
+        # Experiment 2 - Centralized with pre-training
+        training_setup(seed)
+        Output.print_experiment("2 - Centralized with pre-training")
+        experiment_pain_centralized('PAIN', '2-unbalanced-Centralized-pre-training', 30, test_shards, pretraining=True,
+                                    cumulative=True, optimizer=optimizer, loss=loss, metrics=metrics)
+        twilio.send_message("Experiment 2 Complete")
 
-    # Experiment 8 - Federated without pre-training
-    Output.print_experiment("8 - Federated without pre-training")
-    experiment_pain_federated('PAIN', 'Unbalanced-Federated-no-pre-training', 30, test_shards, 12, pretraining=None,
-                              cumulative=True, optimizer=optimizer, loss=loss, metrics=metrics)
-    twilio.send_training_complete_message("Experiment 8 Complete")
+        # Experiment 3 - Federated without pre-training
+        training_setup(seed)
+        Output.print_experiment("3 - Federated without pre-training")
+        experiment_pain_federated('PAIN', '3-unbalanced-Federated-no-pre-training', 30, test_shards, 12,
+                                  pretraining=None, cumulative=True, optimizer=optimizer, loss=loss, metrics=metrics)
+        twilio.send_message("Experiment 3 Complete")
 
-    # Experiment 9 - Federated with centralized pretraining
-    Output.print_experiment("9 - Federated with centralized pretraining")
-    centralized_model_path = find_newest_model_path(os.path.join(painCNN.CENTRAL_PAIN_MODELS, "2019-07-31"),
-                                                    "training.h5")
-    experiment_pain_federated('PAIN', 'Unbalanced-Federated-central-pre-training', 30, test_shards, 12,
-                              model_path=centralized_model_path, pretraining='centralized', cumulative=True,
-                              optimizer=optimizer, loss=loss, metrics=metrics)
-    twilio.send_training_complete_message("Experiment 9 Complete")
+        # Experiment 4 - Federated with centralized pretraining
+        training_setup(seed)
+        Output.print_experiment("4 - Federated with centralized pretraining")
+        centralized_model_path = find_newest_model_path(os.path.join(painCNN.CENTRAL_PAIN_MODELS, "2019-07-31"),
+                                                        "training.h5")
+        experiment_pain_federated('PAIN', '4-unbalanced-Federated-central-pre-training', 30, test_shards, 12,
+                                  model_path=centralized_model_path, pretraining='centralized', cumulative=True,
+                                  optimizer=optimizer, loss=loss, metrics=metrics)
+        twilio.send_message("Experiment 4 Complete")
 
-    # Experiment 10 - Federated with federated pretraining
-    Output.print_experiment("10 - Federated with federated pretraining")
-    experiment_pain_federated('PAIN', 'Unbalanced-Federated-federated-pre-training', 30, test_shards, 12,
-                              pretraining='federated', cumulative=True,
-                              optimizer=optimizer, loss=loss, metrics=metrics)
-    twilio.send_training_complete_message("Experiment 10 Complete")
+        # Experiment 5 - Federated with federated pretraining
+        training_setup(seed)
+        Output.print_experiment("5 - Federated with federated pretraining")
+        experiment_pain_federated('PAIN', '5-unbalanced-Federated-federated-pre-training', 30, test_shards, 12,
+                                  pretraining='federated', cumulative=True,
+                                  optimizer=optimizer, loss=loss, metrics=metrics)
+        twilio.send_message("Experiment 5 Complete")
+
+        twilio.send_message()
+
+    except:
+        twilio.send_message("Attention, an error occurred!")
 
     # Notify that training is complete and shut down Google server
-    twilio.send_training_complete_message()
-    # g_monitor.shutdown()
+    g_monitor.shutdown()
 
 
 if __name__ == '__main__':
