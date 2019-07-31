@@ -236,7 +236,7 @@ def evaluate_federated_cnn(test_data, test_labels, comm_round, model=None, weigh
         weights = np.load(FEDERATED_GLOBAL_WEIGHTS, allow_pickle=True)
     model.set_weights(weights)
 
-    history = painCNN.evaluate_pain_cnn(model, comm_round, test_data, test_labels, history, people)
+    history = painCNN.evaluate_pain_cnn(model, comm_round, test_data, test_labels, history, people, loss)
 
     return history
 

@@ -70,6 +70,12 @@ def print_loss_accuracy(accuracy, loss, data_type="Test"):
     print()
 
 
+def print_session(sess):
+    print("\n\n\033[1m{} Session {} {}\033[0m".format("-" * math.floor((130 - 9 - len(str(sess))) / 2),
+                                                      sess,
+                                                      "-" * math.ceil((130 - 9 - len(str(sess))) / 2)))
+
+
 def print_shard(percentage):
     print("\n\n\033[1m{} Shard {:.0%} {}\033[0m".format("-" * math.floor((130 - 7 - len(str(percentage))) / 2),
                                                         percentage,
@@ -81,15 +87,15 @@ def print_experiment(experiment):
                                                          "-" * math.ceil((130 - 12 - len(experiment)) / 2)))
 
 
-def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
-
-
 # ----------------------------------------------- End Print Functions ---------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------- Plot Functions ------------------------------------------------- #
+
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 
 def plot_centralized_accuracy(model):
@@ -276,6 +282,9 @@ def make_pain_plot(folder, params, final_epoch=29):
     return plt
 
 
+# ----------------------------------------------- End Plot Functions ----------------------------------------------- #
+# ------------------------------------------------------------------------------------------------------------------ #
+
 def make_pain_plot_grid(folder, metrics, params, final_epoch=29):
     for idx, metric in enumerate(metrics):
         params.metric = metric
@@ -290,9 +299,6 @@ def make_pain_plot_grid(folder, metrics, params, final_epoch=29):
     plt.savefig(os.path.join(FIGURES, file), dpi=300)
     plt.show()
 
-
-# ----------------------------------------------- End Plot Functions ----------------------------------------------- #
-# ------------------------------------------------------------------------------------------------------------------ #
 
 if __name__ == '__main__':
     parameters = PlotParams(

@@ -367,8 +367,6 @@ def runner_federated_pain(clients, dataset, experiment, train_data, train_labels
     :return:
     """
 
-    train_data, train_labels = dL.split_data_into_clients(clients, split, train_data, train_labels)
-
     # Reset federated model
     fedTransCNN.reset_federated_model()
 
@@ -616,12 +614,20 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
                                             rounds, model=model, people=test_labels_people,
                                             optimizer=optimizer, loss=loss, metrics=metrics)
 
+    # Split group 2 training data into sessions
     else:
-        group_2_train_data, group_2_train_labels = dL.split_data_into_labels(session, group_2_train_data,
-                                                                             group_2_train_labels, cumulative)
-
-        for sess, session_data, session_labels in zip(np.arange()):
-            pass
+        group_2_train_data, group_2_train_labels_binary = dL.split_data_into_labels(session,
+                                                                                    group_2_train_data,
+                                                                                    group_2_train_labels_binary,
+                                                                                    group_2_train_labels,
+                                                                                    cumulative)
+        for sess, session_data, session_labels in zip(np.unique(group_2_train_labels[:, session]), group_2_train_data,
+                                                      group_2_train_labels_binary):
+            Output.print_session(sess)
+            experiment_current = experiment + "_shard-{}".format(sess)
+            model = runner_centralized_pain(dataset, experiment_current, session_data, session_labels, test_data,
+                                            test_labels_binary, rounds, model=model, people=test_labels_people,
+                                            optimizer=optimizer, loss=loss, metrics=metrics)
 
 
 def experiment_pain_federated(dataset, experiment, rounds, shards, clients, model_path=None, pretraining=None,
@@ -657,6 +663,10 @@ def experiment_pain_federated(dataset, experiment, rounds, shards, clients, mode
             train_labels_binary = dL.reduce_pain_label_categories(train_labels_ordinal, max_pain=1)
             enc = sklearn.preprocessing.OneHotEncoder(sparse=False)
             train_labels_binary = enc.fit_transform(train_labels_binary.reshape(len(train_labels_binary), 1))
+
+            # Split data into clients
+            train_data, train_labels_binary = dL.split_data_into_clients(clients, 'random', train_data,
+                                                                         train_labels_binary)  # TODO
 
             # Train
             runner_federated_pain(clients, dataset, experiment + "_shard-0.00", train_data, train_labels_binary,
@@ -700,6 +710,10 @@ def experiment_pain_federated(dataset, experiment, rounds, shards, clients, mode
                                                 group_2_split_people):
         Output.print_shard(percentage)
         Output.print_shard_summary(labels, people)
+
+        # Split data into clients
+        data, labels = dL.split_data_into_clients(clients, 'random', data, labels)
+
         experiment_current = experiment + "_shard-{}".format(percentage)
         model = runner_federated_pain(clients, dataset, experiment_current, data, labels, test_data, test_labels_binary,
                                       rounds, people=test_labels_people, model=model, optimizer=optimizer, loss=loss,
@@ -713,7 +727,7 @@ def experiment_pain_federated(dataset, experiment, rounds, shards, clients, mode
 def main():
     # Setup functions
     seed = 123
-    g_monitor = GoogleCloudMonitor()
+    # g_monitor = GoogleCloudMonitor()
     twilio = Twilio()
     optimizer = tf.keras.optimizers.SGD()
     loss = tf.keras.losses.BinaryCrossentropy()
@@ -722,20 +736,20 @@ def main():
     # Define shards
     test_shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
     try:
-        # Experiment 1 - Centralized without pre-training
+        # # Experiment 1 - Centralized without pre-training
         # training_setup(seed)
         # Output.print_experiment("1 - Centralized without pre-training")
-        # experiment_pain_centralized('PAIN', '1-unbalanced-Centralized-no-pre-training', 30, test_shards,
+        # experiment_pain_centralized('PAIN', '1-unbalanced-Centralized-no-pre-training', 2, shards=None,
         #                             pretraining=False, cumulative=True, optimizer=optimizer, loss=loss,
         #                             metrics=metrics)
         # twilio.send_message("Experiment 1 Complete")
-
-        # Experiment 2 - Centralized with pre-training
-        training_setup(seed)
-        Output.print_experiment("2 - Centralized with pre-training")
-        experiment_pain_centralized('PAIN', '2-unbalanced-Centralized-pre-training', 30, test_shards, pretraining=True,
-                                    cumulative=True, optimizer=optimizer, loss=loss, metrics=metrics)
-        twilio.send_message("Experiment 2 Complete")
+        #
+        # # Experiment 2 - Centralized with pre-training
+        # training_setup(seed)
+        # Output.print_experiment("2 - Centralized with pre-training")
+        # experiment_pain_centralized('PAIN', '2-unbalanced-Centralized-pre-training', 30, shards=test_shards,
+        #                             pretraining=True, cumulative=True, optimizer=optimizer, loss=loss, metrics=metrics)
+        # twilio.send_message("Experiment 2 Complete")
 
         # Experiment 3 - Federated without pre-training
         training_setup(seed)
@@ -767,12 +781,12 @@ def main():
     except Exception as e:
         tb = traceback.extract_tb(e.__traceback__)
         tb = traceback.format_list(tb)
-        twilio.send_message("Attention, an error occurred:\n{}".format(e))
+        # twilio.send_message("Attention, an error occurred:\n{}".format(e))
         traceback.print_tb(e.__traceback__)
         print(e)
 
     # Notify that training is complete and shut down Google server
-    g_monitor.shutdown()
+    # g_monitor.shutdown()
 
 
 if __name__ == '__main__':

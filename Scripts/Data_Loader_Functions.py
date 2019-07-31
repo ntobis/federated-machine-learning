@@ -535,12 +535,12 @@ def split_data_into_shards(split=None, cumulative=True, array=None):
     return array
 
 
-def split_data_into_labels(label, data, labels, cumulative=True):
-    data = np.array([data[labels[:, label] == k] for k in np.unique(labels[:, label])])
-    labels = np.array([labels[labels[:, label] == k] for k in np.unique(labels[:, label])])
+def split_data_into_labels(label, data, binary_labels, all_labels, cumulative=True):
+    data = np.array([data[all_labels[:, label] == k] for k in np.unique(all_labels[:, label])])
+    binary_labels = np.array([binary_labels[all_labels[:, label] == k] for k in np.unique(all_labels[:, label])])
     if cumulative:
-        data, labels = cumconc(data), cumconc(labels)
-    return data, labels
+        data, binary_labels = cumconc(data), cumconc(binary_labels)
+    return data, binary_labels
 
 
 def cumconc(array):
