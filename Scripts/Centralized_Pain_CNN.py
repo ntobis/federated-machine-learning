@@ -69,15 +69,18 @@ def build_cnn(input_shape):
 
 
 def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labels=None, people=None, evaluate=True,
-              loss=None):
+              loss=None, metrics=None):
     # Set up data frames for logging
     history = history_set_up(people)
+    early_stopping_hist = []
 
     # Start training
     for epoch in range(epochs):
 
         # Training
-        model.fit(train_data, train_labels, epochs=1, batch_size=32, use_multiprocessing=True)
+        train_hist = model.fit(train_data, train_labels, epochs=1, batch_size=32, use_multiprocessing=True)
+        early_stopping_hist.extend(train_hist.history[metrics[0]])
+
         weights = model.get_weights()
         for weight, layer in zip(weights, model.layers):
             print("{}:  \t{:.2f}".format(layer.name, np.sum(weight), 2))
@@ -86,6 +89,10 @@ def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labe
         if evaluate:
             print('Evaluating')
             history = evaluate_pain_cnn(model, epoch, test_data, test_labels, history, people, loss)
+
+        # Early stopping
+        if len(early_stopping_hist) >= 3 and all(x > 0.99 for x in early_stopping_hist[-3:]):
+            break
 
     return model, history
 
