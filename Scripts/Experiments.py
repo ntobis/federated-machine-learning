@@ -593,15 +593,26 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
     enc = sklearn.preprocessing.OneHotEncoder(sparse=False)
     group_2_train_labels_binary = enc.fit_transform(group_2_train_labels_binary.reshape(
         len(group_2_train_labels_binary), 1))
+    group_2_train_labels_people = group_2_train_labels[:, person].astype(np.int)
 
     # Split group 2 training data into shards
     if shards is not None:
-        group_2_train_data, group_2_train_labels_binary = dL.split_data_into_shards(group_2_train_data,
-                                                                                    group_2_train_labels_binary,
-                                                                                    shards,
-                                                                                    cumulative)
+        group_2_train_data, group_2_train_labels_binary, group_2_split_people = dL.split_data_into_shards(
+            array=[group_2_train_data,
+                   group_2_train_labels_binary,
+                   group_2_train_labels_people],
+            split=shards,
+            cumulative=cumulative)
+        print(group_2_train_data.shape)
+        print(group_2_train_labels_binary.shape)
+
         # Train on group 2 shards and evaluate performance
-        for percentage, data, labels in zip(shards, group_2_train_data, group_2_train_labels_binary):
+        for percentage, data, labels, people in zip(shards, group_2_train_data, group_2_train_labels_binary, group_2_split_people):
+            print("Pain:    ", int(np.sum(labels[:, 1])))
+            print("No Pain: ", int(len(labels) - np.sum(labels[:, 1])))
+            print("Total:   ", len(labels))
+            print("Ratio:    {:.1%}".format(int(np.sum(labels[:, 1])) / len(labels)))
+            print("People:  ", np.unique(people, return_counts=True))
             Output.print_shard(percentage)
             experiment_current = experiment + "_shard-{}".format(percentage)
             model = runner_centralized_pain(dataset, experiment_current, data, labels, test_data, test_labels_binary,
@@ -676,10 +687,10 @@ def experiment_pain_federated(dataset, experiment, rounds, shards, clients, mode
         len(group_2_train_labels_binary), 1))
 
     # Split group 2 training data into shards
-    group_2_train_data, group_2_train_labels_binary = dL.split_data_into_shards(group_2_train_data,
-                                                                                group_2_train_labels_binary,
-                                                                                shards,
-                                                                                cumulative)
+    group_2_train_data, group_2_train_labels_binary = dL.split_data_into_shards(array=[group_2_train_data,
+                                                                                group_2_train_labels_binary],
+                                                                                split=shards,
+                                                                                cumulative=cumulative)
 
     # Train on group 2 shards and evaluate performance
     for percentage, data, labels in zip(shards, group_2_train_data, group_2_train_labels_binary):
@@ -695,7 +706,6 @@ def experiment_pain_federated(dataset, experiment, rounds, shards, clients, mode
 
 
 def main():
-
     # Setup functions
     seed = 123
     # g_monitor = GoogleCloudMonitor()

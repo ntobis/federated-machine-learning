@@ -519,22 +519,20 @@ def move_train_test_data(df, origin_path, train_path, test_path):
             os.rename(path, os.path.join(test_path, file))
 
 
-def split_data_into_shards(data, labels, split, cumulative=True):
+def split_data_into_shards(split=None, cumulative=True, array=None):
     """
     Utility function, splitting data into specified subsets of shards. Scales the split array to 100%.
 
-    :param data:                numpy arrray
-    :param labels:              numpy array
+    :param array:
     :param split:               list of percentage split points, e.g. [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
     :param cumulative:          bool, checks if concatenation should be cumulative, e.g. [0], [0, 1] or not [0], [1]
     :return:
     """
-    split = [int(x / max(split) * len(data)) for x in split]
-    data = np.array_split(data, split)
-    labels = np.array_split(labels, split)
+    split = [int(x / max(split) * len(array[0])) for x in split]
+    array = [np.array_split(elem, split) for elem in array]
     if cumulative:
-        data, labels = cumconc(data), cumconc(labels)
-    return data, labels
+        array = [cumconc(elem) for elem in array]
+    return array
 
 
 def split_data_into_labels(label, data, labels, cumulative=True):
