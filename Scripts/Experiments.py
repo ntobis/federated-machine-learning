@@ -727,7 +727,7 @@ def experiment_pain_federated(dataset, experiment, rounds, shards, clients, mode
 def main():
     # Setup functions
     seed = 123
-    # g_monitor = GoogleCloudMonitor()
+    g_monitor = GoogleCloudMonitor()
     twilio = Twilio()
     optimizer = tf.keras.optimizers.SGD()
     loss = tf.keras.losses.BinaryCrossentropy()
@@ -779,14 +779,12 @@ def main():
         twilio.send_message()
 
     except Exception as e:
-        tb = traceback.extract_tb(e.__traceback__)
-        tb = traceback.format_list(tb)
-        # twilio.send_message("Attention, an error occurred:\n{}".format(e))
+        twilio.send_message("Attention, an error occurred:\n{}".format(e))
         traceback.print_tb(e.__traceback__)
         print(e)
 
     # Notify that training is complete and shut down Google server
-    # g_monitor.shutdown()
+    g_monitor.shutdown()
 
 
 if __name__ == '__main__':
