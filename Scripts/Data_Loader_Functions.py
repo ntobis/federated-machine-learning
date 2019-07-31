@@ -374,7 +374,7 @@ def load_greyscale_image_data(path, label_type=None):
         data, labels:           tuple of numpy arrays, holding images and labels
     """
 
-    img_paths = get_image_paths(path)[:500]
+    img_paths = get_image_paths(path)
     np.random.shuffle(img_paths)
     data = []
     for idx, path in enumerate(img_paths):
