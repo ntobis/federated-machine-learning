@@ -65,7 +65,8 @@ def build_cnn(input_shape):
     return model
 
 
-def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labels=None, people=None, evaluate=True):
+def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labels=None, people=None, evaluate=True,
+              loss=None):
     # Set up data frames for logging
     history = history_set_up(people)
 
@@ -78,7 +79,7 @@ def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labe
         # Evaluating
         if evaluate:
             print('Evaluating')
-            history = evaluate_pain_cnn(model, epoch, test_data, test_labels, history, people)
+            history = evaluate_pain_cnn(model, epoch, test_data, test_labels, history, people, loss)
 
     return model, history
 
@@ -97,12 +98,11 @@ def history_set_up(people):
     return history
 
 
-def evaluate_pain_cnn(model, epoch, test_data, test_labels, history=None, people=None):
+def evaluate_pain_cnn(model, epoch, test_data, test_labels, history=None, people=None, loss=None):
     if history is None:
         history = history_set_up(people)
 
     predictions = model.predict(test_data)
-    loss = tf.keras.losses.SparseCategoricalCrossentropy()
     loss = loss(
         tf.convert_to_tensor(tf.cast(test_labels, tf.float32)),
         tf.convert_to_tensor(tf.cast(predictions, tf.float32))
@@ -129,6 +129,7 @@ def evaluate_pain_cnn(model, epoch, test_data, test_labels, history=None, people
 
 
 def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predictions):
+    test_labels = test_labels[:, 1]
     predictions = predictions[:, 1]
     data = np.concatenate([np.expand_dims(x, 1) for x in [people, y_pred, test_labels, predictions]], axis=1)
     df = pd.DataFrame(data, columns=['Person', 'Y_Pred', 'Y_True', 'Predictions'])
@@ -161,6 +162,7 @@ def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predict
 
 
 def compute_aggregate_metrics(epoch, loss, test_labels, y_pred, predictions):
+    test_labels = test_labels[:, 1]
     predictions = predictions[:, 1]
 
     # Getting relevant metrics
