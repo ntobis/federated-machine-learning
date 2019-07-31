@@ -2,6 +2,8 @@ import argparse
 import os
 import sys
 
+import sklearn
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import time
@@ -561,6 +563,8 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
     test_labels_ordinal = test_labels[:, pain].astype(np.int)
     test_labels_binary = dL.reduce_pain_label_categories(test_labels_ordinal, max_pain=1)
     test_labels_people = test_labels[:, person].astype(np.int)
+    enc = sklearn.preprocessing.OneHotEncoder(sparse=False)
+    test_labels_binary = enc.fit_transform(test_labels_binary.reshape(len(test_labels_binary), 1))
 
     # Perform pre-training on group 1
     if pretraining:
@@ -584,6 +588,9 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
     group_2_train_data, group_2_train_labels = dL.load_pain_data(group_2_train_path)
     group_2_train_labels_ordinal = group_2_train_labels[:, pain].astype(np.int)
     group_2_train_labels_binary = dL.reduce_pain_label_categories(group_2_train_labels_ordinal, max_pain=1)
+    enc = sklearn.preprocessing.OneHotEncoder(sparse=False)
+    group_2_train_labels_binary = enc.fit_transform(group_2_train_labels_binary.reshape(
+        len(group_2_train_labels_binary), 1))
 
     # Split group 2 training data into shards
     if shards is not None:
@@ -620,6 +627,8 @@ def experiment_pain_federated(dataset, experiment, rounds, shards, clients, mode
     test_labels_ordinal = test_labels[:, label].astype(np.int)
     test_labels_binary = dL.reduce_pain_label_categories(test_labels_ordinal, max_pain=1)
     test_labels_people = test_labels[:, person].astype(np.int)
+    enc = sklearn.preprocessing.OneHotEncoder(sparse=False)
+    test_labels_binary = enc.fit_transform(test_labels_binary.reshape(len(test_labels_binary), 1))
 
     # Perform pre-training on group 1
     if pretraining == 'federated':
@@ -633,6 +642,8 @@ def experiment_pain_federated(dataset, experiment, rounds, shards, clients, mode
             # Prepare labels for training and evaluation
             train_labels_ordinal = train_labels[:, label].astype(np.int)
             train_labels_binary = dL.reduce_pain_label_categories(train_labels_ordinal, max_pain=1)
+            enc = sklearn.preprocessing.OneHotEncoder(sparse=False)
+            train_labels_binary = enc.fit_transform(train_labels_binary.reshape(len(train_labels_binary), 1))
 
             # Train
             runner_federated_pain(clients, dataset, experiment + "_shard-0.00", train_data, train_labels_binary,
@@ -658,6 +669,9 @@ def experiment_pain_federated(dataset, experiment, rounds, shards, clients, mode
     group_2_train_data, group_2_train_labels = dL.load_pain_data(group_2_train_path)
     group_2_train_labels_ordinal = group_2_train_labels[:, label].astype(np.int)
     group_2_train_labels_binary = dL.reduce_pain_label_categories(group_2_train_labels_ordinal, max_pain=1)
+    enc = sklearn.preprocessing.OneHotEncoder(sparse=False)
+    group_2_train_labels_binary = enc.fit_transform(group_2_train_labels_binary.reshape(
+        len(group_2_train_labels_binary), 1))
 
     # Split group 2 training data into shards
     group_2_train_data, group_2_train_labels_binary = dL.split_data_into_shards(group_2_train_data,
@@ -685,7 +699,7 @@ def main():
     # g_monitor = GoogleCloudMonitor()
     twilio = Twilio()
     optimizer = tf.keras.optimizers.SGD()
-    loss = tf.keras.losses.SparseCategoricalCrossentropy()
+    loss = tf.keras.losses.BinaryCrossentropy()
     metrics = ['accuracy']
 
     # Define shards
