@@ -10,7 +10,7 @@ from Scripts import Print_Functions as Output
 from Scripts.Weights_Accountant import WeightsAccountant
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
-optimizer = tf.keras.optimizers
+# optimizer = tf.keras.optimizers
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
@@ -60,11 +60,13 @@ def create_client_index_array(num_of_clients, num_participating_clients=None):
     return clients
 
 
-def init_global_model(input_shape=(215, 215, 1), learning_rate=0.01):
+def init_global_model(optimizer, loss, metrics, input_shape=(215, 215, 1)):
     """
     Initializes a global "server-side" model.
+    :param metrics:
+    :param loss:
+    :param optimizer:
     :param input_shape:             tuple, input shape of one training example (default, MNIST shape)
-    :param learning_rate:           float, specifying the learning rate of the training algorithm
 
     :return:
         model                       tensorflow-graph
@@ -74,10 +76,7 @@ def init_global_model(input_shape=(215, 215, 1), learning_rate=0.01):
     model = painCNN.build_cnn(input_shape=input_shape)
 
     # Compile the model
-    sgd_optimizer = optimizer.SGD(learning_rate=learning_rate)
-    model.compile(optimizer=sgd_optimizer,
-                  loss='sparse_categorical_crossentropy',
-                  metrics=['accuracy'])
+    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     # Save initial model
     json_config = model.to_json()
@@ -161,10 +160,14 @@ def communication_round(model, num_of_clients, train_data, train_labels, epochs,
 
 
 def federated_learning(communication_rounds, num_of_clients, train_data, train_labels, test_data, test_labels, epochs,
-                       num_participating_clients=None, people=None, model=None):
+                       num_participating_clients=None, people=None, model=None,
+                       optimizer=None, loss=None, metrics=None):
     """
     Train a federated model for a specified number of rounds until convergence.
 
+    :param metrics:
+    :param loss:
+    :param optimizer:
     :param model:
     :param communication_rounds:            int, number of times the global weights will be updated
     :param num_of_clients:                  int, number of clients globally available
@@ -186,7 +189,7 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
 
     # Initialize a random global model and store the weights
     if model is None:
-        model = init_global_model()
+        model = init_global_model(optimizer, loss, metrics)
     weights = model.get_weights()
 
     clients = num_participating_clients if num_participating_clients is not None else num_of_clients
@@ -196,7 +199,8 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
         Output.print_communication_round(comm_round + 1)
         communication_round(model, num_of_clients, train_data, train_labels, epochs, weights_accountant,
                             num_participating_clients)
-        history = evaluate_federated_cnn(test_data, test_labels, comm_round, model, weights_accountant, history, people)
+        history = evaluate_federated_cnn(test_data, test_labels, comm_round, model, weights_accountant, history, people,
+                                         optimizer, loss, metrics)
 
     weights = weights_accountant.get_global_weights()
     model.set_weights(weights)
@@ -205,10 +209,13 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
 
 
 def evaluate_federated_cnn(test_data, test_labels, comm_round, model=None, weights_accountant=None, history=None,
-                           people=None):
+                           people=None, optimizer=None, loss=None, metrics=None):
     """
     Evaluate the global CNN.
 
+    :param metrics:
+    :param loss:
+    :param optimizer:
     :param test_data:                       numpy array
     :param test_labels:                     numpy array
     :param comm_round:                      int, specifying the current communication round
@@ -222,7 +229,7 @@ def evaluate_federated_cnn(test_data, test_labels, comm_round, model=None, weigh
     """
 
     if model is None:
-        model = init_global_model()
+        model = init_global_model(optimizer, loss, metrics)
     if weights_accountant is not None:
         weights = weights_accountant.get_global_weights()
     else:
