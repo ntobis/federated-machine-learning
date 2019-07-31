@@ -73,7 +73,7 @@ def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labe
     for epoch in range(epochs):
 
         # Training
-        model.fit(train_data, train_labels, epochs=30, batch_size=32, use_multiprocessing=True)
+        model.fit(train_data, train_labels, epochs=1, batch_size=32, use_multiprocessing=True)
 
         # Evaluating
         if evaluate:

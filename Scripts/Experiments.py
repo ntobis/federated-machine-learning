@@ -263,7 +263,8 @@ def runner_centralized_pain(dataset, experiment, train_data, train_labels, test_
     # Train Centralized CNN
     if model is None:
         centralized_model = painCNN.build_cnn(input_shape=train_data[0].shape)
-        centralized_model.compile(optimizer='sgd', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+        optimizer = tf.keras.optimizers.SGD(nesterov=True)
+        centralized_model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     else:
         centralized_model = model
 
