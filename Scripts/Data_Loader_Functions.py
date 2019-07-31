@@ -587,3 +587,5 @@ def delete_empty_folders(root_path):
     for dir_path, dir_names, filenames in os.walk(root_path):
         if not dir_names and not filenames:
             os.rmdir(dir_path)
+
+
