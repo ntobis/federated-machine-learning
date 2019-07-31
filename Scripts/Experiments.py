@@ -691,7 +691,8 @@ def experiment_pain_federated(dataset, experiment, rounds, shards, clients, mode
         cumulative=cumulative)
 
     # Train on group 2 shards and evaluate performance
-    for percentage, data, labels, people in zip(shards, group_2_train_data, group_2_train_labels_binary, group_2_split_people):
+    for percentage, data, labels, people in zip(shards, group_2_train_data, group_2_train_labels_binary,
+                                                group_2_split_people):
         Output.print_shard(percentage)
         Output.print_shard_summary(labels, people)
         experiment_current = experiment + "_shard-{}".format(percentage)
