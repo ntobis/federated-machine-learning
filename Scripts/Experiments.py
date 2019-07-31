@@ -708,7 +708,7 @@ def experiment_pain_federated(dataset, experiment, rounds, shards, clients, mode
 def main():
     # Setup functions
     seed = 123
-    # g_monitor = GoogleCloudMonitor()
+    g_monitor = GoogleCloudMonitor()
     twilio = Twilio()
     optimizer = tf.keras.optimizers.SGD()
     loss = tf.keras.losses.BinaryCrossentropy()
@@ -766,7 +766,7 @@ def main():
         print(e)
 
     # Notify that training is complete and shut down Google server
-    # g_monitor.shutdown()
+    g_monitor.shutdown()
 
 
 if __name__ == '__main__':
