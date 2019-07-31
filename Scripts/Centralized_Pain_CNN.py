@@ -76,9 +76,8 @@ def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labe
         # Training
         model.fit(train_data, train_labels, epochs=1, batch_size=32, use_multiprocessing=True)
         weights = model.get_weights()
-        for weight in weights:
-            print(weight.shape)
-        # np.sum(weights)
+        for weight, layer in zip(weights, model.layers):
+            print("{}:  \t{:.2f}".format(layer.name, np.sum(weight), 2))
 
         # Evaluating
         if evaluate:

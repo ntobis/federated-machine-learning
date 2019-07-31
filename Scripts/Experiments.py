@@ -698,7 +698,7 @@ def main():
 
     # Setup functions
     seed = 123
-    g_monitor = GoogleCloudMonitor()
+    # g_monitor = GoogleCloudMonitor()
     twilio = Twilio()
     optimizer = tf.keras.optimizers.SGD()
     loss = tf.keras.losses.BinaryCrossentropy()
