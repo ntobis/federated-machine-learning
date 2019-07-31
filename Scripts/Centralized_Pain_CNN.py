@@ -30,6 +30,19 @@ FEDERATED_PAIN_MODELS = os.path.join(MODELS, "Pain", "Federated")
 # ----------------------------------------------- Model Configuration ---------------------------------------------- #
 
 
+class EarlyStopping:
+    def __init__(self, metric, threshold, patience):
+        self.metric = metric
+        self.threshold = threshold
+        self.patience = patience
+
+    def __call__(self, history):
+        if self.metric == 'accuracy':
+            return len(history) >= self.patience and all(x > self.threshold for x in history[-self.patience:])
+        else:
+            return False
+
+
 def build_cnn(input_shape):
     """
     Compile and return a simple CNN model for image recognition.
@@ -69,7 +82,7 @@ def build_cnn(input_shape):
 
 
 def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labels=None, people=None, evaluate=True,
-              loss=None, metrics=None):
+              loss=None, early_stopping=None):
     # Set up data frames for logging
     history = history_set_up(people)
     early_stopping_hist = []
@@ -79,7 +92,6 @@ def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labe
 
         # Training
         train_hist = model.fit(train_data, train_labels, epochs=1, batch_size=32, use_multiprocessing=True)
-        early_stopping_hist.extend(train_hist.history[metrics[0]])
 
         weights = model.get_weights()
         for weight, layer in zip(weights, model.layers):
@@ -91,8 +103,10 @@ def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labe
             history = evaluate_pain_cnn(model, epoch, test_data, test_labels, history, people, loss)
 
         # Early stopping
-        if len(early_stopping_hist) >= 3 and all(x > 0.99 for x in early_stopping_hist[-3:]):
-            break
+        if early_stopping is not None:
+            early_stopping_hist.extend(train_hist.history[early_stopping.metric])
+            if early_stopping(train_hist):
+                break
 
     return model, history
 
