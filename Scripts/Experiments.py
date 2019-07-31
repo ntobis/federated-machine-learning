@@ -557,7 +557,7 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
 
     # Define labels for training
     person = 0  # Labels: [person, session, culture, frame, pain, Trans_1, Trans_2]
-    # session = 1
+    session = 1
     pain = 4
 
     # Load test data
@@ -575,10 +575,12 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
 
         # Prepare labels for training and evaluation
         train_labels_ord = train_labels[:, pain].astype(np.int)
-        train_labels_bin = dL.reduce_pain_label_categories(train_labels_ord, max_pain=1)
+        train_labels_binary = dL.reduce_pain_label_categories(train_labels_ord, max_pain=1)
+        enc = sklearn.preprocessing.OneHotEncoder(sparse=False)
+        train_labels_binary = enc.fit_transform(train_labels_binary.reshape(len(train_labels_binary), 1))
 
         # Train
-        model = runner_centralized_pain(dataset, experiment + "_shard-0.00", train_data, train_labels_bin, test_data,
+        model = runner_centralized_pain(dataset, experiment + "_shard-0.00", train_data, train_labels_binary, test_data,
                                         test_labels_binary, rounds, people=test_labels_people, optimizer=optimizer,
                                         loss=loss, metrics=metrics)
     else:
@@ -614,9 +616,12 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
                                             rounds, model=model, people=test_labels_people,
                                             optimizer=optimizer, loss=loss, metrics=metrics)
 
-    # else:
-    #     group_2_train_data, group_2_train_labels = dL.split_data_into_labels(session, group_2_train_data,
-    #                                                                          group_2_train_labels, cumulative)
+    else:
+        group_2_train_data, group_2_train_labels = dL.split_data_into_labels(session, group_2_train_data,
+                                                                             group_2_train_labels, cumulative)
+
+        for sess, session_data, session_labels in zip(np.arange()):
+            pass
 
 
 def experiment_pain_federated(dataset, experiment, rounds, shards, clients, model_path=None, pretraining=None,
@@ -718,11 +723,12 @@ def main():
     test_shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
     try:
         # Experiment 1 - Centralized without pre-training
-        training_setup(seed)
-        Output.print_experiment("1 - Centralized without pre-training")
-        experiment_pain_centralized('PAIN', '1-unbalanced-Centralized-no-pre-training', 30, test_shards,
-                                    pretraining=False, cumulative=True, optimizer=optimizer, loss=loss, metrics=metrics)
-        twilio.send_message("Experiment 1 Complete")
+        # training_setup(seed)
+        # Output.print_experiment("1 - Centralized without pre-training")
+        # experiment_pain_centralized('PAIN', '1-unbalanced-Centralized-no-pre-training', 30, test_shards,
+        #                             pretraining=False, cumulative=True, optimizer=optimizer, loss=loss,
+        #                             metrics=metrics)
+        # twilio.send_message("Experiment 1 Complete")
 
         # Experiment 2 - Centralized with pre-training
         training_setup(seed)
@@ -761,7 +767,7 @@ def main():
     except Exception as e:
         tb = traceback.extract_tb(e.__traceback__)
         tb = traceback.format_list(tb)
-        twilio.send_message("Attention, an error occurred:\n{}\nTraceback:\n{}".format(e, tb))
+        twilio.send_message("Attention, an error occurred:\n{}".format(e))
         traceback.print_tb(e.__traceback__)
         print(e)
 
