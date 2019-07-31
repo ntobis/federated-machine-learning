@@ -566,7 +566,7 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
     else:
         # Initialize random model
         model = painCNN.build_cnn(test_data[0].shape)
-        optimizer = tf.keras.optimizers.SGD(nesterov=True)
+        optimizer = tf.keras.optimizers.SGD(learning_rate=0.001, nesterov=True)
         model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     # Load group 2 training data
