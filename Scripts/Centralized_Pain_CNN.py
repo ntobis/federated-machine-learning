@@ -59,7 +59,10 @@ def build_cnn(input_shape):
     model.add(layers.Conv2D(filters=64, kernel_size=(5, 5), strides=(2, 2)))
     model.add(layers.Conv2D(filters=128, kernel_size=(5, 5), strides=(2, 2)))
     model.add(layers.Flatten())
-    model.add(layers.Dense(units=128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)))
+    model.add(layers.Dense(units=128))
+    model.add(layers.BatchNormalization())
+    model.add(layers.ReLU())
+    # model.add(layers.Dense(units=128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)))
     model.add(layers.Dense(units=2, activation='sigmoid'))
 
     return model

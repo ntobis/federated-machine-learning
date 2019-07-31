@@ -306,3 +306,12 @@ if __name__ == '__main__':
     )
     rep_metrics = ['Accuracy', 'Precision', 'Recall', 'F1_Score']
     make_pain_plot_grid(RESULTS, rep_metrics, parameters)
+
+
+def print_shard_summary(labels, people):
+    print("Pain:     ", int(np.sum(labels[:, 1])))
+    print("No Pain:  ", int(len(labels) - np.sum(labels[:, 1])))
+    print("Total:    ", len(labels))
+    print("Ratio:     {:.1%}".format(int(np.sum(labels[:, 1])) / len(labels)))
+    print("People:   ", np.unique(people, return_counts=True)[0])
+    print("People(N):", np.unique(people, return_counts=True)[1])
