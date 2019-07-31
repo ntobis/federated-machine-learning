@@ -755,7 +755,7 @@ def main():
         traceback.print_tb(e.__traceback__)
 
     # Notify that training is complete and shut down Google server
-    g_monitor.shutdown()
+    # g_monitor.shutdown()
 
 
 if __name__ == '__main__':
