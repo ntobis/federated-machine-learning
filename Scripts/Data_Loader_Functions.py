@@ -3,6 +3,7 @@ import pickle
 
 import cv2
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 
 from Scripts import Print_Functions as Output
@@ -215,7 +216,7 @@ def split_train_data(num_of_clients, train_data, train_labels):
     return train_data, train_labels
 
 
-def split_data_into_clients(clients, split, train_data, train_labels):
+def split_data_into_clients(clients, split, train_data, train_labels, people=None):
     """
     Utility function to split train data and labels into a specified number of clients, in accordance with a specified
     type of split.
@@ -224,6 +225,7 @@ def split_data_into_clients(clients, split, train_data, train_labels):
     :param split:                       string, type of split that should be performed
     :param train_data:                  numpy array, train data
     :param train_labels:                numpy array, train_labels
+    :param people:                      numpy array, test_subject for each data point
     :return:
         train_data                      list of numpy arrays, train_data, split into clients
         train_labels                    list of numpy arrays, train_labels, split into clients
@@ -247,6 +249,11 @@ def split_data_into_clients(clients, split, train_data, train_labels):
                                                  categories_per_client=2,
                                                  data_points_per_category=int(
                                                      len(train_data) / (clients * 2)))
+    elif split.lower() == 'person':
+        assert people is not None
+        train_data, train_labels, all_labels = split_data_into_labels(0, train_data, train_labels, people,
+                                                                      cumulative=False)
+        return train_data, train_labels, all_labels
     else:
         raise ValueError(
             "Invalid value for 'Split'. Value can be 'random', 'overlap', 'no_overlap', value was: {}".format(split))
@@ -538,9 +545,10 @@ def split_data_into_shards(split=None, cumulative=True, array=None):
 def split_data_into_labels(label, data, binary_labels, all_labels, cumulative=True):
     data = np.array([data[all_labels[:, label] == k] for k in np.unique(all_labels[:, label])])
     binary_labels = np.array([binary_labels[all_labels[:, label] == k] for k in np.unique(all_labels[:, label])])
+    all_labels = np.array([all_labels[all_labels[:, label] == k] for k in np.unique(all_labels[:, label])])
     if cumulative:
-        data, binary_labels = cumconc(data), cumconc(binary_labels)
-    return data, binary_labels
+        data, binary_labels, all_labels = cumconc(data), cumconc(binary_labels), cumconc(all_labels)
+    return data, binary_labels, all_labels
 
 
 def cumconc(array):
@@ -585,3 +593,113 @@ def delete_empty_folders(root_path):
     for dir_path, dir_names, filenames in os.walk(root_path):
         if not dir_names and not filenames:
             os.rmdir(dir_path)
+
+
+def prepare_pain_images(root_path, distribution='unbalanced'):
+    """
+    Utility function copied from Jupyter notebook
+
+    :param root_path:           string, root_path where the image folder structure is located
+    :param distribution:        string, distribute the images "balanced" or "unbalanced"
+    :return:
+    """
+    print('# Moving all images into the "raw" subfolder')
+    reset_to_raw(root_path)
+
+    print("# Deleting all empty folders")
+    delete_empty_folders(root_path)
+
+    print("# Get all image paths and corresponding labels into a dataframe")
+    img_paths = np.array(get_image_paths(root_path))
+    labels = np.array(get_labels(img_paths))
+    df = pd.DataFrame(labels, columns=['Person', 'Session', 'Culture', 'Frame', 'Pain', 'Trans_1', 'Trans_2'])
+    df[['Person', 'Session', 'Culture', 'Frame', 'Pain']] = df[
+        ['Person', 'Session', 'Culture', 'Frame', 'Pain']].astype(int)
+    df['img_path'] = img_paths
+    df[['Trans_1', 'Trans_2', 'img_path']] = df[['Trans_1', 'Trans_2', 'img_path']].astype(str)
+    df = df.sort_values(['Person', 'Session', 'Frame', 'Trans_1', 'Trans_2'],
+                        ascending=[True, True, True, False, False]).reset_index(drop=True)
+    df['temp_id'] = df['Person'].astype(str) + df['Session'].astype(str) + df['Frame'].astype(str)
+
+    print("# Removing subject 101 from the data")
+    df = df[df['Person'] != 101]
+
+    print("# Split Data into two groups")
+    group_1 = [42, 47, 49, 66, 95, 97, 103, 106, 108, 121, 123, 124]
+    df_1 = df[df['Person'].isin(group_1)]
+    df_2 = df[~df['Person'].isin(group_1)]
+
+    if distribution is 'balanced':
+
+        print("# Downsample first group")
+        df_1_pain_1 = df_1[df_1['Pain'] > 0]
+        df_1_pain_0 = df_1[df_1['Pain'] == 0].sample(len(df_1_pain_1))
+        df_1_downsampled = pd.concat((df_1_pain_0, df_1_pain_1))
+
+        print("# Split Pain Frames into Train and Test 60 / 40")
+        ratio = 0.6
+        temp_ids_pain = df_2[df_2['Pain'] > 0]['temp_id'].unique()
+        temp_ids_pain_train = np.random.choice(temp_ids_pain, int(ratio * len(temp_ids_pain)), replace=False)
+        temp_ids_pain_test = temp_ids_pain[~np.isin(temp_ids_pain, temp_ids_pain_train)]
+        df_2_pain_train = df_2[df_2['temp_id'].isin(temp_ids_pain_train)]
+        df_2_pain_test = df_2[df_2['temp_id'].isin(temp_ids_pain_test)]
+
+        print("# Split Pain Frames into Train and Test 60 / 40, with the same number of Train / Test Samples as Pain")
+        temp_ids_no_pain = df_2[df_2['Pain'] == 0]['temp_id'].unique()
+        temp_ids_no_pain_train = np.random.choice(temp_ids_no_pain, len(df_2_pain_train), replace=False)
+        temp_ids_no_pain_test = np.random.choice(
+            temp_ids_no_pain[~np.isin(temp_ids_no_pain, temp_ids_no_pain_train)], len(df_2_pain_test),
+            replace=False)
+        df_2_pain_0_train = df_2[df_2['temp_id'].isin(temp_ids_no_pain_train)].sample(len(df_2_pain_train))
+        df_2_pain_0_test = df_2[df_2['temp_id'].isin(temp_ids_no_pain_test)].sample(len(df_2_pain_test))
+
+        print("# Concatenate train and test")
+        df_2_train = pd.concat((df_2_pain_train, df_2_pain_0_train))
+        df_2_test = pd.concat((df_2_pain_test, df_2_pain_0_test))
+
+    elif distribution is 'unbalanced':
+        print("# Downsample first group")
+        df_1_pain_1 = df_1[df_1['Pain'] > 0]
+        df_1_pain_0 = df_1[df_1['Pain'] == 0].sample(len(df_1_pain_1))
+        df_1_downsampled = pd.concat((df_1_pain_0, df_1_pain_1))
+
+        df_2_originals = df_2[(df_2['Trans_1'] == 'original') & (df_2['Trans_2'] == 'straight')]
+
+        print("# Split original images into train and test, on a per person basis, 60/40")
+        ratio = 0.6
+
+        df_2_originals_train = pd.DataFrame(columns=df_2_originals.columns)
+        df_2_originals_test = pd.DataFrame(columns=df_2_originals.columns)
+        for df_person in df_2_originals.groupby('Person'):
+            df_person_train = df_person[1].sample(frac=ratio)
+            df_person_test = df_person[1].drop(df_person_train.index)
+            df_2_originals_train = pd.concat((df_2_originals_train, df_person_train))
+            df_2_originals_test = pd.concat((df_2_originals_test, df_person_test))
+
+        df_2_train_ids = df_2_originals_train['temp_id'].unique()
+        df_2_train = df_2[df_2['temp_id'].isin(df_2_train_ids)]
+        df_2_train_pain = df_2_train[df_2_train['Pain'] > 0]
+        df_2_train_no_pain = df_2_train[df_2_train['Pain'] == 0].sample(len(df_2_train_pain))
+        df_2_train = pd.concat((df_2_train_pain, df_2_train_no_pain))
+
+        df_2_test = df_2_originals_test
+
+    else:
+        raise ValueError("'distribution' must be either 'balanced' or 'unbalanced', was: {}".format(distribution))
+
+    def allocate_group(dframe, path):
+        if not os.path.isdir(path):
+            os.mkdir(path)
+
+        for f_path in dframe['img_path'].values:
+            os.rename(f_path, os.path.join(path, os.path.basename(f_path)))
+
+    print("# Allocate Group 1")
+    group_1_path = os.path.join(root_path, "group_1")
+    allocate_group(df_1_downsampled, group_1_path)
+
+    print("# Allocate Group 2 Train / Test")
+    train_path = os.path.join(root_path, 'group_2_train')
+    test_path = os.path.join(root_path, 'group_2_test')
+    allocate_group(df_2_train, train_path)
+    allocate_group(df_2_test, test_path)

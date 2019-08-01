@@ -114,14 +114,13 @@ def client_learning(model, client, epochs, train_data, train_labels, weights_acc
     Initializes a client model and kicks off the training of that client by calling "train_client_model".
 
     :param model:                       Tensorflow graph
-    :param client:                      int, index for a specific client to be trained
+    :param client:                      int, index for a specific client to be trained, or array tb converted to int
     :param epochs:                      int, local epochs to be trained
     :param train_data:                  numpy array, partitioned into a number of clients
     :param train_labels:                numpy array, partitioned into a number of clients
     :param weights_accountant:          WeightsAccountant object
     :return:
     """
-    Output.print_client_id(client)
 
     # Initialize model structure and load weights
     weights = weights_accountant.get_global_weights()
@@ -131,7 +130,7 @@ def client_learning(model, client, epochs, train_data, train_labels, weights_acc
     train_client_model(client, epochs, model, train_data, train_labels, weights_accountant)
 
 
-def communication_round(model, num_of_clients, train_data, train_labels, epochs, weights_accountant,
+def communication_round(model, clients, train_data, train_labels, epochs, weights_accountant,
                         num_participating_clients=None):
     """
     One round of communication between a 'server' and the 'clients'. Each client 'downloads' a global model and trains
@@ -139,7 +138,7 @@ def communication_round(model, num_of_clients, train_data, train_labels, epochs,
     the server and averaged.
 
     :param model:                           Tensorflow Graph
-    :param num_of_clients:                  int, number of clients globally available
+    :param clients:                         int, number of clients globally available, or array
     :param train_data:                      numpy array
     :param train_labels:                    numpy array
     :param epochs:                          int, number of epochs each client will train in a given communication round
@@ -149,11 +148,13 @@ def communication_round(model, num_of_clients, train_data, train_labels, epochs,
     """
 
     # Select clients to participate in communication round
-    clients = create_client_index_array(num_of_clients, num_participating_clients)
+    if type(num_participating_clients) is int:
+        clients = create_client_index_array(clients, num_participating_clients)
 
     # Train each client
-    for client in clients:
-        client_learning(model, client, epochs, train_data, train_labels, weights_accountant)
+    for idx, client in enumerate(clients):
+        Output.print_client_id(client[0, 0].astype(int)) if type(client) is not int else Output.print_client_id(idx)
+        client_learning(model, idx, epochs, train_data, train_labels, weights_accountant)
 
     # Average all local updates and store them as new 'global weights'
     weights_accountant.average_local_weights()
