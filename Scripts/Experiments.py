@@ -615,11 +615,13 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
 
     # Split group 2 training data into sessions
     else:
-        group_2_train_data, group_2_train_labels_binary = dL.split_data_into_labels(session,
-                                                                                    group_2_train_data,
-                                                                                    group_2_train_labels_binary,
-                                                                                    group_2_train_labels,
-                                                                                    cumulative)
+        group_2_train_data, group_2_train_labels_binary, all_labels = dL.split_data_into_labels(
+            session,
+            group_2_train_data,
+            group_2_train_labels_binary,
+            group_2_train_labels,
+            cumulative)
+
         for sess, session_data, session_labels in zip(np.unique(group_2_train_labels[:, session]), group_2_train_data,
                                                       group_2_train_labels_binary):
             Output.print_session(sess)
@@ -923,4 +925,4 @@ def main(unbalanced=False, balanced=False, sessions=False, redistribution=False)
 
 
 if __name__ == '__main__':
-    main(sessions=True, redistribution=True)
+    main(sessions=True, redistribution=False)

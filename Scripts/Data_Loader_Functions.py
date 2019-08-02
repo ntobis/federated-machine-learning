@@ -687,6 +687,36 @@ def prepare_pain_images(root_path, distribution='unbalanced'):
     else:
         raise ValueError("'distribution' must be either 'balanced' or 'unbalanced', was: {}".format(distribution))
 
+    # Distribution checking
+    def print_distribution(df_train, df_test):
+        print("\033[1mTrain\t\t\t\t   |Test\033[0m")
+        for train, test in zip(df_train.groupby('Person'), df_test.groupby('Person')):
+            print("Subject {} Train:\t{}\t{:.0%}|{:.0%}  Subject {} Test:\t{}"
+                  .format(train[0], len(train[1]), len(train[1]) / (len(train[1]) + len(test[1])),
+                          len(test[1]) / (len(train[1]) + len(test[1])), test[0], len(test[1])))
+        print("-" * 68)
+        print("Total Original Train:\t{}\t{:.0%}|{:.0%}  Total Original Test:\t{}"
+              .format(len(df_train), len(df_train) / (len(df_train) + len(df_test)),
+                      len(df_test) / (len(df_train) + len(df_test)), len(df_test)))
+
+    def print_pain_distribution(df_train, df_test):
+        print("Train:          {:.0%} |".format(len(df_train) / (len(df_test) + len(df_train))),
+              "Test:          {:.0%}".format(len(df_test) / (len(df_test) + len(df_train))), )
+        print("Train No Pain: {} |".format(len(df_train[df_train['Pain'] == 0])),
+              "Test No Pain: {}".format(len(df_test[df_test['Pain'] == 0])))
+        print("Train Pain:    {} |".format(len(df_train[df_train['Pain'] > 0])),
+              "Test Pain:    {}".format(len(df_test[df_test['Pain'] > 0])))
+        print("Train Total:  {} |".format(len(df_train)), "Test Total:   {}".format(len(df_test)))
+        print()
+        print("Total:        {}".format(len(df_train) + len(df_test)))
+        print("----------------------------------------")
+        print("Duplicates:", sum(df_train['temp_id'].isin(df_test['temp_id'])))
+
+    # Print final distribution with augmented train images
+    print_pain_distribution(df_2_train, df_2_test)
+    print("\n--------------------------------------------------------------------\n")
+    print_distribution(df_2_train, df_2_test)
+
     def allocate_group(dframe, path):
         if not os.path.isdir(path):
             os.mkdir(path)
@@ -703,3 +733,13 @@ def prepare_pain_images(root_path, distribution='unbalanced'):
     test_path = os.path.join(root_path, 'group_2_test')
     allocate_group(df_2_train, train_path)
     allocate_group(df_2_test, test_path)
+
+    print('# Verify Success, expected outcome is no instances of pain images in the "Raw" folder, a large group one,')
+    print('# and smaller group 2 train and test')
+    print("Group 1:        {}".format(len(os.listdir(group_1_path))))
+    print("Group 2 Train:  {}".format(len(os.listdir(train_path))))
+    print("Group 2 Test:   {}".format(len(os.listdir(test_path))))
+    print("Raw:            {}".format(len(os.listdir(os.path.join(root_path, 'raw')))))
+    print("Raw Pain Img's: {}".format(np.sum(np.minimum(
+        np.array(get_labels(get_image_paths(os.path.join(root_path, 'raw'))))[:, 4].astype(int),
+        1))))
