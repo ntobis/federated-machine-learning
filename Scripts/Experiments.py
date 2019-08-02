@@ -669,8 +669,18 @@ def experiment_pain_federated(dataset, experiment, rounds, shards=None, clients=
             train_labels_binary = enc.fit_transform(train_labels_binary.reshape(len(train_labels_binary), 1))
 
             # Split data into clients
-            train_data, train_labels_binary = dL.split_data_into_clients(clients, 'random', train_data,
-                                                                         train_labels_binary)
+            if clients is None:
+                client_arr = np.unique(train_labels[:, person])
+                train_data, train_labels_binary, all_labels = dL.split_data_into_clients(len(client_arr), 'person',
+                                                                                         train_data,
+                                                                                         train_labels_binary,
+                                                                                         train_labels)
+
+                # If no clients are specified, clients will be separated according to the "person" label
+                clients = all_labels
+            else:
+                train_data, train_labels_binary = dL.split_data_into_clients(clients, 'random', train_data,
+                                                                             train_labels_binary)
 
             # Train
             runner_federated_pain(clients, dataset, experiment + "_shard-0.00", train_data, train_labels_binary,
@@ -760,7 +770,7 @@ def main(unbalanced=False, balanced=False, sessions=False, redistribution=False)
     seed = 123
     data_loc = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Flexible Augmentation")
 
-    g_monitor = GoogleCloudMonitor()
+    # g_monitor = GoogleCloudMonitor()
     twilio = Twilio()
 
     optimizer = tf.keras.optimizers.SGD()
@@ -888,25 +898,25 @@ def main(unbalanced=False, balanced=False, sessions=False, redistribution=False)
             #                             pretraining=True, cumulative=True, optimizer=optimizer,
             #                             loss=loss, metrics=metrics)
             # twilio.send_message("Experiment 12 Complete")
-
-            # Experiment 13 - Sessions: Federated without pre-training
-            training_setup(seed)
-            Output.print_experiment("13 - Sessions: Federated without pre-training")
-            experiment_pain_federated('PAIN', '3-sessions-Federated-no-pre-training', 30, shards=None,
-                                      clients=None, pretraining=None, cumulative=True, optimizer=optimizer, loss=loss,
-                                      metrics=metrics)
-            twilio.send_message("Experiment 13 Complete")
-
-            # Experiment 14 - Sessions: Federated with centralized pretraining
-            training_setup(seed)
-            Output.print_experiment("14 - Sessions: Federated with centralized pretraining")
-            centralized_model_path = find_newest_model_path(os.path.join(painCNN.CENTRAL_PAIN_MODELS, "2019-07-31"),
-                                                            "shard-0.00.h5")
-            experiment_pain_federated('PAIN', '4-sessions-Federated-central-pre-training', 30, shards=None,
-                                      clients=None, model_path=centralized_model_path, pretraining='centralized',
-                                      cumulative=True, optimizer=optimizer, loss=loss, metrics=metrics)
-            twilio.send_message("Experiment 14 Complete")
-
+            #
+            # # Experiment 13 - Sessions: Federated without pre-training
+            # training_setup(seed)
+            # Output.print_experiment("13 - Sessions: Federated without pre-training")
+            # experiment_pain_federated('PAIN', '3-sessions-Federated-no-pre-training', 30, shards=None,
+            #                           clients=None, pretraining=None, cumulative=True, optimizer=optimizer, loss=loss,
+            #                           metrics=metrics)
+            # twilio.send_message("Experiment 13 Complete")
+            #
+            # # Experiment 14 - Sessions: Federated with centralized pretraining
+            # training_setup(seed)
+            # Output.print_experiment("14 - Sessions: Federated with centralized pretraining")
+            # centralized_model_path = find_newest_model_path(os.path.join(painCNN.CENTRAL_PAIN_MODELS, "2019-07-31"),
+            #                                                 "shard-0.00.h5")
+            # experiment_pain_federated('PAIN', '4-sessions-Federated-central-pre-training', 30, shards=None,
+            #                           clients=None, model_path=centralized_model_path, pretraining='centralized',
+            #                           cumulative=True, optimizer=optimizer, loss=loss, metrics=metrics)
+            # twilio.send_message("Experiment 14 Complete")
+            #
             # Experiment 15 - Sessions: Federated with federated pretraining
             training_setup(seed)
             Output.print_experiment("15 - Sessions: Federated with federated pretraining")
