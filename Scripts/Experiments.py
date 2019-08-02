@@ -916,7 +916,7 @@ def main(unbalanced=False, balanced=False, sessions=False, redistribution=False)
         twilio.send_message()
 
     except Exception as e:
-        twilio.send_message("Attention, an error occurred:\n{}".format(e))
+        twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
         traceback.print_tb(e.__traceback__)
         print(e)
 
