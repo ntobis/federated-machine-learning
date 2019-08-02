@@ -75,7 +75,6 @@ def build_cnn(input_shape):
     model.add(layers.Dense(units=128))
     model.add(layers.BatchNormalization())
     model.add(layers.ReLU())
-    # model.add(layers.Dense(units=128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)))
     model.add(layers.Dense(units=2, activation='sigmoid'))
 
     return model
