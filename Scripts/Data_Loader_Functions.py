@@ -252,8 +252,7 @@ def split_data_into_clients(clients, split, train_data, train_labels, all_labels
                                                      len(train_data) / (clients * 2)))
     elif split.lower() == 'person':
         assert all_labels is not None
-        train_data, train_labels, all_labels = split_data_into_labels(0, train_data, train_labels, all_labels,
-                                                                      cumulative=False)
+        all_labels, train_data, train_labels = split_data_into_labels(0, all_labels, False, train_data, train_labels)
         if subjects_per_client is not None:
             train_data, train_labels, all_labels = merge_clients(subjects_per_client, train_data, train_labels,
                                                                  all_labels)
@@ -552,13 +551,13 @@ def split_data_into_shards(split=None, cumulative=True, array=None):
     return array
 
 
-def split_data_into_labels(label, data, binary_labels, all_labels, cumulative=True):
-    data = np.array([data[all_labels[:, label] == k] for k in np.unique(all_labels[:, label])])
-    binary_labels = np.array([binary_labels[all_labels[:, label] == k] for k in np.unique(all_labels[:, label])])
-    all_labels = np.array([all_labels[all_labels[:, label] == k] for k in np.unique(all_labels[:, label])])
+def split_data_into_labels(label, all_labels, cumulative, *args):
+    arg_array = [np.array([all_labels[all_labels[:, label] == k] for k in np.unique(all_labels[:, label])])]
+    arrays = [np.array([arg[all_labels[:, label] == k] for k in np.unique(all_labels[:, label])]) for arg in args]
+    arg_array.extend(arrays)
     if cumulative:
-        data, binary_labels, all_labels = cumconc(data), cumconc(binary_labels), cumconc(all_labels)
-    return data, binary_labels, all_labels
+        arg_array = [cumconc(elem) for elem in arg_array]
+    return tuple(arg_array)
 
 
 def cumconc(array):

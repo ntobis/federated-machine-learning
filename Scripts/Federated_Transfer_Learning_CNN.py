@@ -162,10 +162,11 @@ def communication_round(model, clients, train_data, train_labels, epochs, weight
 
 def federated_learning(communication_rounds, num_of_clients, train_data, train_labels, test_data, test_labels, epochs,
                        num_participating_clients=None, people=None, model=None,
-                       optimizer=None, loss=None, metrics=None):
+                       optimizer=None, loss=None, metrics=None, sessions=False):
     """
     Train a federated model for a specified number of rounds until convergence.
 
+    :param sessions:
     :param metrics:
     :param loss:
     :param optimizer:
@@ -201,7 +202,7 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
         communication_round(model, num_of_clients, train_data, train_labels, epochs, weights_accountant,
                             num_participating_clients)
         history = evaluate_federated_cnn(test_data, test_labels, comm_round, model, weights_accountant, history, people,
-                                         optimizer, loss, metrics)
+                                         optimizer, loss, metrics, sessions)
 
     weights = weights_accountant.get_global_weights()
     model.set_weights(weights)
@@ -210,10 +211,11 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
 
 
 def evaluate_federated_cnn(test_data, test_labels, comm_round, model=None, weights_accountant=None, history=None,
-                           people=None, optimizer=None, loss=None, metrics=None):
+                           people=None, optimizer=None, loss=None, metrics=None, sessions=False):
     """
     Evaluate the global CNN.
 
+    :param sessions:
     :param metrics:
     :param loss:
     :param optimizer:
@@ -237,7 +239,7 @@ def evaluate_federated_cnn(test_data, test_labels, comm_round, model=None, weigh
         weights = np.load(FEDERATED_GLOBAL_WEIGHTS, allow_pickle=True)
     model.set_weights(weights)
 
-    history = painCNN.evaluate_pain_cnn(model, comm_round, test_data, test_labels, history, people, loss)
+    history = painCNN.evaluate_pain_cnn(model, comm_round, test_data, test_labels, history, people, loss, sessions)
 
     return history
 

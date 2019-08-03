@@ -2,7 +2,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
-import time
 
 import numpy as np
 import pandas as pd
@@ -81,7 +80,7 @@ def build_cnn(input_shape):
 
 
 def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labels=None, people=None, evaluate=True,
-              loss=None, early_stopping=None):
+              loss=None, early_stopping=None, sessions=False):
     # Set up data frames for logging
     history = history_set_up(people)
     early_stopping_hist = []
@@ -99,7 +98,7 @@ def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labe
         # Evaluating
         if evaluate:
             print('Evaluating')
-            history = evaluate_pain_cnn(model, epoch, test_data, test_labels, history, people, loss)
+            history = evaluate_pain_cnn(model, epoch, test_data, test_labels, history, people, loss, sessions)
 
         # Early stopping
         if early_stopping is not None:
@@ -112,37 +111,50 @@ def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labe
 
 def history_set_up(people):
     if people is not None:
-        history = pd.DataFrame(columns=['Epoch', 'Loss', 'Person', 'TN', 'FP', 'FN', 'TP',
+        history = pd.DataFrame(columns=['Epoch', 'Loss', 'Session', 'Person', 'TN', 'FP', 'FN', 'TP',
                                         'Individual Avg. Precision', 'Aggregate Avg. Precision',
                                         'Individual Accuracy', 'Individual Precision', 'Individual Recall',
                                         'Individual F1-Score', 'Aggregate Accuracy', 'Aggregate Precision',
                                         'Aggregate Recall', 'Aggregate F1_Score'])
     else:
-        history = pd.DataFrame(columns=['Epoch', 'Loss', 'Aggregate Accuracy', 'Aggregate Recall',
+        history = pd.DataFrame(columns=['Epoch', 'Loss', 'Session', 'Aggregate Accuracy', 'Aggregate Recall',
                                         'Aggregate Precision', 'Aggregate Avg. Precision', 'TP', 'TN', 'FP',
                                         'FN', 'Aggregate F1_Score'])
     return history
 
 
-def evaluate_pain_cnn(model, epoch, test_data, test_labels, history=None, people=None, loss=None):
+def evaluate_pain_cnn(model, epoch, test_data, test_labels, history=None, people=None, loss=None, sessions=False):
     if history is None:
         history = history_set_up(people)
 
-    predictions = model.predict(test_data)
-    loss = loss(
-        tf.convert_to_tensor(tf.cast(test_labels, tf.float32)),
-        tf.convert_to_tensor(tf.cast(predictions, tf.float32))
-    ).numpy()
-    y_pred = np.argmax(predictions, axis=1)
-
-    # If people were passed, compute metrics on a per person basis as well as aggregate
-    # Else just compute aggregate
-    if people is not None:
-        df = compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predictions)
-        history = history.append(df, ignore_index=True)
+    if sessions:
+        for session, (data, labels, session_people) in enumerate(zip(test_data, test_labels, people)):
+            predictions = model.predict(data)
+            current_loss = loss(
+                tf.convert_to_tensor(tf.cast(labels, tf.float32)),
+                tf.convert_to_tensor(tf.cast(predictions, tf.float32))
+            )
+            y_pred = np.argmax(predictions, axis=1)
+            # If people were passed, compute metrics on a per person basis as well as aggregate
+            # Else just compute aggregate
+            df = compute_individual_metrics(epoch, current_loss, session_people, labels, y_pred, predictions, session)
+            history = history.append(df, ignore_index=True)
     else:
-        df = compute_aggregate_metrics(epoch, loss, test_labels, y_pred, predictions)
-        history = history.append(df, ignore_index=True)
+        predictions = model.predict(test_data)
+        current_loss = loss(
+            tf.convert_to_tensor(tf.cast(test_labels, tf.float32)),
+            tf.convert_to_tensor(tf.cast(predictions, tf.float32))
+        ).numpy()
+        y_pred = np.argmax(predictions, axis=1)
+
+        # If people were passed, compute metrics on a per person basis as well as aggregate
+        # Else just compute aggregate
+        if people is not None:
+            df = compute_individual_metrics(epoch, current_loss, people, test_labels, y_pred, predictions)
+            history = history.append(df, ignore_index=True)
+        else:
+            df = compute_aggregate_metrics(epoch, current_loss, test_labels, y_pred, predictions)
+            history = history.append(df, ignore_index=True)
 
     # Save logs
     if people is not None:
@@ -154,7 +166,7 @@ def evaluate_pain_cnn(model, epoch, test_data, test_labels, history=None, people
     return history
 
 
-def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predictions):
+def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predictions, session=None):
     test_labels = test_labels[:, 1]
     predictions = predictions[:, 1]
     data = np.concatenate([np.expand_dims(x, 1) for x in [people, y_pred, test_labels, predictions]], axis=1)
@@ -163,12 +175,12 @@ def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predict
     results = []
     for person in df['Person'].unique():
         df_person = df[df['Person'] == person]
-        tn, fp, fn, tp = confusion_matrix(df_person['Y_True'], df_person['Y_Pred']).ravel()
+        tn, fp, fn, tp = confusion_matrix(df_person['Y_True'], df_person['Y_Pred'], labels=[0, 1]).ravel()
         ind_avg_precision = average_precision_score(df_person['Y_True'], df_person['Predictions'])
         aggregate_avg_precision = average_precision_score(df['Y_True'], df['Predictions'])
-        results.append([epoch, loss, person, tn, fp, fn, tp, ind_avg_precision, aggregate_avg_precision])
-    df = pd.DataFrame(results, columns=['Epoch', 'Loss', 'Person', 'TN', 'FP', 'FN', 'TP', 'Individual Avg. Precision',
-                                        'Aggregate Avg. Precision'])
+        results.append([epoch, loss, session, person, tn, fp, fn, tp, ind_avg_precision, aggregate_avg_precision])
+    df = pd.DataFrame(results, columns=['Epoch', 'Loss', 'Session', 'Person', 'TN', 'FP', 'FN', 'TP',
+                                        'Individual Avg. Precision', 'Aggregate Avg. Precision'])
 
     df['Individual Accuracy'] = (df['TP'] + df['TN']) / (df['TN'] + df['FP'] + df['FN'] + df['TP'])
     df['Individual Precision'] = df['TP'] / (df['FP'] + df['TP'])
@@ -187,8 +199,8 @@ def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predict
     return df
 
 
-def compute_aggregate_metrics(epoch, loss, test_labels, y_pred, predictions):
-    test_labels = test_labels[:, 1]
+def compute_aggregate_metrics(epoch, loss, test_labels, y_pred, predictions, session=None):
+    test_labels = test_labels[:, 1].astype(int)
     predictions = predictions[:, 1]
 
     # Getting relevant metrics
@@ -197,10 +209,10 @@ def compute_aggregate_metrics(epoch, loss, test_labels, y_pred, predictions):
     precision = precision_score(test_labels, y_pred)
     tn, fp, fn, tp = confusion_matrix(test_labels, y_pred).ravel()
     aggregate_avg_precision = average_precision_score(test_labels, predictions)
-    results = [epoch, loss, accuracy, recall, precision, aggregate_avg_precision, tp, tn, fp, fn]
+    results = [epoch, loss, session, accuracy, recall, precision, aggregate_avg_precision, tp, tn, fp, fn]
 
     # Create DF for Progress
-    df = pd.DataFrame([results], columns=['Epoch', 'Loss', 'Aggregate Accuracy', 'Aggregate Recall',
+    df = pd.DataFrame([results], columns=['Epoch', 'Loss', 'Session', 'Aggregate Accuracy', 'Aggregate Recall',
                                           'Aggregate Precision', 'Aggregate Avg. Precision', 'TP', 'TN', 'FP', 'FN'])
     df['Aggregate F1_Score'] = 2 * ((df['Aggregate Precision'] * df['Aggregate Recall']) / (df['Aggregate Precision'] +
                                                                                             df['Aggregate Recall']))
