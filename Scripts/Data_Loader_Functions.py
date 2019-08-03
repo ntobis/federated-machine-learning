@@ -216,16 +216,17 @@ def split_train_data(num_of_clients, train_data, train_labels):
     return train_data, train_labels
 
 
-def split_data_into_clients(clients, split, train_data, train_labels, people=None):
+def split_data_into_clients(clients, split, train_data, train_labels, all_labels=None, subjects_per_client=None):
     """
     Utility function to split train data and labels into a specified number of clients, in accordance with a specified
     type of split.
 
+    :param subjects_per_client:       int, specifying how many labels a client should hold
     :param clients:                     int, number of clients the data needs to be split into
     :param split:                       string, type of split that should be performed
     :param train_data:                  numpy array, train data
     :param train_labels:                numpy array, train_labels
-    :param people:                      numpy array, test_subject for each data point
+    :param all_labels:                  numpy array, all labels for each data point
     :return:
         train_data                      list of numpy arrays, train_data, split into clients
         train_labels                    list of numpy arrays, train_labels, split into clients
@@ -246,18 +247,27 @@ def split_data_into_clients(clients, split, train_data, train_labels, people=Non
         train_data, train_labels = allocate_data(clients,
                                                  split_data,
                                                  split_labels,
-                                                 categories_per_client=2,
+                                                 categories_per_client=subjects_per_client,
                                                  data_points_per_category=int(
                                                      len(train_data) / (clients * 2)))
     elif split.lower() == 'person':
-        assert people is not None
-        train_data, train_labels, all_labels = split_data_into_labels(0, train_data, train_labels, people,
+        assert all_labels is not None
+        train_data, train_labels, all_labels = split_data_into_labels(0, train_data, train_labels, all_labels,
                                                                       cumulative=False)
+        if subjects_per_client is not None:
+            train_data, train_labels, all_labels = merge_clients(subjects_per_client, train_data, train_labels,
+                                                                 all_labels)
         return train_data, train_labels, all_labels
     else:
         raise ValueError(
-            "Invalid value for 'Split'. Value can be 'random', 'overlap', 'no_overlap', value was: {}".format(split))
+            "Invalid value for 'Split'. Value can be 'random', 'overlap', 'no_overlap', "
+            "'person', value was: {}".format(split))
     return train_data, train_labels
+
+
+def merge_clients(categories_per_client, *args):
+    return tuple([np.array([np.concatenate(arg[idx: idx + categories_per_client])
+                            for idx in range(0, len(arg), categories_per_client)]) for arg in args])
 
 
 def tf_load_image(path):
@@ -381,7 +391,7 @@ def load_greyscale_image_data(path, label_type=None):
         data, labels:           tuple of numpy arrays, holding images and labels
     """
 
-    img_paths = get_image_paths(path)[:1000]
+    img_paths = get_image_paths(path)[:1500]
     np.random.shuffle(img_paths)
     data = []
     for idx, path in enumerate(img_paths):
