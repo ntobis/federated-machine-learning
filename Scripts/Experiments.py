@@ -722,15 +722,16 @@ def experiment_pain_federated(dataset, experiment, rounds, shards=None, clients=
         for percentage, data, labels, all_labels in zip(shards, group_2_train_data, group_2_train_labels_binary,
                                                         group_2_train_labels):
             Output.print_shard(percentage)
-            Output.print_shard_summary(labels, all_labels[all_labels[:, person]])
+            Output.print_shard_summary(labels, all_labels[:, person])
 
             # Split data into clients
-            client_arr = np.unique(group_2_train_labels[:, person])
-            data, labels, = dL.split_data_into_clients(len(client_arr), 'person', data, labels, all_labels=all_labels,
-                                                       subjects_per_client=subjects_per_client)
+            client_arr = np.unique(all_labels[:, person])
+            data, labels, all_labels = dL.split_data_into_clients(len(client_arr), 'person', data, labels,
+                                                                  all_labels=all_labels,
+                                                                  subjects_per_client=subjects_per_client)
 
             experiment_current = experiment + "_shard-{}".format(percentage)
-            model = runner_federated_pain(clients, dataset, experiment_current, data, labels, test_data,
+            model = runner_federated_pain(all_labels, dataset, experiment_current, data, labels, test_data,
                                           test_labels_binary, rounds, people=True, model=model,
                                           optimizer=optimizer, loss=loss, metrics=metrics)
 
@@ -785,25 +786,25 @@ def main(unbalanced=False, balanced=False, sessions=False, redistribution=False)
 
         # --------------------------------------- UNBALANCED ---------------------------------------#
         if unbalanced:
-            if redistribution:
-                dL.prepare_pain_images(data_loc, distribution='unbalanced')
-
-            # Experiment 1 - Unbalanced: Centralized without pre-training
-            training_setup(seed)
-            Output.print_experiment("1 - Unbalanced: Centralized without pre-training")
-            experiment_pain_centralized('PAIN', '1-unbalanced-Centralized-no-pre-training', 2, shards=test_shards,
-                                        pretraining=False, cumulative=True, optimizer=optimizer, loss=loss,
-                                        metrics=metrics)
-            twilio.send_message("Experiment 1 Complete")
-
-            # Experiment 2 - Unbalanced: Centralized with pre-training
-            training_setup(seed)
-            Output.print_experiment("2 - Unbalanced: Centralized with pre-training")
-            experiment_pain_centralized('PAIN', '2-unbalanced-Centralized-pre-training', 2, shards=test_shards,
-                                        pretraining=True, cumulative=True, optimizer=optimizer,
-                                        loss=loss, metrics=metrics)
-            twilio.send_message("Experiment 2 Complete")
-
+            # if redistribution:
+            #     dL.prepare_pain_images(data_loc, distribution='unbalanced')
+            #
+            # # Experiment 1 - Unbalanced: Centralized without pre-training
+            # training_setup(seed)
+            # Output.print_experiment("1 - Unbalanced: Centralized without pre-training")
+            # experiment_pain_centralized('PAIN', '1-unbalanced-Centralized-no-pre-training', 2, shards=test_shards,
+            #                             pretraining=False, cumulative=True, optimizer=optimizer, loss=loss,
+            #                             metrics=metrics)
+            # twilio.send_message("Experiment 1 Complete")
+            #
+            # # Experiment 2 - Unbalanced: Centralized with pre-training
+            # training_setup(seed)
+            # Output.print_experiment("2 - Unbalanced: Centralized with pre-training")
+            # experiment_pain_centralized('PAIN', '2-unbalanced-Centralized-pre-training', 2, shards=test_shards,
+            #                             pretraining=True, cumulative=True, optimizer=optimizer,
+            #                             loss=loss, metrics=metrics)
+            # twilio.send_message("Experiment 2 Complete")
+            #
             # Experiment 3 - Unbalanced: Federated without pre-training
             training_setup(seed)
             Output.print_experiment("3 - Unbalanced: Federated without pre-training")
