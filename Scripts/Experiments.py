@@ -732,7 +732,7 @@ def experiment_pain_federated(dataset, experiment, rounds, shards=None, clients=
 
             experiment_current = experiment + "_shard-{}".format(percentage)
             model = runner_federated_pain(all_labels, dataset, experiment_current, data, labels, test_data,
-                                          test_labels_binary, rounds, people=True, model=model,
+                                          test_labels_binary, rounds, people=test_labels_people, model=model,
                                           optimizer=optimizer, loss=loss, metrics=metrics)
 
     # Split group 2 into sessions
@@ -786,8 +786,8 @@ def main(unbalanced=False, balanced=False, sessions=False, redistribution=False)
 
         # --------------------------------------- UNBALANCED ---------------------------------------#
         if unbalanced:
-            if redistribution:
-                dL.prepare_pain_images(data_loc, distribution='unbalanced')
+            # if redistribution:
+            #     dL.prepare_pain_images(data_loc, distribution='unbalanced')
 
             # # Experiment 1 - Unbalanced: Centralized without pre-training
             # training_setup(seed)
