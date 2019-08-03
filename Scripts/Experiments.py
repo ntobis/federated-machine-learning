@@ -786,9 +786,9 @@ def main(unbalanced=False, balanced=False, sessions=False, redistribution=False)
 
         # --------------------------------------- UNBALANCED ---------------------------------------#
         if unbalanced:
-            # if redistribution:
-            #     dL.prepare_pain_images(data_loc, distribution='unbalanced')
-            #
+            if redistribution:
+                dL.prepare_pain_images(data_loc, distribution='unbalanced')
+
             # # Experiment 1 - Unbalanced: Centralized without pre-training
             # training_setup(seed)
             # Output.print_experiment("1 - Unbalanced: Centralized without pre-training")
