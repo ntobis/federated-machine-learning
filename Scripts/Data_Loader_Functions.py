@@ -384,20 +384,23 @@ def load_greyscale_image_data(path, label_type=None):
     """
     Utility function, loading all images in a directory and its sub-directories into a numpy array, labeled
 
-    :param path:                string, root directory
+    :param path:                string, root directory or list of strings (image paths)
     :param label_type:          string, if not None, only a specific label will be attached to each image
     :return:
         data, labels:           tuple of numpy arrays, holding images and labels
     """
 
-    img_paths = get_image_paths(path)
+    if type(path) is str:
+        img_paths = get_image_paths(path)
+    else:
+        img_paths = path
     np.random.shuffle(img_paths)
     data = []
     for idx, path in enumerate(img_paths):
         data.append(np.expand_dims(cv2.imread(path, 0), -1))
         if not idx % 1000:
             print("{} images processed".format(idx))
-    data = np.array([np.expand_dims(cv2.imread(path, 0), -1) for path in img_paths])
+    data = np.array(data, dtype=np.float32)
     labels = np.array(get_labels(img_paths, label_type=label_type))
     return data, labels
 
@@ -413,10 +416,12 @@ def load_pain_data(train_path, test_path=None, label_type=None):
     """
 
     train_data, train_labels = load_greyscale_image_data(train_path, label_type)
-    train_data = np.divide(train_data, 255.0, dtype=np.float16)
+    print("Normalization")
+    np.divide(train_data, 255.0, out=train_data, dtype=np.float32)
     if test_path:
         test_data, test_labels = load_greyscale_image_data(test_path, label_type)
-        test_data = np.divide(test_data, 255.0, dtype=np.float16)
+        print("Normalization")
+        test_data = np.divide(test_data, 255.0, out=test_data, dtype=np.float32)
         return train_data, train_labels, test_data, test_labels
     return train_data, train_labels
 
@@ -752,3 +757,17 @@ def prepare_pain_images(root_path, distribution='unbalanced'):
     print("Raw Pain Img's: {}".format(np.sum(np.minimum(
         np.array(get_labels(get_image_paths(os.path.join(root_path, 'raw'))))[:, 4].astype(int),
         1))))
+
+
+def create_pain_df(path):
+    img_paths = np.array(get_image_paths(path))
+    labels = np.array(get_labels(img_paths))
+    df = pd.DataFrame(labels, columns=['Person', 'Session', 'Culture', 'Frame', 'Pain', 'Trans_1', 'Trans_2'])
+    df[['Person', 'Session', 'Culture', 'Frame', 'Pain']] = df[
+        ['Person', 'Session', 'Culture', 'Frame', 'Pain']].astype(int)
+    df['img_path'] = img_paths
+    df[['Trans_1', 'Trans_2', 'img_path']] = df[['Trans_1', 'Trans_2', 'img_path']].astype(str)
+    df = df.sort_values(['Person', 'Session', 'Frame', 'Trans_1', 'Trans_2'],
+                        ascending=[True, True, True, False, False]).reset_index(drop=True)
+    df['temp_id'] = df['Person'].astype(str) + df['Session'].astype(str) + df['Frame'].astype(str)
+    return df
