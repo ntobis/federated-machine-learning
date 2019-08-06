@@ -811,7 +811,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
     # Setup
     data_loc = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Flexible Augmentation")
 
-    # g_monitor = GoogleCloudMonitor()
+    g_monitor = GoogleCloudMonitor()
     twilio = Twilio()
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
@@ -982,7 +982,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
         print(e)
 
     # Notify that training is complete and shut down Google server
-    # g_monitor.shutdown()
+    g_monitor.shutdown()
 
 
 if __name__ == '__main__':
