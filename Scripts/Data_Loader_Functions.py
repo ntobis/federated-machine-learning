@@ -770,4 +770,43 @@ def create_pain_df(path):
     df = df.sort_values(['Person', 'Session', 'Frame', 'Trans_1', 'Trans_2'],
                         ascending=[True, True, True, False, False]).reset_index(drop=True)
     df['temp_id'] = df['Person'].astype(str) + df['Session'].astype(str) + df['Frame'].astype(str)
+    df['Pain'] = np.minimum(df['Pain'], 1).astype(str)
     return df
+
+
+def sample_df(df, threshold):
+    if len(df) > threshold:
+        return df.sample(threshold, replace=False)
+    else:
+        return pd.concat((df, df.sample(threshold - len(df), replace=True)))
+
+
+def balance_session(df, threshold):
+    df_train = []
+    for person, df_person in df.groupby('Person'):
+        df_pain = df_person[df_person['Pain'] == '1']
+        if len(df_pain) > 0:
+            df_pain = sample_df(df_pain, threshold)
+            df_no_pain = df_person[df_person['Pain'] == '0']
+            df_no_pain = sample_df(df_no_pain, threshold)
+            df_train.append(pd.concat((df_pain, df_no_pain)))
+    return pd.concat(df_train)
+
+
+def balance_data(df, threshold):
+    df_train = []
+    for person, df_person in df.groupby('Person'):
+        df_temp_pain = []
+        df_temp_no_pain = []
+        for sess, df_sess in reversed(tuple(df_person.groupby('Session'))):
+            df_temp_pain.append(df_sess[df_sess['Pain'] == '1'])
+            df_temp_no_pain.append(df_sess[df_sess['Pain'] == '0'])
+            if len(pd.concat(df_temp_pain)) > threshold and len(pd.concat(df_temp_no_pain)) > threshold:
+                break
+        df_temp_pain.extend(df_temp_no_pain)
+        df_temp = pd.concat(df_temp_pain)
+        df_train.append(df_temp)
+    df_train = pd.concat(df_train)
+    return balance_session(df_train, threshold)
+
+

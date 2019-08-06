@@ -6,9 +6,10 @@ import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix, average_precision_score
+from sklearn.metrics import confusion_matrix, average_precision_score
 
 from Scripts import Centralized_CNN as cNN
+from Scripts import Data_Loader_Functions as dL
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 layers = tf.keras.layers  # like 'from tensorflow.keras import layers' (PyCharm import issue workaround)
@@ -17,10 +18,8 @@ optimizers = tf.keras.optimizers  # like 'from tensorflow.keras import optimizer
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
 ROOT = os.path.dirname(os.path.dirname(__file__))
-DATA = os.path.join(ROOT, "Data")
-MODELS = os.path.join(ROOT, "Models")
-CENTRAL_PAIN_MODELS = os.path.join(MODELS, "Pain", "Centralized")
-FEDERATED_PAIN_MODELS = os.path.join(MODELS, "Pain", "Federated")
+SESSION_DATA = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_2")
+EPOCH_LEN = 1
 
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
@@ -79,8 +78,8 @@ def build_cnn(input_shape):
     return model
 
 
-def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labels=None, people=None, evaluate=True,
-              loss=None, early_stopping=None, sessions=False):
+def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None, test_labels=None, df=None,
+              people=None, evaluate=True, loss=None, early_stopping=None, session=None):
     # Set up data frames for logging
     history = history_set_up(people)
     early_stopping_hist = []
@@ -88,8 +87,21 @@ def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labe
     # Start training
     for epoch in range(epochs):
 
-        # Training
-        train_hist = model.fit(train_data, train_labels, epochs=1, batch_size=32, use_multiprocessing=True)
+        # Training (either on dataset, or on Keras train iterator
+        if train_data is not None and train_labels is not None:
+            train_hist = model.fit(train_data, train_labels, epochs=1, batch_size=32, use_multiprocessing=True)
+        elif df is not None and session is not None:
+            data_gen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
+            train_df = df[df['Session'] <= session]
+            train_df = dL.balance_data(train_df, threshold=200)
+            train_gen = data_gen.flow_from_dataframe(dataframe=train_df, directory=SESSION_DATA, x_col="img_path",
+                                                     y_col="Pain", color_mode="grayscale",
+                                                     class_mode="categorical", target_size=(215, 215), batch_size=32,
+                                                     classes=['0', '1'])
+            train_hist = model.fit_generator(generator=train_gen, steps_per_epoch=train_gen.n // train_gen.batch_size,
+                                             epochs=1)
+        else:
+            raise KeyError("Need to specify either ('train_data' and 'train_labels') or 'df'. Neither was specified.")
 
         weights = model.get_weights()
         for weight, layer in zip(weights, model.layers):
@@ -98,7 +110,7 @@ def train_cnn(model, epochs, train_data, train_labels, test_data=None, test_labe
         # Evaluating
         if evaluate:
             print('Evaluating')
-            history = evaluate_pain_cnn(model, epoch, test_data, test_labels, history, people, loss, sessions)
+            history = evaluate_pain_cnn(model, epoch, test_data, test_labels, df, history, people, loss, session)
 
         # Early stopping
         if early_stopping is not None:
@@ -123,22 +135,47 @@ def history_set_up(people):
     return history
 
 
-def evaluate_pain_cnn(model, epoch, test_data, test_labels, history=None, people=None, loss=None, sessions=False):
+def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, df=None, history=None, people=None, loss=None,
+                      session=None):
     if history is None:
         history = history_set_up(people)
 
-    if sessions:
-        for session, (data, labels, session_people) in enumerate(zip(test_data, test_labels, people)):
-            predictions = model.predict(data)
-            current_loss = loss(
-                tf.convert_to_tensor(tf.cast(labels, tf.float32)),
-                tf.convert_to_tensor(tf.cast(predictions, tf.float32))
-            )
-            y_pred = np.argmax(predictions, axis=1)
-            # If people were passed, compute metrics on a per person basis as well as aggregate
-            # Else just compute aggregate
-            df = compute_individual_metrics(epoch, current_loss, session_people, labels, y_pred, predictions, session)
-            history = history.append(df, ignore_index=True)
+    if session is not None:
+        df_test = df[(df['Trans_1'] == 'original') & (df['Trans_2'] == 'straight')]
+        data_gen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
+        for sess, df_sess in df_test.groupby('Session'):
+            print("\nEvaluate Session :", sess)
+            for person, df_person in df_sess.groupby('Person'):
+                predict_gen = data_gen.flow_from_dataframe(dataframe=df_person, directory=SESSION_DATA,
+                                                           x_col="img_path",
+                                                           y_col="Pain", color_mode="grayscale",
+                                                           class_mode="categorical", target_size=(215, 215),
+                                                           batch_size=32, classes=['0', '1'])
+
+                # Get predictions and labels for specific person/session combination
+                predictions = []
+                labels = []
+
+                # EPOCH_LEN = predict_gen.n // predict_gen.batch_size
+                for i in range(predict_gen.n // predict_gen.batch_size):
+                    x, y = next(predict_gen)
+                    predictions.append(model.predict(x))
+                    labels.append(y)
+                predictions = np.concatenate(predictions)
+                labels = np.concatenate(labels)
+
+                # Get Loss
+                current_loss = loss(
+                    tf.convert_to_tensor(tf.cast(labels, tf.float32)),
+                    tf.convert_to_tensor(tf.cast(predictions, tf.float32))
+                ).numpy()
+
+                # Get y_pred
+                y_pred = np.argmax(predictions, axis=1)
+
+                # Compute metrics
+                df = compute_individual_metrics(epoch, current_loss, person, labels, y_pred, predictions, sess)
+                history = history.append(df, ignore_index=True)
     else:
         predictions = model.predict(test_data)
         current_loss = loss(
@@ -149,12 +186,8 @@ def evaluate_pain_cnn(model, epoch, test_data, test_labels, history=None, people
 
         # If people were passed, compute metrics on a per person basis as well as aggregate
         # Else just compute aggregate
-        if people is not None:
-            df = compute_individual_metrics(epoch, current_loss, people, test_labels, y_pred, predictions)
-            history = history.append(df, ignore_index=True)
-        else:
-            df = compute_aggregate_metrics(epoch, current_loss, test_labels, y_pred, predictions)
-            history = history.append(df, ignore_index=True)
+        df = compute_individual_metrics(epoch, current_loss, people, test_labels, y_pred, predictions)
+        history = history.append(df, ignore_index=True)
 
     # Save logs
     if people is not None:
@@ -169,8 +202,14 @@ def evaluate_pain_cnn(model, epoch, test_data, test_labels, history=None, people
 def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predictions, session=None):
     test_labels = test_labels[:, 1]
     predictions = predictions[:, 1]
-    data = np.concatenate([np.expand_dims(x, 1) for x in [people, y_pred, test_labels, predictions]], axis=1)
-    df = pd.DataFrame(data, columns=['Person', 'Y_Pred', 'Y_True', 'Predictions'])
+
+    if type(people) is not int:
+        data = np.concatenate([np.expand_dims(x, 1) for x in [people, y_pred, test_labels, predictions]], axis=1)
+        df = pd.DataFrame(data, columns=['Person', 'Y_Pred', 'Y_True', 'Predictions'])
+    else:
+        data = np.concatenate([np.expand_dims(x, 1) for x in [y_pred, test_labels, predictions]], axis=1)
+        df = pd.DataFrame(data, columns=['Y_Pred', 'Y_True', 'Predictions'])
+        df['Person'] = people
 
     results = []
     for person in df['Person'].unique():
@@ -196,24 +235,4 @@ def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predict
     df['Aggregate Recall'] = tp_g / (fn_g + tp_g)
     df['Aggregate F1_Score'] = 2 * ((df['Aggregate Precision'] * df['Aggregate Recall']) / (
             df['Aggregate Precision'] + df['Aggregate Recall']))
-    return df
-
-
-def compute_aggregate_metrics(epoch, loss, test_labels, y_pred, predictions, session=None):
-    test_labels = test_labels[:, 1].astype(int)
-    predictions = predictions[:, 1]
-
-    # Getting relevant metrics
-    accuracy = accuracy_score(test_labels, y_pred)
-    recall = recall_score(test_labels, y_pred)
-    precision = precision_score(test_labels, y_pred)
-    tn, fp, fn, tp = confusion_matrix(test_labels, y_pred).ravel()
-    aggregate_avg_precision = average_precision_score(test_labels, predictions)
-    results = [epoch, loss, session, accuracy, recall, precision, aggregate_avg_precision, tp, tn, fp, fn]
-
-    # Create DF for Progress
-    df = pd.DataFrame([results], columns=['Epoch', 'Loss', 'Session', 'Aggregate Accuracy', 'Aggregate Recall',
-                                          'Aggregate Precision', 'Aggregate Avg. Precision', 'TP', 'TN', 'FP', 'FN'])
-    df['Aggregate F1_Score'] = 2 * ((df['Aggregate Precision'] * df['Aggregate Recall']) / (df['Aggregate Precision'] +
-                                                                                            df['Aggregate Recall']))
     return df
