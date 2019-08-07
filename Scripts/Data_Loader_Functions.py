@@ -790,7 +790,7 @@ def balance_session(df, threshold):
             df_no_pain = df_person[df_person['Pain'] == '0']
             df_no_pain = sample_df(df_no_pain, threshold)
             df_train.append(pd.concat((df_pain, df_no_pain)))
-    return pd.concat(df_train)
+    return pd.concat(df_train) if len(df_train) > 0 else pd.DataFrame(columns=df.columns)
 
 
 def balance_data(df, threshold):

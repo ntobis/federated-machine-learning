@@ -93,24 +93,24 @@ def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None,
         elif df is not None and session is not None:
             data_gen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
             train_df = df[df['Session'] <= session]
+            print("Actual number of images: ", len(train_df), "thereof pain: ", sum(train_df['Pain'] != '0'))
             train_df = dL.balance_data(train_df, threshold=200)
-            train_gen = data_gen.flow_from_dataframe(dataframe=train_df, directory=SESSION_DATA, x_col="img_path",
-                                                     y_col="Pain", color_mode="grayscale",
-                                                     class_mode="categorical", target_size=(215, 215), batch_size=32,
-                                                     classes=['0', '1'])
-            train_hist = model.fit_generator(generator=train_gen, steps_per_epoch=train_gen.n // train_gen.batch_size,
-                                             epochs=1)
+
+            # Only train this client, if pain images exist
+            if len(train_df) > 0:
+                train_gen = data_gen.flow_from_dataframe(dataframe=train_df, directory=SESSION_DATA, x_col="img_path",
+                                                         y_col="Pain", color_mode="grayscale",
+                                                         class_mode="categorical", target_size=(215, 215), batch_size=32,
+                                                         classes=['0', '1'])
+                train_hist = model.fit_generator(generator=train_gen, steps_per_epoch=train_gen.n // train_gen.batch_size,
+                                                 epochs=1)
         else:
             raise KeyError("Need to specify either ('train_data' and 'train_labels') or 'df'. Neither was specified.")
-
-        weights = model.get_weights()
-        for weight, layer in zip(weights, model.layers):
-            print("{}:  \t{:.2f}".format(layer.name, np.sum(weight), 2))
 
         # Evaluating
         if evaluate:
             print('Evaluating')
-            history = evaluate_pain_cnn(model, epoch, test_data, test_labels, df, history, people, loss, session)
+            history = evaluate_pain_cnn(model, epoch, test_data, test_labels, df, history, people, loss)
 
         # Early stopping
         if early_stopping is not None:
@@ -135,12 +135,13 @@ def history_set_up(people):
     return history
 
 
-def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, df=None, history=None, people=None, loss=None,
-                      session=None):
+def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, df=None, history=None, people=None, loss=None):
     if history is None:
         history = history_set_up(people)
 
-    if session is not None:
+    if df is not None:
+        all_predictions = []
+        all_labels = []
         df_test = df[(df['Trans_1'] == 'original') & (df['Trans_2'] == 'straight')]
         data_gen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
         for sess, df_sess in df_test.groupby('Session'):
@@ -155,7 +156,6 @@ def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, df=None, h
                 # Get predictions and labels for specific person/session combination
                 predictions = []
                 labels = []
-
                 # EPOCH_LEN = predict_gen.n // predict_gen.batch_size
                 for i in range(predict_gen.n // predict_gen.batch_size):
                     x, y = next(predict_gen)
@@ -173,9 +173,16 @@ def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, df=None, h
                 # Get y_pred
                 y_pred = np.argmax(predictions, axis=1)
 
-                # Compute metrics
+                # Compute individual metrics
                 df = compute_individual_metrics(epoch, current_loss, person, labels, y_pred, predictions, sess)
                 history = history.append(df, ignore_index=True)
+                all_predictions.append(predictions)
+                all_labels.append(labels)
+
+        # Compute aggregate metrics
+        all_predictions = np.concatenate(all_predictions)
+        all_labels = np.concatenate(all_labels)
+        history = compute_aggregate_metrics(history, all_labels, all_predictions)
     else:
         predictions = model.predict(test_data)
         current_loss = loss(
@@ -216,16 +223,23 @@ def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predict
         df_person = df[df['Person'] == person]
         tn, fp, fn, tp = confusion_matrix(df_person['Y_True'], df_person['Y_Pred'], labels=[0, 1]).ravel()
         ind_avg_precision = average_precision_score(df_person['Y_True'], df_person['Predictions'])
-        aggregate_avg_precision = average_precision_score(df['Y_True'], df['Predictions'])
-        results.append([epoch, loss, session, person, tn, fp, fn, tp, ind_avg_precision, aggregate_avg_precision])
+        results.append([epoch, loss, session, person, tn, fp, fn, tp, ind_avg_precision])
     df = pd.DataFrame(results, columns=['Epoch', 'Loss', 'Session', 'Person', 'TN', 'FP', 'FN', 'TP',
-                                        'Individual Avg. Precision', 'Aggregate Avg. Precision'])
+                                        'Individual Avg. Precision'])
 
     df['Individual Accuracy'] = (df['TP'] + df['TN']) / (df['TN'] + df['FP'] + df['FN'] + df['TP'])
     df['Individual Precision'] = df['TP'] / (df['FP'] + df['TP'])
     df['Individual Recall'] = df['TP'] / (df['FN'] + df['TP'])
     df['Individual F1-Score'] = 2 * ((df['Individual Precision'] * df['Individual Recall']) / (
             df['Individual Precision'] + df['Individual Recall']))
+    return df
+
+
+def compute_aggregate_metrics(df, test_labels, predictions):
+    test_labels = test_labels[:, 1]
+    predictions = predictions[:, 1]
+
+    df['Aggregate Avg. Precision'] = average_precision_score(test_labels, predictions)
     tn_g = df.groupby('Epoch')['TN'].transform(sum)
     fp_g = df.groupby('Epoch')['FP'].transform(sum)
     fn_g = df.groupby('Epoch')['FN'].transform(sum)

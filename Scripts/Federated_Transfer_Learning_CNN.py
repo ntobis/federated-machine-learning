@@ -90,12 +90,15 @@ def init_global_model(optimizer, loss, metrics, input_shape=(215, 215, 1)):
 # ------------------------------------------------ Federated Learning ---------------------------------------------- #
 
 
-def train_client_model(client, epochs, model, train_data, train_labels, weights_accountant):
+def train_client_model(client, epochs, model, train_data=None, train_labels=None, df=None, weights_accountant=None,
+                       session=None):
     """
     Utility function training a simple CNN for 1 client in a federated setting and adding those weights to the
     weights_accountant. Call this function in a federated loop that then makes the weights_accountant average the
     weights to send to a global model.
 
+    :param df:
+    :param session:
     :param client:                      int, index for a specific client to be trained
     :param epochs:                      int, local epochs to be trained
     :param model:                       Tensorflow Graph
@@ -104,15 +107,28 @@ def train_client_model(client, epochs, model, train_data, train_labels, weights_
     :param weights_accountant:          WeightsAccountant object
     :return:
     """
-    model, history = painCNN.train_cnn(model, epochs, train_data[client], train_labels[client], evaluate=False)
+
+    old_weights = model.get_weights()
+    if train_data is not None and train_labels is not None:
+        model, history = painCNN.train_cnn(model, epochs, train_data[client], train_labels[client], evaluate=False)
+    elif df is not None:
+        model, history = painCNN.train_cnn(model, epochs, df=df, evaluate=False, session=session)
+    else:
+        raise ValueError('Need to provide either "train_data" and "train_labels", or "df", None was provided.')
     weights = model.get_weights()
-    weights_accountant.append_local_weights(weights)
+
+    # Only append weights for updating the model, if there was an update
+    if not all([np.array_equal(w_1, w_2) for w_1, w_2 in zip(old_weights, weights)]):
+        weights_accountant.append_local_weights(weights)
 
 
-def client_learning(model, client, epochs, train_data, train_labels, weights_accountant):
+def client_learning(model, client, epochs, train_data=None, train_labels=None, df=None, weights_accountant=None,
+                    session=None):
     """
     Initializes a client model and kicks off the training of that client by calling "train_client_model".
 
+    :param session:
+    :param df:
     :param model:                       Tensorflow graph
     :param client:                      int, index for a specific client to be trained, or array tb converted to int
     :param epochs:                      int, local epochs to be trained
@@ -127,16 +143,18 @@ def client_learning(model, client, epochs, train_data, train_labels, weights_acc
     model.set_weights(weights)
 
     # Train local model and store weights to folder
-    train_client_model(client, epochs, model, train_data, train_labels, weights_accountant)
+    train_client_model(client, epochs, model, train_data, train_labels, df, weights_accountant, session=session)
 
 
-def communication_round(model, clients, train_data, train_labels, epochs, weights_accountant,
-                        num_participating_clients=None):
+def communication_round(model, clients, train_data=None, train_labels=None, df=None, epochs=1, weights_accountant=None,
+                        num_participating_clients=None, session=None):
     """
     One round of communication between a 'server' and the 'clients'. Each client 'downloads' a global model and trains
     a local model, updating its weights locally. When all clients have updated their weights, they are 'uploaded' to
     the server and averaged.
 
+    :param session:
+    :param df:
     :param model:                           Tensorflow Graph
     :param clients:                         int, number of clients globally available, or array
     :param train_data:                      numpy array
@@ -150,23 +168,30 @@ def communication_round(model, clients, train_data, train_labels, epochs, weight
     # Select clients to participate in communication round
     if type(num_participating_clients) is int:
         clients = create_client_index_array(clients, num_participating_clients)
+    if clients is None and df is not None:
+        clients = df['Person'].unique()
 
     # Train each client
     for idx, client in enumerate(clients):
-        Output.print_client_id(client[0, 0].astype(int)) if type(client) is not int else Output.print_client_id(idx)
-        client_learning(model, idx, epochs, train_data, train_labels, weights_accountant)
+        df_train = df[df['Person'] == client]
+        Output.print_client_id(client[0, 0].astype(int)) if not np.issubdtype(client, np.integer) else \
+            Output.print_client_id(client)
+        client_learning(model, idx, epochs, train_data, train_labels, df_train, weights_accountant, session)
 
     # Average all local updates and store them as new 'global weights'
-    weights_accountant.average_local_weights()
+    if weights_accountant is not None:
+        weights_accountant.average_local_weights()
 
 
 def federated_learning(communication_rounds, num_of_clients, train_data, train_labels, test_data, test_labels, epochs,
                        num_participating_clients=None, people=None, model=None,
-                       optimizer=None, loss=None, metrics=None, sessions=False):
+                       optimizer=None, loss=None, metrics=None, session=False, df=None, evaluate=True):
     """
     Train a federated model for a specified number of rounds until convergence.
 
-    :param sessions:
+    :param evaluate:
+    :param df:
+    :param session:
     :param metrics:
     :param loss:
     :param optimizer:
@@ -196,13 +221,15 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
 
     clients = num_participating_clients if num_participating_clients is not None else num_of_clients
     weights_accountant = WeightsAccountant(weights, clients=clients)
+
     # Start communication rounds and save the results of each round to the data frame
     for comm_round in range(communication_rounds):
         Output.print_communication_round(comm_round + 1)
-        communication_round(model, num_of_clients, train_data, train_labels, epochs, weights_accountant,
-                            num_participating_clients)
-        history = evaluate_federated_cnn(test_data, test_labels, comm_round, model, weights_accountant, history, people,
-                                         optimizer, loss, metrics, sessions)
+        communication_round(model, num_of_clients, train_data, train_labels, df, epochs, weights_accountant,
+                            num_participating_clients, session)
+        if evaluate:
+            history = evaluate_federated_cnn(comm_round, test_data, test_labels, df, model, weights_accountant, history,
+                                             people, optimizer, loss, metrics)
 
     weights = weights_accountant.get_global_weights()
     model.set_weights(weights)
@@ -210,12 +237,12 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
     return history, model
 
 
-def evaluate_federated_cnn(test_data, test_labels, comm_round, model=None, weights_accountant=None, history=None,
-                           people=None, optimizer=None, loss=None, metrics=None, sessions=False):
+def evaluate_federated_cnn(comm_round, test_data=None, test_labels=None, df=None, model=None, weights_accountant=None,
+                           history=None, people=None, optimizer=None, loss=None, metrics=None):
     """
     Evaluate the global CNN.
 
-    :param sessions:
+    :param df:
     :param metrics:
     :param loss:
     :param optimizer:
@@ -239,10 +266,9 @@ def evaluate_federated_cnn(test_data, test_labels, comm_round, model=None, weigh
         weights = np.load(FEDERATED_GLOBAL_WEIGHTS, allow_pickle=True)
     model.set_weights(weights)
 
-    history = painCNN.evaluate_pain_cnn(model, comm_round, test_data, test_labels, history, people, loss, sessions)
+    history = painCNN.evaluate_pain_cnn(model, comm_round, test_data, test_labels, df, history, people, loss)
 
     return history
-
 
 # ---------------------------------------------- End Federated Learning -------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #

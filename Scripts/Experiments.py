@@ -350,13 +350,16 @@ def runner_federated_mnist(clients, dataset, experiment, train_data, train_label
     history.to_csv(os.path.join(cNN.RESULTS, file))
 
 
-def runner_federated_pain(clients, dataset, experiment, train_data, train_labels, test_data, test_labels,
-                          rounds=5, epochs=1, participants=None, people=None, model=None,
-                          optimizer=None, loss=None, metrics=None, sessions=False):
+def runner_federated_pain(dataset, experiment, clients=None, train_data=None, train_labels=None, test_data=None,
+                          test_labels=None, df=None, rounds=5, epochs=1, participants=None, people=None, model=None,
+                          optimizer=None, loss=None, metrics=None, session=False, evaluate=True):
+
     """
     Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
 
-    :param sessions:
+    :param evaluate:
+    :param df:
+    :param session:
     :param metrics:
     :param loss:
     :param optimizer:
@@ -392,7 +395,9 @@ def runner_federated_pain(clients, dataset, experiment, train_data, train_labels
                                                     optimizer=optimizer,
                                                     loss=loss,
                                                     metrics=metrics,
-                                                    sessions=sessions
+                                                    session=session,
+                                                    df=df,
+                                                    evaluate=evaluate
                                                     )
 
     # Save history for plotting
@@ -629,8 +634,6 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
 
     # Split group 2 training data into sessions
     else:
-        # Free memory
-        # del test_data, test_labels
 
         # Prepare data generator
         group_2_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_2")
@@ -653,16 +656,10 @@ def experiment_pain_federated(dataset, experiment, rounds, shards=None, clients=
 
     # Define labels for training
     person = 0  # Labels: [person, session, culture, frame, pain, Trans_1, Trans_2]
-    session = 1
     pain = 4
 
-    # Load test data
-    test_data, test_labels = dL.load_pain_data(group_2_test_path)
-    test_labels_ordinal = test_labels[:, pain].astype(np.int)
-    test_labels_binary = dL.reduce_pain_label_categories(test_labels_ordinal, max_pain=1)
-    test_labels_people = test_labels[:, person].astype(np.int)
+    # Initialize OneHotEncoder
     enc = sklearn.preprocessing.OneHotEncoder(sparse=False, categories='auto')
-    test_labels_binary = enc.fit_transform(test_labels_binary.reshape(len(test_labels_binary), 1))
 
     # Perform pre-training on group 1
     if pretraining == 'federated':
@@ -692,14 +689,13 @@ def experiment_pain_federated(dataset, experiment, rounds, shards=None, clients=
                                                                              train_labels_binary)
 
             # Train
-            runner_federated_pain(clients, dataset, experiment + "_shard-0.00", train_data, train_labels_binary,
-                                  test_data, test_labels_binary, rounds, people=test_labels_people, optimizer=optimizer,
-                                  loss=loss, metrics=metrics)
+            model = runner_federated_pain(dataset, experiment + "_shard-0.00", clients, train_data,
+                                          train_labels_binary, rounds=rounds, evaluate=False)
 
         # Load trained model into memory
-        model_path = find_newest_model_path(os.path.join(cNN.MODELS, "Pain", "Federated"), "_shard-0.00.h5")
-        model = tf.keras.models.load_model(model_path)
-        model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+        # model_path = find_newest_model_path(os.path.join(cNN.MODELS, "Pain", "Federated"), "_shard-0.00.h5")
+        # model = tf.keras.models.load_model(model_path)
+        # model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     elif pretraining == 'centralized':
         model = tf.keras.models.load_model(model_path)
@@ -712,6 +708,13 @@ def experiment_pain_federated(dataset, experiment, rounds, shards=None, clients=
                          .format(pretraining))
 
     if shards is not None:
+        # Load test data
+        test_data, test_labels = dL.load_pain_data(group_2_test_path)
+        test_labels_ordinal = test_labels[:, pain].astype(np.int)
+        test_labels_binary = dL.reduce_pain_label_categories(test_labels_ordinal, max_pain=1)
+        test_labels_people = test_labels[:, person].astype(np.int)
+        test_labels_binary = enc.fit_transform(test_labels_binary.reshape(len(test_labels_binary), 1))
+
         # Load group 2 training data
         group_2_train_data, group_2_train_labels = dL.load_pain_data(group_2_train_path)
         group_2_train_labels_ordinal = group_2_train_labels[:, pain].astype(np.int)
@@ -740,67 +743,24 @@ def experiment_pain_federated(dataset, experiment, rounds, shards=None, clients=
                                                                   subjects_per_client=subjects_per_client)
 
             experiment_current = experiment + "_shard-{}".format(percentage)
-            model = runner_federated_pain(all_labels, dataset, experiment_current, data, labels, test_data,
-                                          test_labels_binary, rounds, people=test_labels_people, model=model,
+            model = runner_federated_pain(dataset, experiment_current, all_labels, data, labels, test_data,
+                                          test_labels_binary, rounds=rounds, people=test_labels_people, model=model,
                                           optimizer=optimizer, loss=loss, metrics=metrics)
 
     # Split group 2 into sessions
     else:
-        # Load additional data
-        group_2_train_data, group_2_train_labels = dL.load_pain_data(group_2_train_path)
 
-        # Concat train and test data to enable "sessions-methodology" (i.e. train on cumulative sessions[1, 1+2, ...]
-        # and evaluate on each session, 1 to N
-        group_2_data = np.concatenate((group_2_train_data, test_data))
-        group_2_labels = np.concatenate((group_2_train_labels, test_labels))
+        # Prepare df for data generator
+        group_2_path = os.path.join(cNN.ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_2")
+        df = dL.create_pain_df(group_2_path)
 
-        # Prepare labels for training and evaluation (OneHotEncoding, etc.)
-        group_2_labels_ordinal = group_2_labels[:, pain].astype(np.int)
-        group_2_labels_binary = dL.reduce_pain_label_categories(group_2_labels_ordinal, max_pain=1)
-        group_2_labels_binary = enc.fit_transform(group_2_labels_binary.reshape(len(group_2_labels_binary), 1))
-        group_2_labels_people = group_2_labels[:, person].astype(np.int)
-
-        # Split data into train sessions (all sessions, cumulative dependent on main experiment setup (likely: True))
-        group_2_train_labels_split, group_2_train_data, group_2_train_labels_binary = dL.split_data_into_labels(
-            session,
-            group_2_labels,
-            cumulative,
-            group_2_data,
-            group_2_labels_binary,
-        )
-
-        # Split data into test sessions (all sessions, non-cumulative)
-        group_2_test_labels_split, group_2_test_data, group_2_test_labels_binary, group_2_labels_people_split = \
-            dL.split_data_into_labels(
-                session,
-                group_2_labels,
-                False,
-                group_2_data,
-                group_2_labels_binary,
-                group_2_labels_people
-            )
-
-        # Train
-        for sess, session_data, session_labels, all_labels in zip(np.unique(group_2_train_labels[:, session]),
-                                                                  group_2_train_data,
-                                                                  group_2_train_labels_binary,
-                                                                  group_2_train_labels_split,
-                                                                  ):
-            # Print current session
-            Output.print_session(sess)
-
-            # Split data into clients
-            group_2_labels_people = all_labels[:, person].astype(np.int)
-            client_arr = np.unique(group_2_labels_people)
-            session_data, session_labels, all_labels = \
-                dL.split_data_into_clients(len(client_arr), 'person', session_data, session_labels, all_labels,
-                                           subjects_per_client=subjects_per_client)
-
-            experiment_current = experiment + "_shard-{}".format(sess)
-            model = runner_federated_pain(all_labels, dataset, experiment_current, session_data, session_labels,
-                                          group_2_test_data, group_2_test_labels_binary, rounds, model=model,
-                                          people=group_2_labels_people_split, optimizer=optimizer,
-                                          loss=loss, metrics=metrics, sessions=True)
+        # Run Sessions
+        for session in df['Session'].unique():
+            Output.print_session(session)
+            experiment_current = experiment + "_shard-{}".format(session)
+            model = runner_federated_pain(dataset, experiment_current, df=df, rounds=rounds, epochs=1, model=model,
+                                          optimizer=optimizer, loss=loss, metrics=metrics, session=session,
+                                          evaluate=True)
 
 
 # ------------------------------------------------ End Experiments - 3 --------------------------------------------- #
@@ -930,49 +890,49 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                 training_setup(seed)
                 dL.prepare_pain_images(data_loc, distribution='unbalanced')
 
-            # # Experiment 11 - Sessions: Centralized without pre-training
-            # training_setup(seed)
-            # Output.print_experiment("11 - Sessions: Centralized without pre-training")
-            # experiment_pain_centralized('PAIN', '1-sessions-Centralized-no-pre-training', 30, shards=None,
-            #                             pretraining=False, cumulative=True, optimizer=optimizer, loss=loss,
-            #                             metrics=metrics)
-            # twilio.send_message("Experiment 11 Complete")
-            #
-            # Experiment 12 - Sessions: Centralized with pre-training
+            # Experiment 11 - Sessions: Centralized without pre-training
             training_setup(seed)
-            Output.print_experiment("12 - Sessions: Centralized with pre-training")
-            experiment_pain_centralized('PAIN', '2-sessions-Centralized-pre-training', 30, shards=None,
-                                        pretraining=True, cumulative=True, optimizer=optimizer,
-                                        loss=loss, metrics=metrics)
-            twilio.send_message("Experiment 12 Complete")
+            Output.print_experiment("11 - Sessions: Centralized without pre-training")
+            experiment_pain_centralized('PAIN', '1-sessions-Centralized-no-pre-training', 30, shards=None,
+                                        pretraining=False, cumulative=True, optimizer=optimizer, loss=loss,
+                                        metrics=metrics)
+            twilio.send_message("Experiment 11 Complete")
 
-            # # Experiment 13 - Sessions: Federated without pre-training
+            # # Experiment 12 - Sessions: Centralized with pre-training
             # training_setup(seed)
-            # Output.print_experiment("13 - Sessions: Federated without pre-training")
-            # experiment_pain_federated('PAIN', '3-sessions-Federated-no-pre-training', 30, shards=None,
-            #                           clients=None, pretraining=None, cumulative=True, optimizer=optimizer, loss=loss,
-            #                           metrics=metrics, subjects_per_client=1)
-            # twilio.send_message("Experiment 13 Complete")
+            # Output.print_experiment("12 - Sessions: Centralized with pre-training")
+            # experiment_pain_centralized('PAIN', '2-sessions-Centralized-pre-training', 30, shards=None,
+            #                             pretraining=True, cumulative=True, optimizer=optimizer,
+            #                             loss=loss, metrics=metrics)
+            # twilio.send_message("Experiment 12 Complete")
             #
-            # # Experiment 14 - Sessions: Federated with centralized pretraining
-            # training_setup(seed)
-            # Output.print_experiment("14 - Sessions: Federated with centralized pretraining")
-            # centralized_model_path = find_newest_model_path(os.path.join(CENTRAL_PAIN_MODELS, "2019-07-31"),
-            #                                                 "shard-0.00.h5")
-            # experiment_pain_federated('PAIN', '4-sessions-Federated-central-pre-training', 30, shards=None,
-            #                           clients=None, model_path=centralized_model_path, pretraining='centralized',
-            #                           cumulative=True, optimizer=optimizer, loss=loss, metrics=metrics,
-            #                           subjects_per_client=1)
-            #
-            # twilio.send_message("Experiment 14 Complete")
-            #
-            # # Experiment 15 - Sessions: Federated with federated pretraining
-            # training_setup(seed)
-            # Output.print_experiment("15 - Sessions: Federated with federated pretraining")
-            # experiment_pain_federated('PAIN', '5-sessions-Federated-federated-pre-training', 30, shards=None,
-            #                           clients=None, pretraining='federated', cumulative=True,
-            #                           optimizer=optimizer, loss=loss, metrics=metrics, subjects_per_client=1)
-            # twilio.send_message("Experiment 15 Complete")
+            # Experiment 13 - Sessions: Federated without pre-training
+            training_setup(seed)
+            Output.print_experiment("13 - Sessions: Federated without pre-training")
+            experiment_pain_federated('PAIN', '3-sessions-Federated-no-pre-training', 30, shards=None,
+                                      clients=None, pretraining=None, cumulative=True, optimizer=optimizer, loss=loss,
+                                      metrics=metrics, subjects_per_client=1)
+            twilio.send_message("Experiment 13 Complete")
+
+            # Experiment 14 - Sessions: Federated with centralized pretraining
+            training_setup(seed)
+            Output.print_experiment("14 - Sessions: Federated with centralized pretraining")
+            centralized_model_path = find_newest_model_path(os.path.join(CENTRAL_PAIN_MODELS, "Final", "Sessions"),
+                                                            "shard-0.00.h5")
+            experiment_pain_federated('PAIN', '4-sessions-Federated-central-pre-training', 30, shards=None,
+                                      clients=None, model_path=centralized_model_path, pretraining='centralized',
+                                      cumulative=True, optimizer=optimizer, loss=loss, metrics=metrics,
+                                      subjects_per_client=1)
+
+            twilio.send_message("Experiment 14 Complete")
+
+            # Experiment 15 - Sessions: Federated with federated pretraining
+            training_setup(seed)
+            Output.print_experiment("15 - Sessions: Federated with federated pretraining")
+            experiment_pain_federated('PAIN', '5-sessions-Federated-federated-pre-training', 30, shards=None,
+                                      clients=None, pretraining='federated', cumulative=True,
+                                      optimizer=optimizer, loss=loss, metrics=metrics, subjects_per_client=1)
+            twilio.send_message("Experiment 15 Complete")
 
         twilio.send_message()
 
