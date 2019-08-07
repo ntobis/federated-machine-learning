@@ -690,7 +690,8 @@ def experiment_pain_federated(dataset, experiment, rounds, shards=None, clients=
 
             # Train
             model = runner_federated_pain(dataset, experiment + "_shard-0.00", clients, train_data,
-                                          train_labels_binary, rounds=rounds, evaluate=False)
+                                          train_labels_binary, rounds=rounds, evaluate=False, loss=loss,
+                                          metrics=metrics, optimizer=optimizer)
 
         # Load trained model into memory
         # model_path = find_newest_model_path(os.path.join(cNN.MODELS, "Pain", "Federated"), "_shard-0.00.h5")

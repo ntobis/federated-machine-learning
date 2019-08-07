@@ -173,9 +173,8 @@ def communication_round(model, clients, train_data=None, train_labels=None, df=N
 
     # Train each client
     for idx, client in enumerate(clients):
-        df_train = df[df['Person'] == client]
-        Output.print_client_id(client[0, 0].astype(int)) if not np.issubdtype(client, np.integer) else \
-            Output.print_client_id(client)
+        df_train = df[df['Person'] == client] if df is not None else None
+        Output.print_client_id(client[0, 0].astype(int)) if type(client) is np.ndarray else Output.print_client_id(client)
         client_learning(model, idx, epochs, train_data, train_labels, df_train, weights_accountant, session)
 
     # Average all local updates and store them as new 'global weights'
