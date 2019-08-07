@@ -406,9 +406,7 @@ def runner_federated_pain(dataset, experiment, clients=None, train_data=None, tr
     if not os.path.isdir(folder):
         os.mkdir(folder)
     suffix = r'_final_results_individual.csv' if people is not None else r'_final_results_aggregate.csv'
-    clients = clients if type(clients) is int else len(clients)
-    print(clients)
-    f_name = time.strftime("%Y-%m-%d-%H%M%S") + "_{}_{}_clients-{}".format(dataset, experiment, clients) + suffix
+    f_name = time.strftime("%Y-%m-%d-%H%M%S") + "_{}_{}".format(dataset, experiment) + suffix
     history.to_csv(os.path.join(folder, f_name))
 
     # Save model
