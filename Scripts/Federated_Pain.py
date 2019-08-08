@@ -220,7 +220,7 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
     """
 
     # Create history object
-    history = cP.history_set_up(people)
+    history = cP.set_up_history(people)
 
     # Set up generators if relevant
     df_test, predict_gen = cP.set_up_predict_generator(df, evaluate, model)

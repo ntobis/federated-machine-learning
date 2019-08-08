@@ -552,9 +552,9 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             # Experiment 11 - Sessions: Centralized without pre-training
             training_setup(seed)
             Output.print_experiment("11 - Sessions: Centralized without pre-training")
-            experiment_pain_centralized('PAIN', '1-sessions-Centralized-no-pre-training', 30, shards=None,
+            experiment_pain_centralized('PAIN', '1-sessions-Centralized-no-pre-training', 1, shards=None,
                                         pretraining=False, cumulative=True, optimizer=optimizer, loss=loss,
-                                        metrics=metrics, model_type='ResNet')
+                                        metrics=metrics)
             twilio.send_message("Experiment 11 Complete")
 
             # Experiment 12 - Sessions: Centralized with pre-training

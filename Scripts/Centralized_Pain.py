@@ -5,6 +5,7 @@ import os
 
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import OneHotEncoder
 import tensorflow as tf
 from sklearn.metrics import confusion_matrix, average_precision_score
 
@@ -16,40 +17,71 @@ optimizers = tf.keras.optimizers  # like 'from tensorflow.keras import optimizer
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
+
 ROOT = os.path.dirname(os.path.dirname(__file__))
 SESSION_DATA = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_2")
 RESULTS = os.path.join(ROOT, 'Results')
-
 
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
 # ------------------------------------------------------------------------------------------------------------------ #
-# ----------------------------------------------- Model Configuration ---------------------------------------------- #
+# ------------------------------------------------- Set-Up Functions ----------------------------------------------- #
 
 
-class EarlyStopping:
-    def __init__(self, metric, threshold, patience):
-        self.metric = metric
-        self.threshold = threshold
-        self.patience = patience
+def set_up_predict_generator(df, evaluate, model):
+    df_test = df[(df['Trans_1'] == 'original') & (df['Trans_2'] == 'straight')] if evaluate and len(df) > 0 else None
+    predict_gen = set_up_data_generator(df_test, model.name, shuffle=False) if df_test is not None else None
+    return df_test, predict_gen
 
-    def __call__(self, history):
-        if self.metric == 'accuracy':
-            return len(history) >= self.patience and all(x > self.threshold for x in history[-self.patience:])
-        else:
-            return False
+
+def set_up_data_generator(df, model_name, shuffle=True, balanced=False):
+    print("Actual number of images: ", len(df), "thereof pain: ", sum(df['Pain'] != '0'))
+
+    # Balance data
+    if balanced:
+        df = dL.balance_data(df, threshold=200)
+    data_gen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
+
+    # Ensure that input channels are of correct size (1-channel for 'CNN', 3-channels for 'ResNet'
+    color_mode = 'rgb' if model_name is 'ResNet' else 'grayscale'
+
+    return data_gen.flow_from_dataframe(dataframe=df, directory=SESSION_DATA, x_col="img_path",
+                                        y_col="Pain", color_mode=color_mode,
+                                        class_mode="categorical", target_size=(215, 215),
+                                        batch_size=32,
+                                        classes=['0', '1'], shuffle=shuffle)
+
+
+def set_up_history(people):
+    if people is not None:
+        history = pd.DataFrame(columns=['Epoch', 'Loss', 'Session', 'Person', 'TN', 'FP', 'FN', 'TP',
+                                        'Individual Avg. Precision', 'Aggregate Avg. Precision',
+                                        'Individual Accuracy', 'Individual Precision', 'Individual Recall',
+                                        'Individual F1-Score', 'Aggregate Accuracy', 'Aggregate Precision',
+                                        'Aggregate Recall', 'Aggregate F1_Score'])
+    else:
+        history = pd.DataFrame(columns=['Epoch', 'Loss', 'Session', 'Aggregate Accuracy', 'Aggregate Recall',
+                                        'Aggregate Precision', 'Aggregate Avg. Precision', 'TP', 'TN', 'FP',
+                                        'FN', 'Aggregate F1_Score'])
+    return history
+
+
+# ----------------------------------------------- End Set-Up Functions --------------------------------------------- #
+# ------------------------------------------------------------------------------------------------------------------ #
+
+# ------------------------------------------------------------------------------------------------------------------ #
+# -------------------------------------------------- Model Runners ------------------------------------------------- #
 
 
 def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None, test_labels=None,
               df=pd.DataFrame(columns=['Session']), people=None, evaluate=True, loss=None, session=-1):
     # Set up data frames for logging
-    history = history_set_up(people)
+    history = set_up_history(people)
 
     # Set up Keras data generators
     df_train = df[df['Session'] <= session]
-    train_gen = set_up_data_generator(df_train, model.name) if len(df_train) > 0 else None
-
+    train_gen = set_up_data_generator(df_train, model.name, balanced=True) if len(df_train) > 0 else None
     df_test, predict_gen = set_up_predict_generator(df, evaluate, model)
 
     # Start training
@@ -76,46 +108,11 @@ def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None,
     return model, history
 
 
-def set_up_predict_generator(df, evaluate, model):
-    df_test = df[(df['Trans_1'] == 'original') & (df['Trans_2'] == 'straight')] if evaluate and len(df) > 0 else None
-    predict_gen = set_up_data_generator(df_test, model.name, shuffle=False) if df_test is not None else None
-    return df_test, predict_gen
+def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, predict_gen=None, history=None, people=None,
+                      loss=None, df_test=None):
 
-
-def set_up_data_generator(df, model_name, shuffle=True):
-    print("Actual number of images: ", len(df), "thereof pain: ", sum(df['Pain'] != '0'))
-
-    # Balance data
-    df = dL.balance_data(df, threshold=200)
-    data_gen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
-
-    # Ensure that input channels are of correct size (1-channel for 'CNN', 3-channels for 'ResNet'
-    color_mode = 'rgb' if model_name is 'ResNet' else 'grayscale'
-
-    return data_gen.flow_from_dataframe(dataframe=df, directory=SESSION_DATA, x_col="img_path",
-                                        y_col="Pain", color_mode=color_mode,
-                                        class_mode="categorical", target_size=(215, 215),
-                                        batch_size=32,
-                                        classes=['0', '1'], shuffle=shuffle)
-
-
-def history_set_up(people):
-    if people is not None:
-        history = pd.DataFrame(columns=['Epoch', 'Loss', 'Session', 'Person', 'TN', 'FP', 'FN', 'TP',
-                                        'Individual Avg. Precision', 'Aggregate Avg. Precision',
-                                        'Individual Accuracy', 'Individual Precision', 'Individual Recall',
-                                        'Individual F1-Score', 'Aggregate Accuracy', 'Aggregate Precision',
-                                        'Aggregate Recall', 'Aggregate F1_Score'])
-    else:
-        history = pd.DataFrame(columns=['Epoch', 'Loss', 'Session', 'Aggregate Accuracy', 'Aggregate Recall',
-                                        'Aggregate Precision', 'Aggregate Avg. Precision', 'TP', 'TN', 'FP',
-                                        'FN', 'Aggregate F1_Score'])
-    return history
-
-
-def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, predict_gen=None, history=None, people=None, loss=None, df_test=None):
     if history is None:
-        history = history_set_up(people)
+        history = set_up_history(people)
 
     if test_data is not None:
         predictions = model.predict(test_data, use_multiprocessing=True)
@@ -125,28 +122,32 @@ def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, predict_ge
         history = history.append(df_metrics, ignore_index=True)
 
     elif df_test is not None:
+        # Instantiate OneHotEncoder and encode Pain Labels
+        enc = OneHotEncoder(sparse=False, categories='auto')
+        test_labels = enc.fit_transform(df_test['Pain'].astype(int).values.reshape(len(df_test), 1))
+
         predictions = model.predict_generator(predict_gen, use_multiprocessing=True)
-        current_loss = compute_loss(loss, predictions, df_test['Pain'])
+        current_loss = compute_loss(loss, predictions, test_labels)
         y_pred = np.argmax(predictions, axis=1)
-        df_metrics = compute_metrics(current_loss, epoch, df_test['Person'], predictions, df_test['Pain'].astype(int),
-                                     y_pred)
+        df_metrics = compute_metrics(current_loss, epoch, df_test['Person'], predictions, test_labels,
+                                     y_pred, df_test['Session'])
         history = history.append(df_metrics, ignore_index=True)
 
     else:
         raise ValueError('Either "test_data" or "df_test" must be not None.')
 
-    # Save logs
-    if people is not None:
-        file = r'logs_individual.csv'
-        history.to_csv(os.path.join(RESULTS, file))
-    else:
-        file = r'logs_aggregate.csv'
-        history.to_csv(os.path.join(RESULTS, file))
     return history
 
 
-def compute_metrics(current_loss, epoch, people, predictions, test_labels, y_pred):
-    df = compute_individual_metrics(epoch, current_loss, people, test_labels, y_pred, predictions)
+# ------------------------------------------------ End Model Runners ----------------------------------------------- #
+# ------------------------------------------------------------------------------------------------------------------ #
+
+
+# ------------------------------------------------------------------------------------------------------------------ #
+# ----------------------------------------------- Evaluation Functions --------------------------------------------- #
+
+def compute_metrics(current_loss, epoch, people, predictions, test_labels, y_pred, sessions=None):
+    df = compute_individual_metrics(epoch, current_loss, people, test_labels, y_pred, predictions, sessions)
     df = compute_aggregate_metrics(df, test_labels, predictions)
     return df
 
@@ -158,24 +159,21 @@ def compute_loss(loss, predictions, test_labels):
     ).numpy()
 
 
-def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predictions, session=None):
+def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predictions, sessions=None):
     test_labels = test_labels[:, 1]
     predictions = predictions[:, 1]
 
-    if type(people) is not int:
-        data = np.concatenate([np.expand_dims(x, 1) for x in [people, y_pred, test_labels, predictions]], axis=1)
-        df = pd.DataFrame(data, columns=['Person', 'Y_Pred', 'Y_True', 'Predictions'])
-    else:
-        data = np.concatenate([np.expand_dims(x, 1) for x in [y_pred, test_labels, predictions]], axis=1)
-        df = pd.DataFrame(data, columns=['Y_Pred', 'Y_True', 'Predictions'])
-        df['Person'] = people
+    sessions = [0] * len(y_pred) if sessions is None else sessions
+    data = np.concatenate([np.expand_dims(x, 1) for x in [people, y_pred, test_labels, predictions, sessions]], axis=1)
+    df = pd.DataFrame(data, columns=['Person', 'Y_Pred', 'Y_True', 'Predictions', 'Session'])
 
     results = []
-    for person in df['Person'].unique():
-        df_person = df[df['Person'] == person]
-        tn, fp, fn, tp = confusion_matrix(df_person['Y_True'], df_person['Y_Pred'], labels=[0, 1]).ravel()
-        ind_avg_precision = average_precision_score(df_person['Y_True'], df_person['Predictions'])
-        results.append([epoch, loss, session, person, tn, fp, fn, tp, ind_avg_precision])
+    for session, df_session in df.groupby('Session'):
+        for person, df_person in df.groupby('Person'):
+            df_person = df[df['Person'] == person]
+            tn, fp, fn, tp = confusion_matrix(df_person['Y_True'], df_person['Y_Pred'], labels=[0, 1]).ravel()
+            ind_avg_precision = average_precision_score(df_person['Y_True'], df_person['Predictions'])
+            results.append([epoch, loss, session, person, tn, fp, fn, tp, ind_avg_precision])
     df = pd.DataFrame(results, columns=['Epoch', 'Loss', 'Session', 'Person', 'TN', 'FP', 'FN', 'TP',
                                         'Individual Avg. Precision'])
 
@@ -202,3 +200,7 @@ def compute_aggregate_metrics(df, test_labels, predictions):
     df['Aggregate F1_Score'] = 2 * ((df['Aggregate Precision'] * df['Aggregate Recall']) / (
             df['Aggregate Precision'] + df['Aggregate Recall']))
     return df
+
+# --------------------------------------------- End Evaluation Functions ------------------------------------------- #
+# ------------------------------------------------------------------------------------------------------------------ #
+
