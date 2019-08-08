@@ -429,7 +429,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
     # Setup
     data_loc = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
 
-    # g_monitor = GoogleCloudMonitor()
+    g_monitor = GoogleCloudMonitor()
     twilio = Twilio()
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
@@ -552,7 +552,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             # Experiment 11 - Sessions: Centralized without pre-training
             training_setup(seed)
             Output.print_experiment("11 - Sessions: Centralized without pre-training")
-            experiment_pain_centralized('PAIN', '1-sessions-Centralized-no-pre-training', 1, shards=None,
+            experiment_pain_centralized('PAIN', '1-sessions-Centralized-no-pre-training', 2, shards=None,
                                         pretraining=False, cumulative=True, optimizer=optimizer, loss=loss,
                                         metrics=metrics)
             twilio.send_message("Experiment 11 Complete")
@@ -560,7 +560,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             # Experiment 12 - Sessions: Centralized with pre-training
             training_setup(seed)
             Output.print_experiment("12 - Sessions: Centralized with pre-training")
-            experiment_pain_centralized('PAIN', '2-sessions-Centralized-pre-training', 30, shards=None,
+            experiment_pain_centralized('PAIN', '2-sessions-Centralized-pre-training', 2, shards=None,
                                         pretraining=True, cumulative=True, optimizer=optimizer,
                                         loss=loss, metrics=metrics)
             twilio.send_message("Experiment 12 Complete")
@@ -568,7 +568,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             # Experiment 13 - Sessions: Federated without pre-training
             training_setup(seed)
             Output.print_experiment("13 - Sessions: Federated without pre-training")
-            experiment_pain_federated('PAIN', '3-sessions-Federated-no-pre-training', 30, shards=None,
+            experiment_pain_federated('PAIN', '3-sessions-Federated-no-pre-training', 2, shards=None,
                                       clients=None, pretraining=None, cumulative=True, optimizer=optimizer, loss=loss,
                                       metrics=metrics, subjects_per_client=1)
             twilio.send_message("Experiment 13 Complete")
@@ -578,7 +578,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             Output.print_experiment("14 - Sessions: Federated with centralized pretraining")
             centralized_model_path = find_newest_model_path(os.path.join(CENTRAL_PAIN_MODELS, "2019-08-06"),
                                                             "shard-0.00.h5")
-            experiment_pain_federated('PAIN', '4-sessions-Federated-central-pre-training', 30, shards=None,
+            experiment_pain_federated('PAIN', '4-sessions-Federated-central-pre-training', 2, shards=None,
                                       clients=None, model_path=centralized_model_path, pretraining='centralized',
                                       cumulative=True, optimizer=optimizer, loss=loss, metrics=metrics,
                                       subjects_per_client=1)
@@ -588,7 +588,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             # Experiment 15 - Sessions: Federated with federated pretraining
             training_setup(seed)
             Output.print_experiment("15 - Sessions: Federated with federated pretraining")
-            experiment_pain_federated('PAIN', '5-sessions-Federated-federated-pre-training', 30, shards=None,
+            experiment_pain_federated('PAIN', '5-sessions-Federated-federated-pre-training', 2, shards=None,
                                       clients=None, pretraining='federated', cumulative=True,
                                       optimizer=optimizer, loss=loss, metrics=metrics, subjects_per_client=1)
             twilio.send_message("Experiment 15 Complete")
