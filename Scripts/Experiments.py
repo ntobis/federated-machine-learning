@@ -905,18 +905,18 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             #                             loss=loss, metrics=metrics)
             # twilio.send_message("Experiment 12 Complete")
             #
-            # Experiment 13 - Sessions: Federated without pre-training
-            training_setup(seed)
-            Output.print_experiment("13 - Sessions: Federated without pre-training")
-            experiment_pain_federated('PAIN', '3-sessions-Federated-no-pre-training', 30, shards=None,
-                                      clients=None, pretraining=None, cumulative=True, optimizer=optimizer, loss=loss,
-                                      metrics=metrics, subjects_per_client=1)
-            twilio.send_message("Experiment 13 Complete")
-
+            # # Experiment 13 - Sessions: Federated without pre-training
+            # training_setup(seed)
+            # Output.print_experiment("13 - Sessions: Federated without pre-training")
+            # experiment_pain_federated('PAIN', '3-sessions-Federated-no-pre-training', 30, shards=None,
+            #                           clients=None, pretraining=None, cumulative=True, optimizer=optimizer, loss=loss,
+            #                           metrics=metrics, subjects_per_client=1)
+            # twilio.send_message("Experiment 13 Complete")
+            #
             # Experiment 14 - Sessions: Federated with centralized pretraining
             training_setup(seed)
             Output.print_experiment("14 - Sessions: Federated with centralized pretraining")
-            centralized_model_path = find_newest_model_path(os.path.join(CENTRAL_PAIN_MODELS, "Final", "Sessions"),
+            centralized_model_path = find_newest_model_path(os.path.join(CENTRAL_PAIN_MODELS, "2019-08-06"),
                                                             "shard-0.00.h5")
             experiment_pain_federated('PAIN', '4-sessions-Federated-central-pre-training', 30, shards=None,
                                       clients=None, model_path=centralized_model_path, pretraining='centralized',
