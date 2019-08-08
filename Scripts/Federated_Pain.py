@@ -220,18 +220,18 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
     """
 
     # Create history object
-    history = cP.set_up_history(people)
-
-    # Set up generators if relevant
-    df_test, predict_gen = cP.set_up_predict_generator(df, evaluate, model)
+    history = cP.set_up_history()
 
     # Initialize a random global model and store the weights
     if model is None:
-        model = init_global_model(optimizer, loss, metrics, model_type)
+        model = init_global_model(optimizer, loss, metrics, model_type=model_type)
     weights = model.get_weights()
 
-    clients = num_participating_clients if num_participating_clients is not None else num_of_clients
-    weights_accountant = WeightsAccountant(weights, clients=clients)
+    # Set up data generators
+    df_train, df_test, train_gen, predict_gen = cP.set_up_train_test_generators(df, model, session)
+
+    # Initialize weights accountant
+    weights_accountant = WeightsAccountant(weights)
 
     # Start communication rounds and save the results of each round to the data frame
     for comm_round in range(communication_rounds):

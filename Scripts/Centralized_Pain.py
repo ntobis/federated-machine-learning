@@ -22,6 +22,7 @@ ROOT = os.path.dirname(os.path.dirname(__file__))
 SESSION_DATA = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_2")
 RESULTS = os.path.join(ROOT, 'Results')
 
+
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
@@ -29,14 +30,20 @@ RESULTS = os.path.join(ROOT, 'Results')
 # ------------------------------------------------- Set-Up Functions ----------------------------------------------- #
 
 
-def set_up_predict_generator(df, evaluate, model):
-    df_test = df[(df['Trans_1'] == 'original') & (df['Trans_2'] == 'straight')] if evaluate and len(df) > 0 else None
-    predict_gen = set_up_data_generator(df_test, model.name, shuffle=False) if df_test is not None else None
-    return df_test, predict_gen
+def set_up_train_test_generators(df, model, session):
+    train_gen, predict_gen, df_train, df_test = [None] * 4  # Initializing values
+    if df is not None:
+        df_train = df[df['Session'] <= session]
+        df_test = df[(df['Trans_1'] == 'original') & (df['Trans_2'] == 'straight')]
+        if sum(df_train['Pain'] != '0'):
+            train_gen = set_up_data_generator(df_train, model.name, shuffle=True, balanced=True, gen_type='Train')
+        if len(df_test):
+            predict_gen = set_up_data_generator(df_test, model.name, shuffle=False, balanced=False, gen_type='Test')
+    return df_train, df_test, train_gen, predict_gen
 
 
-def set_up_data_generator(df, model_name, shuffle=True, balanced=False):
-    print("Actual number of images: ", len(df), "thereof pain: ", sum(df['Pain'] != '0'))
+def set_up_data_generator(df, model_name, shuffle=True, balanced=False, gen_type='Data_Gen'):
+    print("{}: Actual number of images: ".format(gen_type), len(df), "thereof pain: ", sum(df['Pain'] != '0'))
 
     # Balance data
     if balanced:
@@ -45,7 +52,6 @@ def set_up_data_generator(df, model_name, shuffle=True, balanced=False):
 
     # Ensure that input channels are of correct size (1-channel for 'CNN', 3-channels for 'ResNet'
     color_mode = 'rgb' if model_name is 'ResNet' else 'grayscale'
-    print(df['img_path'].head())
     return data_gen.flow_from_dataframe(dataframe=df, x_col="img_path",
                                         y_col="Pain", color_mode=color_mode,
                                         class_mode="categorical", target_size=(215, 215),
@@ -53,17 +59,12 @@ def set_up_data_generator(df, model_name, shuffle=True, balanced=False):
                                         classes=['0', '1'], shuffle=shuffle)
 
 
-def set_up_history(people):
-    if people is not None:
-        history = pd.DataFrame(columns=['Epoch', 'Loss', 'Session', 'Person', 'TN', 'FP', 'FN', 'TP',
-                                        'Individual Avg. Precision', 'Aggregate Avg. Precision',
-                                        'Individual Accuracy', 'Individual Precision', 'Individual Recall',
-                                        'Individual F1-Score', 'Aggregate Accuracy', 'Aggregate Precision',
-                                        'Aggregate Recall', 'Aggregate F1_Score'])
-    else:
-        history = pd.DataFrame(columns=['Epoch', 'Loss', 'Session', 'Aggregate Accuracy', 'Aggregate Recall',
-                                        'Aggregate Precision', 'Aggregate Avg. Precision', 'TP', 'TN', 'FP',
-                                        'FN', 'Aggregate F1_Score'])
+def set_up_history():
+    history = pd.DataFrame(columns=['Epoch', 'Loss', 'Session', 'Person', 'TN', 'FP', 'FN', 'TP',
+                                    'Individual Avg. Precision', 'Aggregate Avg. Precision',
+                                    'Individual Accuracy', 'Individual Precision', 'Individual Recall',
+                                    'Individual F1-Score', 'Aggregate Accuracy', 'Aggregate Precision',
+                                    'Aggregate Recall', 'Aggregate F1_Score'])
     return history
 
 
@@ -75,14 +76,12 @@ def set_up_history(people):
 
 
 def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None, test_labels=None,
-              df=pd.DataFrame(columns=['Session']), people=None, evaluate=True, loss=None, session=-1):
+              df=None, people=None, evaluate=True, loss=None, session=-1):
     # Set up data frames for logging
-    history = set_up_history(people)
+    history = set_up_history()
 
     # Set up Keras data generators
-    df_train = df[df['Session'] <= session]
-    train_gen = set_up_data_generator(df_train, model.name, balanced=True) if len(df_train) > 0 else None
-    df_test, predict_gen = set_up_predict_generator(df, evaluate, model)
+    df_train, df_test, train_gen, predict_gen = set_up_train_test_generators(df, model, session)
 
     # Start training
     for epoch in range(epochs):
@@ -101,7 +100,6 @@ def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None,
 
         # Evaluating
         if evaluate:
-            print('Evaluating')
             history = evaluate_pain_cnn(model, epoch, test_data, test_labels, predict_gen, history, people, loss,
                                         df_test)
 
@@ -110,16 +108,15 @@ def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None,
 
 def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, predict_gen=None, history=None, people=None,
                       loss=None, df_test=None):
-
+    print('Evaluating')
     if history is None:
-        history = set_up_history(people)
+        history = set_up_history()
 
     if test_data is not None:
         predictions = model.predict(test_data, use_multiprocessing=True)
         current_loss = compute_loss(loss, predictions, test_labels)
         y_pred = np.argmax(predictions, axis=1)
         df_metrics = compute_metrics(current_loss, epoch, people, predictions, test_labels, y_pred)
-        history = history.append(df_metrics, ignore_index=True)
 
     elif df_test is not None:
         # Instantiate OneHotEncoder and encode Pain Labels
@@ -131,11 +128,11 @@ def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, predict_ge
         y_pred = np.argmax(predictions, axis=1)
         df_metrics = compute_metrics(current_loss, epoch, df_test['Person'], predictions, test_labels,
                                      y_pred, df_test['Session'])
-        history = history.append(df_metrics, ignore_index=True)
 
     else:
         raise ValueError('Either "test_data" or "df_test" must be not None.')
 
+    history = history.append(df_metrics, ignore_index=True, sort=False)
     return history
 
 
@@ -203,4 +200,3 @@ def compute_aggregate_metrics(df, test_labels, predictions):
 
 # --------------------------------------------- End Evaluation Functions ------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
-

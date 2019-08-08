@@ -196,7 +196,7 @@ def federated_learning(communication_rounds, num_of_clients, train_data, train_l
     weights = model.get_weights()
 
     clients = num_participating_clients if num_participating_clients is not None else num_of_clients
-    weights_accountant = WeightsAccountant(weights, clients=clients)
+    weights_accountant = WeightsAccountant(weights)
     # Start communication rounds and save the results of each round to the data frame
     for _ in range(communication_rounds):
         Output.print_communication_round(_ + 1)
