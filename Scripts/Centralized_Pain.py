@@ -41,52 +41,62 @@ class EarlyStopping:
             return False
 
 
-def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None, test_labels=None, df=None,
-              people=None, evaluate=True, loss=None, early_stopping=None, session=None):
+def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None, test_labels=None,
+              df=pd.DataFrame(columns=['Session']), people=None, evaluate=True, loss=None, session=-1):
     # Set up data frames for logging
     history = history_set_up(people)
-    early_stopping_hist = []
+
+    # Set up Keras data generators
+    df_train = df[df['Session'] <= session]
+    train_gen = set_up_data_generator(df_train, model.name) if len(df_train) > 0 else None
+
+    df_test, predict_gen = set_up_predict_generator(df, evaluate, model)
 
     # Start training
     for epoch in range(epochs):
 
-        # Training (either on dataset, or on Keras train iterator
+        # Training (on dataset)
         if train_data is not None and train_labels is not None:
-            train_hist = model.fit(train_data, train_labels, epochs=1, batch_size=32, use_multiprocessing=True)
+            model.fit(train_data, train_labels, epochs=1, batch_size=32, use_multiprocessing=True)
 
-        elif df is not None and session is not None:
-            data_gen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
-            train_df = df[df['Session'] <= session]
-            print("Actual number of images: ", len(train_df), "thereof pain: ", sum(train_df['Pain'] != '0'))
-            train_df = dL.balance_data(train_df, threshold=200)
-
-            # Only train this client, if pain images exist
-            if len(train_df) > 0:
-                train_gen = data_gen.flow_from_dataframe(dataframe=train_df, directory=SESSION_DATA, x_col="img_path",
-                                                         y_col="Pain", color_mode="grayscale",
-                                                         class_mode="categorical", target_size=(215, 215),
-                                                         batch_size=32,
-                                                         classes=['0', '1'])
-                train_hist = model.fit_generator(generator=train_gen,
-                                                 steps_per_epoch=train_gen.n // train_gen.batch_size,
-                                                 epochs=1)
-            else:
-                train_hist = None
+        # Training (on Keras iterator)
+        elif train_gen is not None:
+            model.fit_generator(generator=train_gen,
+                                steps_per_epoch=train_gen.n // train_gen.batch_size,
+                                epochs=1)
         else:
-            raise KeyError("Need to specify either ('train_data' and 'train_labels') or 'df'. Neither was specified.")
+            print("Not training, since input data was empty.")
 
         # Evaluating
         if evaluate:
             print('Evaluating')
-            history = evaluate_pain_cnn(model, epoch, test_data, test_labels, df, history, people, loss)
-
-        # Early stopping
-        if early_stopping is not None and train_hist is not None:
-            early_stopping_hist.extend(train_hist.history[early_stopping.metric])
-            if early_stopping(train_hist):
-                break
+            history = evaluate_pain_cnn(model, epoch, test_data, test_labels, predict_gen, history, people, loss,
+                                        df_test)
 
     return model, history
+
+
+def set_up_predict_generator(df, evaluate, model):
+    df_test = df[(df['Trans_1'] == 'original') & (df['Trans_2'] == 'straight')] if evaluate and len(df) > 0 else None
+    predict_gen = set_up_data_generator(df_test, model.name, shuffle=False) if df_test is not None else None
+    return df_test, predict_gen
+
+
+def set_up_data_generator(df, model_name, shuffle=True):
+    print("Actual number of images: ", len(df), "thereof pain: ", sum(df['Pain'] != '0'))
+
+    # Balance data
+    df = dL.balance_data(df, threshold=200)
+    data_gen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
+
+    # Ensure that input channels are of correct size (1-channel for 'CNN', 3-channels for 'ResNet'
+    color_mode = 'rgb' if model_name is 'ResNet' else 'grayscale'
+
+    return data_gen.flow_from_dataframe(dataframe=df, directory=SESSION_DATA, x_col="img_path",
+                                        y_col="Pain", color_mode=color_mode,
+                                        class_mode="categorical", target_size=(215, 215),
+                                        batch_size=32,
+                                        classes=['0', '1'], shuffle=shuffle)
 
 
 def history_set_up(people):
@@ -103,66 +113,27 @@ def history_set_up(people):
     return history
 
 
-def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, df=None, history=None, people=None, loss=None):
+def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, predict_gen=None, history=None, people=None, loss=None, df_test=None):
     if history is None:
         history = history_set_up(people)
 
-    if df is not None:
-        all_predictions = []
-        all_labels = []
-        df_test = df[(df['Trans_1'] == 'original') & (df['Trans_2'] == 'straight')]
-        data_gen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
-        for sess, df_sess in df_test.groupby('Session'):
-            print("\nEvaluate Session :", sess)
-            for person, df_person in df_sess.groupby('Person'):
-                predict_gen = data_gen.flow_from_dataframe(dataframe=df_person, directory=SESSION_DATA,
-                                                           x_col="img_path",
-                                                           y_col="Pain", color_mode="grayscale",
-                                                           class_mode="categorical", target_size=(215, 215),
-                                                           batch_size=32, classes=['0', '1'])
-
-                # Get predictions and labels for specific person/session combination
-                predictions = []
-                labels = []
-                # EPOCH_LEN = predict_gen.n // predict_gen.batch_size
-                for i in range(predict_gen.n // predict_gen.batch_size):
-                    x, y = next(predict_gen)
-                    predictions.append(model.predict(x))
-                    labels.append(y)
-                predictions = np.concatenate(predictions)
-                labels = np.concatenate(labels)
-
-                # Get Loss
-                current_loss = loss(
-                    tf.convert_to_tensor(tf.cast(labels, tf.float32)),
-                    tf.convert_to_tensor(tf.cast(predictions, tf.float32))
-                ).numpy()
-
-                # Get y_pred
-                y_pred = np.argmax(predictions, axis=1)
-
-                # Compute individual metrics
-                df = compute_individual_metrics(epoch, current_loss, person, labels, y_pred, predictions, sess)
-                history = history.append(df, ignore_index=True)
-                all_predictions.append(predictions)
-                all_labels.append(labels)
-
-        # Compute aggregate metrics
-        all_predictions = np.concatenate(all_predictions)
-        all_labels = np.concatenate(all_labels)
-        history = compute_aggregate_metrics(history, all_labels, all_predictions)
-    else:
+    if test_data is not None:
         predictions = model.predict(test_data)
-        current_loss = loss(
-            tf.convert_to_tensor(tf.cast(test_labels, tf.float32)),
-            tf.convert_to_tensor(tf.cast(predictions, tf.float32))
-        ).numpy()
+        current_loss = compute_loss(loss, predictions, test_labels)
         y_pred = np.argmax(predictions, axis=1)
+        df_metrics = compute_metrics(current_loss, epoch, people, predictions, test_labels, y_pred)
+        history = history.append(df_metrics, ignore_index=True)
 
-        # If people were passed, compute metrics on a per person basis as well as aggregate
-        # Else just compute aggregate
-        df = compute_individual_metrics(epoch, current_loss, people, test_labels, y_pred, predictions)
-        history = history.append(df, ignore_index=True)
+    elif df_test is not None:
+        predictions = model.predict_generator(predict_gen)
+        current_loss = compute_loss(loss, predictions, df_test['Pain'])
+        y_pred = np.argmax(predictions, axis=1)
+        df_metrics = compute_metrics(current_loss, epoch, df_test['Person'], predictions, df_test['Pain'].astype(int),
+                                     y_pred)
+        history = history.append(df_metrics, ignore_index=True)
+
+    else:
+        raise ValueError('Either "test_data" or "df_test" must be not None.')
 
     # Save logs
     if people is not None:
@@ -172,6 +143,19 @@ def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, df=None, h
         file = r'logs_aggregate.csv'
         history.to_csv(os.path.join(RESULTS, file))
     return history
+
+
+def compute_metrics(current_loss, epoch, people, predictions, test_labels, y_pred):
+    df = compute_individual_metrics(epoch, current_loss, people, test_labels, y_pred, predictions)
+    df = compute_aggregate_metrics(df, test_labels, predictions)
+    return df
+
+
+def compute_loss(loss, predictions, test_labels):
+    return loss(
+        tf.convert_to_tensor(tf.cast(test_labels, tf.float32)),
+        tf.convert_to_tensor(tf.cast(predictions, tf.float32))
+    ).numpy()
 
 
 def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predictions, session=None):

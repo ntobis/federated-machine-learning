@@ -391,7 +391,7 @@ def load_greyscale_image_data(path, label_type=None):
     """
 
     if type(path) is str:
-        img_paths = get_image_paths(path)
+        img_paths = get_image_paths(path)[:500]
     else:
         img_paths = path
     np.random.shuffle(img_paths)

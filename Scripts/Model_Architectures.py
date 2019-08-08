@@ -25,8 +25,9 @@ def build_CNN(input_shape):
         model               compiled tensorflow model
     """
 
+    print("Setting up CNN")
     # Set up model type
-    model = models.Sequential()
+    model = models.Sequential(name='CNN')
 
     # Add layers
     model.add(layers.Conv2D(filters=32, kernel_size=(5, 5), strides=(2, 2), input_shape=input_shape))
@@ -42,8 +43,11 @@ def build_CNN(input_shape):
 
 
 def build_ResNet(input_shape):
-    base_model = tf.keras.applications.ResNet50(input_shape)
 
+    print("Setting up ResNet")
+    base_model = tf.keras.applications.ResNet50(include_top=False, input_shape=(input_shape[0], input_shape[1], 3),
+                                                weights='imagenet')
+    base_model.summary()
     # Freeze the pre-trained model weights
     base_model.trainable = False
 
@@ -55,5 +59,13 @@ def build_ResNet(input_shape):
         layers.BatchNormalization(),
         layers.ReLU(),
         layers.Dense(units=2, activation='sigmoid')
-    ])
+    ], name='ResNet')
+
     return model
+
+
+def build_model(input_shape, model_type):
+    model_type = model_type.lower()
+    model_types = {'cnn': build_CNN,
+                   'resnet': build_ResNet}
+    return model_types[model_type](input_shape=input_shape)

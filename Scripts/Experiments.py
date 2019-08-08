@@ -5,8 +5,6 @@ import traceback
 
 import sklearn
 
-import Scripts.Model_Architectures
-
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import time
@@ -23,6 +21,7 @@ from Scripts import Print_Functions as Output
 from Scripts import Data_Loader_Functions as dL
 from Scripts import Centralized_Pain as cP
 from Scripts import Federated_Pain as fP
+from Scripts import Model_Architectures as mA
 
 pd.set_option('display.max_columns', 500)
 
@@ -102,18 +101,15 @@ def find_newest_model_path(path, sub_string):
 # ------------------------------------------------ Experiment Runners ---------------------------------------------- #
 
 
-def runner_centralized_pain(dataset, experiment, train_data=None, train_labels=None, test_data=None, test_labels=None,
-                            df=None, epochs=5, model=None, people=None, optimizer=None, loss=None, metrics=None,
-                            session=None, evaluate=True):
+def runner_centralized_pain(dataset, experiment, model, train_data=None, train_labels=None, test_data=None,
+                            test_labels=None, df=None, epochs=5, people=None, loss=None, session=None, evaluate=True):
     """
     Sets up a centralized CNN that trains on a specified dataset. Saves the results to CSV.
 
     :param session:
     :param df:
     :param evaluate:
-    :param metrics:
     :param loss:
-    :param optimizer:
     :param model:
     :param people:
     :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
@@ -126,24 +122,17 @@ def runner_centralized_pain(dataset, experiment, train_data=None, train_labels=N
     :return:
     """
 
-    # Train Centralized CNN
-    if model is None:
-        centralized_model = Scripts.Model_Architectures.build_CNN(input_shape=(215, 215, 1))
-        centralized_model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
-    else:
-        centralized_model = model
-
-    centralized_model, history = cP.train_cnn(centralized_model, epochs=epochs, train_data=train_data,
-                                              train_labels=train_labels, test_data=test_data,
-                                              test_labels=test_labels, df=df, people=people, evaluate=evaluate,
-                                              loss=loss, early_stopping=None, session=session)
+    model, history = cP.train_cnn(model, epochs=epochs, train_data=train_data,
+                                  train_labels=train_labels, test_data=test_data,
+                                  test_labels=test_labels, df=df, people=people, evaluate=evaluate,
+                                  loss=loss, session=session)
 
     # Save full model
     folder = os.path.join(CENTRAL_PAIN_MODELS, time.strftime("%Y-%m-%d"))
     if not os.path.isdir(folder):
         os.mkdir(folder)
     f_name = time.strftime("%Y-%m-%d-%H%M%S") + r"_{}_{}.h5".format(dataset, experiment)
-    centralized_model.save(os.path.join(folder, f_name))
+    model.save(os.path.join(folder, f_name))
 
     # Save Final Results
     folder = os.path.join(RESULTS, time.strftime("%Y-%m-%d") + "_{}_{}".format(dataset,
@@ -154,15 +143,16 @@ def runner_centralized_pain(dataset, experiment, train_data=None, train_labels=N
     f_name = time.strftime("%Y-%m-%d-%H%M%S") + "_{}_{}".format(dataset, experiment) + suffix
     history.to_csv(os.path.join(folder, f_name))
 
-    return centralized_model
+    return model
 
 
 def runner_federated_pain(dataset, experiment, clients=None, train_data=None, train_labels=None, test_data=None,
                           test_labels=None, df=None, rounds=5, epochs=1, participants=None, people=None, model=None,
-                          optimizer=None, loss=None, metrics=None, session=False, evaluate=True):
+                          optimizer=None, loss=None, metrics=None, session=False, evaluate=True, model_type='CNN'):
     """
     Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
 
+    :param model_type:
     :param evaluate:
     :param df:
     :param session:
@@ -194,7 +184,7 @@ def runner_federated_pain(dataset, experiment, clients=None, train_data=None, tr
                                            train_labels=train_labels,
                                            test_data=test_data,
                                            test_labels=test_labels,
-                                           epochs=epochs,
+                                           local_epochs=epochs,
                                            num_participating_clients=participants,
                                            people=people,
                                            model=model,
@@ -203,7 +193,8 @@ def runner_federated_pain(dataset, experiment, clients=None, train_data=None, tr
                                            metrics=metrics,
                                            session=session,
                                            df=df,
-                                           evaluate=evaluate
+                                           evaluate=evaluate,
+                                           model_type=model_type
                                            )
 
     # Save history for plotting
@@ -233,7 +224,7 @@ def runner_federated_pain(dataset, experiment, clients=None, train_data=None, tr
 # ------------------------------------------------ Experiments - PAIN ---------------------------------------------- #
 
 def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretraining=True, cumulative=True,
-                                optimizer=None, loss=None, metrics=None):
+                                optimizer=None, loss=None, metrics=None, model_type='CNN'):
     # Define data paths
     group_1_train_path = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_1")
     group_2_train_path = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_2_train")
@@ -246,6 +237,10 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
     # Initialize OneHotEncoder
     enc = sklearn.preprocessing.OneHotEncoder(sparse=False, categories='auto')
 
+    # Initialize random model
+    model = mA.build_model((215, 215, 1), model_type)
+    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+
     # Perform pre-training on group 1
     if pretraining:
         # Load data
@@ -257,16 +252,10 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
         train_labels_binary = enc.fit_transform(train_labels_binary.reshape(len(train_labels_binary), 1))
 
         # Train
-        model = runner_centralized_pain(dataset, experiment + "_shard-0.00", train_data, train_labels_binary,
-                                        epochs=rounds, optimizer=optimizer,
-                                        loss=loss, metrics=metrics, evaluate=False)
+        model = runner_centralized_pain(dataset, experiment + "_shard-0.00", model=model, train_data=train_data,
+                                        train_labels=train_labels_binary, epochs=rounds, loss=loss, evaluate=False)
         # Free memory
         del train_data
-
-    else:
-        # Initialize random model
-        model = Scripts.Model_Architectures.build_CNN((215, 215, 1))
-        model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     if shards is not None:
         # Load the test data
@@ -298,9 +287,9 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
             Output.print_shard(percentage)
             Output.print_shard_summary(labels, people)
             experiment_current = experiment + "_shard-{}".format(percentage)
-            model = runner_centralized_pain(dataset, experiment_current, data, labels, test_data, test_labels_binary,
-                                            rounds, model=model, people=test_labels_people,
-                                            optimizer=optimizer, loss=loss, metrics=metrics)
+            model = runner_centralized_pain(dataset, experiment_current, model=model, train_data=data,
+                                            train_labels=labels, test_data=test_data, test_labels=test_labels_binary,
+                                            df=rounds, people=test_labels_people, loss=loss)
 
     # Split group 2 training data into sessions
     else:
@@ -313,13 +302,13 @@ def experiment_pain_centralized(dataset, experiment, rounds, shards=None, pretra
         for session in df['Session'].unique():
             Output.print_session(session)
             experiment_current = experiment + "_shard-{}".format(session)
-            model = runner_centralized_pain(dataset, experiment_current, df=df, epochs=rounds, model=model,
-                                            optimizer=optimizer, loss=loss, metrics=metrics, session=session)
+            model = runner_centralized_pain(dataset, experiment_current, model=model, df=df, epochs=rounds, loss=loss,
+                                            session=session)
 
 
 def experiment_pain_federated(dataset, experiment, rounds, shards=None, clients=None, model_path=None, pretraining=None,
                               cumulative=True, optimizer=None, loss=None, metrics=None, subjects_per_client=None,
-                              local_epochs=1):
+                              local_epochs=1, model_type='CNN'):
     # Define data paths
     group_1_train_path = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_1")
     group_2_train_path = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_2_train")
@@ -362,7 +351,8 @@ def experiment_pain_federated(dataset, experiment, rounds, shards=None, clients=
             # Train
             model = runner_federated_pain(dataset, experiment + "_shard-0.00", clients, train_data,
                                           train_labels_binary, rounds=rounds, evaluate=False, loss=loss,
-                                          metrics=metrics, optimizer=optimizer, epochs=local_epochs)
+                                          metrics=metrics, optimizer=optimizer, epochs=local_epochs,
+                                          model_type=model_type)
 
     elif pretraining == 'centralized':
         model = tf.keras.models.load_model(model_path)
@@ -412,7 +402,8 @@ def experiment_pain_federated(dataset, experiment, rounds, shards=None, clients=
             experiment_current = experiment + "_shard-{}".format(percentage)
             model = runner_federated_pain(dataset, experiment_current, all_labels, data, labels, test_data,
                                           test_labels_binary, rounds=rounds, people=test_labels_people, model=model,
-                                          optimizer=optimizer, loss=loss, metrics=metrics, epochs=local_epochs)
+                                          optimizer=optimizer, loss=loss, metrics=metrics, epochs=local_epochs,
+                                          model_type=model_type)
 
     # Split group 2 into sessions
     else:
@@ -427,7 +418,7 @@ def experiment_pain_federated(dataset, experiment, rounds, shards=None, clients=
             experiment_current = experiment + "_shard-{}".format(session)
             model = runner_federated_pain(dataset, experiment_current, df=df, rounds=rounds, epochs=local_epochs,
                                           model=model, optimizer=optimizer, loss=loss, metrics=metrics, session=session,
-                                          evaluate=True)
+                                          evaluate=True, model_type=model_type)
 
 
 # ------------------------------------------------ End Experiments - 3 --------------------------------------------- #
@@ -438,11 +429,11 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
     # Setup
     data_loc = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
 
-    g_monitor = GoogleCloudMonitor()
+    # g_monitor = GoogleCloudMonitor()
     twilio = Twilio()
 
-    # optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
-    optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
+    # optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
     loss = tf.keras.losses.BinaryCrossentropy()
     metrics = ['accuracy']
 
@@ -563,7 +554,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             Output.print_experiment("11 - Sessions: Centralized without pre-training")
             experiment_pain_centralized('PAIN', '1-sessions-Centralized-no-pre-training', 30, shards=None,
                                         pretraining=False, cumulative=True, optimizer=optimizer, loss=loss,
-                                        metrics=metrics)
+                                        metrics=metrics, model_type='ResNet')
             twilio.send_message("Experiment 11 Complete")
 
             # Experiment 12 - Sessions: Centralized with pre-training
