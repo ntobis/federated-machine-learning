@@ -45,8 +45,8 @@ def set_up_data_generator(df, model_name, shuffle=True, balanced=False):
 
     # Ensure that input channels are of correct size (1-channel for 'CNN', 3-channels for 'ResNet'
     color_mode = 'rgb' if model_name is 'ResNet' else 'grayscale'
-
-    return data_gen.flow_from_dataframe(dataframe=df, directory=SESSION_DATA, x_col="img_path",
+    print(df['img_path'].head())
+    return data_gen.flow_from_dataframe(dataframe=df, x_col="img_path",
                                         y_col="Pain", color_mode=color_mode,
                                         class_mode="categorical", target_size=(215, 215),
                                         batch_size=32,
