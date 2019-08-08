@@ -16,12 +16,12 @@ optimizers = tf.keras.optimizers  # like 'from tensorflow.keras import optimizer
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
 ROOT = os.path.dirname(os.path.dirname(__file__))
+RESULTS = os.path.join(ROOT, 'Results')
 MODELS = os.path.join(ROOT, 'Models')
 AUTISM = os.path.join(ROOT, 'Data', 'Autism')
 CENTRALIZED_MODEL_PATH = os.path.join(MODELS, "Centralized Model")
 CENTRALIZED_CHECK_POINT = os.path.join(CENTRALIZED_MODEL_PATH, "centralized_cp.ckpt")
 CENTRALIZED_MODEL = os.path.join(CENTRALIZED_MODEL_PATH, "centralized_model.h5")
-RESULTS = os.path.join(ROOT, 'Results')
 
 
 # ---------------------------------------------------- End Paths --------------------------------------------------- #

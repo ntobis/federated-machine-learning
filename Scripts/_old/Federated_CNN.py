@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from Scripts import Centralized_CNN as cNN
-from Scripts import Model_Reset as Reset
+from Scripts._old import Centralized_CNN as cNN
+from Scripts import Reset_Model as Reset
 from Scripts import Print_Functions as Output
 from Scripts.Weights_Accountant import WeightsAccountant
 

@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import tensorflow as tf
 import numpy as np
 
-from Scripts import Centralized_CNN as cNN
+from Scripts._old import Centralized_CNN as cNN
 from Scripts import Data_Loader_Functions as Data_Loader
 from Scripts import Print_Functions as Output
 

@@ -1,9 +1,9 @@
 import pandas as pd
 import numpy as np
 
-from Scripts import Federated_CNN as fedCNN
+from Scripts._old import Federated_CNN as fedCNN
 from Scripts import Print_Functions as Output
-from Scripts.Federated_CNN import FEDERATED_GLOBAL_WEIGHTS
+from Scripts._old.Federated_CNN import FEDERATED_GLOBAL_WEIGHTS
 from Scripts.Weights_Accountant import WeightsAccountant
 
 

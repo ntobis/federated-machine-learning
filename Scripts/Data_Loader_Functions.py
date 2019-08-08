@@ -391,7 +391,7 @@ def load_greyscale_image_data(path, label_type=None):
     """
 
     if type(path) is str:
-        img_paths = get_image_paths(path)
+        img_paths = get_image_paths(path)[:2000]
     else:
         img_paths = path
     np.random.shuffle(img_paths)
@@ -731,11 +731,11 @@ def prepare_pain_images(root_path, distribution='unbalanced'):
     print("\n--------------------------------------------------------------------\n")
     print_distribution(df_2_train, df_2_test)
 
-    def allocate_group(dframe, path):
+    def allocate_group(d_frame, path):
         if not os.path.isdir(path):
             os.mkdir(path)
 
-        for f_path in dframe['img_path'].values:
+        for f_path in d_frame['img_path'].values:
             os.rename(f_path, os.path.join(path, os.path.basename(f_path)))
 
     print("# Allocate Group 1")
@@ -760,7 +760,7 @@ def prepare_pain_images(root_path, distribution='unbalanced'):
 
 
 def create_pain_df(path):
-    img_paths = np.array(get_image_paths(path))
+    img_paths = np.array(get_image_paths(path))[:10000]
     labels = np.array(get_labels(img_paths))
     df = pd.DataFrame(labels, columns=['Person', 'Session', 'Culture', 'Frame', 'Pain', 'Trans_1', 'Trans_2'])
     df[['Person', 'Session', 'Culture', 'Frame', 'Pain']] = df[
