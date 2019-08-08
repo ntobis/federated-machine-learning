@@ -8,7 +8,6 @@ import pandas as pd
 import tensorflow as tf
 from sklearn.metrics import confusion_matrix, average_precision_score
 
-from Scripts import Centralized_CNN as cNN
 from Scripts import Data_Loader_Functions as dL
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
@@ -19,7 +18,8 @@ optimizers = tf.keras.optimizers  # like 'from tensorflow.keras import optimizer
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
 ROOT = os.path.dirname(os.path.dirname(__file__))
 SESSION_DATA = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation", "group_2")
-EPOCH_LEN = 1
+RESULTS = os.path.join(ROOT, 'Results')
+
 
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
@@ -41,43 +41,6 @@ class EarlyStopping:
             return False
 
 
-def build_cnn(input_shape):
-    """
-    Compile and return a simple CNN model for image recognition.
-
-    Configuration:
-    Layer 1: Convolution Layer | Filters: 32 | Kernel Size: 3x3 | Activation: Relu
-    Layer 2: Max Pooling Layer | Filter: 2x2
-    Layer 3: Dense Layer       | Neurons: 32 | Activation: Relu
-    Layer 4: Dense Layer       | Neurons: 10 | Activation: Softmax
-
-    Optimizer:      Adam
-    Loss function:  Sparse Categorical Cross Entropy
-    Loss metric:    Accuracy
-
-
-    :param input_shape:     image input shape (tuple), e.g. (28, 28, 1)
-
-    :return:
-        model               compiled tensorflow model
-    """
-
-    # Set up model type
-    model = models.Sequential()
-
-    # Add layers
-    model.add(layers.Conv2D(filters=32, kernel_size=(5, 5), strides=(2, 2), input_shape=input_shape))
-    model.add(layers.Conv2D(filters=64, kernel_size=(5, 5), strides=(2, 2)))
-    model.add(layers.Conv2D(filters=128, kernel_size=(5, 5), strides=(2, 2)))
-    model.add(layers.Flatten())
-    model.add(layers.Dense(units=128))
-    model.add(layers.BatchNormalization())
-    model.add(layers.ReLU())
-    model.add(layers.Dense(units=2, activation='sigmoid'))
-
-    return model
-
-
 def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None, test_labels=None, df=None,
               people=None, evaluate=True, loss=None, early_stopping=None, session=None):
     # Set up data frames for logging
@@ -90,6 +53,7 @@ def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None,
         # Training (either on dataset, or on Keras train iterator
         if train_data is not None and train_labels is not None:
             train_hist = model.fit(train_data, train_labels, epochs=1, batch_size=32, use_multiprocessing=True)
+
         elif df is not None and session is not None:
             data_gen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
             train_df = df[df['Session'] <= session]
@@ -100,10 +64,14 @@ def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None,
             if len(train_df) > 0:
                 train_gen = data_gen.flow_from_dataframe(dataframe=train_df, directory=SESSION_DATA, x_col="img_path",
                                                          y_col="Pain", color_mode="grayscale",
-                                                         class_mode="categorical", target_size=(215, 215), batch_size=32,
+                                                         class_mode="categorical", target_size=(215, 215),
+                                                         batch_size=32,
                                                          classes=['0', '1'])
-                train_hist = model.fit_generator(generator=train_gen, steps_per_epoch=train_gen.n // train_gen.batch_size,
+                train_hist = model.fit_generator(generator=train_gen,
+                                                 steps_per_epoch=train_gen.n // train_gen.batch_size,
                                                  epochs=1)
+            else:
+                train_hist = None
         else:
             raise KeyError("Need to specify either ('train_data' and 'train_labels') or 'df'. Neither was specified.")
 
@@ -113,7 +81,7 @@ def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None,
             history = evaluate_pain_cnn(model, epoch, test_data, test_labels, df, history, people, loss)
 
         # Early stopping
-        if early_stopping is not None:
+        if early_stopping is not None and train_hist is not None:
             early_stopping_hist.extend(train_hist.history[early_stopping.metric])
             if early_stopping(train_hist):
                 break
@@ -199,10 +167,10 @@ def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, df=None, h
     # Save logs
     if people is not None:
         file = r'logs_individual.csv'
-        history.to_csv(os.path.join(cNN.RESULTS, file))
+        history.to_csv(os.path.join(RESULTS, file))
     else:
         file = r'logs_aggregate.csv'
-        history.to_csv(os.path.join(cNN.RESULTS, file))
+        history.to_csv(os.path.join(RESULTS, file))
     return history
 
 
