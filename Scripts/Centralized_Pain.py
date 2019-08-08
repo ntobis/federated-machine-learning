@@ -63,7 +63,7 @@ def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None,
         elif train_gen is not None:
             model.fit_generator(generator=train_gen,
                                 steps_per_epoch=train_gen.n // train_gen.batch_size,
-                                epochs=1)
+                                epochs=1, use_multiprocessing=True)
         else:
             print("Not training, since input data was empty.")
 
@@ -118,14 +118,14 @@ def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, predict_ge
         history = history_set_up(people)
 
     if test_data is not None:
-        predictions = model.predict(test_data)
+        predictions = model.predict(test_data, use_multiprocessing=True)
         current_loss = compute_loss(loss, predictions, test_labels)
         y_pred = np.argmax(predictions, axis=1)
         df_metrics = compute_metrics(current_loss, epoch, people, predictions, test_labels, y_pred)
         history = history.append(df_metrics, ignore_index=True)
 
     elif df_test is not None:
-        predictions = model.predict_generator(predict_gen)
+        predictions = model.predict_generator(predict_gen, use_multiprocessing=True)
         current_loss = compute_loss(loss, predictions, df_test['Pain'])
         y_pred = np.argmax(predictions, axis=1)
         df_metrics = compute_metrics(current_loss, epoch, df_test['Person'], predictions, df_test['Pain'].astype(int),
