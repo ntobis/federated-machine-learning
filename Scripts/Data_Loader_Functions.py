@@ -617,6 +617,12 @@ def prepare_pain_images(root_path, distribution='unbalanced'):
     :param distribution:        string, distribute the images "balanced" or "unbalanced"
     :return:
     """
+    def allocate_group(d_frame, file_path):
+        if not os.path.isdir(file_path):
+            os.mkdir(file_path)
+
+        for f_path in d_frame['img_path'].values:
+            os.rename(f_path, os.path.join(file_path, os.path.basename(f_path)))
     print('# Moving all images into the "raw" subfolder')
     reset_to_raw(root_path)
 
@@ -698,6 +704,23 @@ def prepare_pain_images(root_path, distribution='unbalanced'):
 
         df_2_test = df_2_originals_test
 
+    elif distribution is 'sessions':
+        print('# Downsample first group')
+        df_1_pain_1 = df_1[df_1['Pain'] > 0]
+        df_1_pain_0 = df_1[df_1['Pain'] == 0].sample(len(df_1_pain_1))
+        df_1_downsampled = pd.concat((df_1_pain_0, df_1_pain_1))
+
+        print('# Split dataframe into sessions')
+        session_dfs_2 = np.array([idx_df for idx_df in df_2.groupby('Session')])
+        session_paths = [os.path.join(root_path, "group_2", "session_" + str(sess)) for sess in
+                         session_dfs_2[:, 0]]
+
+        # Allocate into sessions
+        if not os.path.isdir(os.path.join(root_path, "group_2")):
+            os.mkdir(os.path.join(root_path, "group_2"))
+        for df, path in zip(session_dfs_2[:, 1], session_paths):
+            allocate_group(df, path)
+
     else:
         raise ValueError("'distribution' must be either 'balanced' or 'unbalanced', was: {}".format(distribution))
 
@@ -726,37 +749,33 @@ def prepare_pain_images(root_path, distribution='unbalanced'):
         print("----------------------------------------")
         print("Duplicates:", sum(df_train['temp_id'].isin(df_test['temp_id'])))
 
-    # Print final distribution with augmented train images
-    print_pain_distribution(df_2_train, df_2_test)
-    print("\n--------------------------------------------------------------------\n")
-    print_distribution(df_2_train, df_2_test)
-
-    def allocate_group(d_frame, path):
-        if not os.path.isdir(path):
-            os.mkdir(path)
-
-        for f_path in d_frame['img_path'].values:
-            os.rename(f_path, os.path.join(path, os.path.basename(f_path)))
+    if distribution is not 'sessions':
+        # Print final distribution with augmented train images
+        print_pain_distribution(df_2_train, df_2_test)
+        print("\n--------------------------------------------------------------------\n")
+        print_distribution(df_2_train, df_2_test)
 
     print("# Allocate Group 1")
     group_1_path = os.path.join(root_path, "group_1")
     allocate_group(df_1_downsampled, group_1_path)
 
-    print("# Allocate Group 2 Train / Test")
-    train_path = os.path.join(root_path, 'group_2_train')
-    test_path = os.path.join(root_path, 'group_2_test')
-    allocate_group(df_2_train, train_path)
-    allocate_group(df_2_test, test_path)
+    if distribution is not 'sessions':
+        print("# Allocate Group 2 Train / Test")
+        train_path = os.path.join(root_path, 'group_2_train')
+        test_path = os.path.join(root_path, 'group_2_test')
+        allocate_group(df_2_train, train_path)
+        allocate_group(df_2_test, test_path)
 
-    print('# Verify Success, expected outcome is no instances of pain images in the "Raw" folder, a large group one,')
-    print('# and smaller group 2 train and test')
-    print("Group 1:        {}".format(len(os.listdir(group_1_path))))
-    print("Group 2 Train:  {}".format(len(os.listdir(train_path))))
-    print("Group 2 Test:   {}".format(len(os.listdir(test_path))))
-    print("Raw:            {}".format(len(os.listdir(os.path.join(root_path, 'raw')))))
-    print("Raw Pain Img's: {}".format(np.sum(np.minimum(
-        np.array(get_labels(get_image_paths(os.path.join(root_path, 'raw'))))[:, 4].astype(int),
-        1))))
+        print('# Verify Success, expected outcome is no instances of pain images in the "Raw" folder, '
+              'a large group one,')
+        print('# and smaller group 2 train and test')
+        print("Group 1:        {}".format(len(os.listdir(group_1_path))))
+        print("Group 2 Train:  {}".format(len(os.listdir(train_path))))
+        print("Group 2 Test:   {}".format(len(os.listdir(test_path))))
+        print("Raw:            {}".format(len(os.listdir(os.path.join(root_path, 'raw')))))
+        print("Raw Pain Img's: {}".format(np.sum(np.minimum(
+            np.array(get_labels(get_image_paths(os.path.join(root_path, 'raw'))))[:, 4].astype(int),
+            1))))
 
 
 def create_pain_df(path):
@@ -808,5 +827,3 @@ def balance_data(df, threshold):
         df_train.append(df_temp)
     df_train = pd.concat(df_train)
     return balance_session(df_train, threshold)
-
-

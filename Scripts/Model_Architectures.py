@@ -47,7 +47,6 @@ def build_ResNet(input_shape):
     print("Setting up ResNet")
     base_model = tf.keras.applications.ResNet50(include_top=False, input_shape=(input_shape[0], input_shape[1], 3),
                                                 weights='imagenet')
-    base_model.summary()
     # Freeze the pre-trained model weights
     base_model.trainable = False
 
@@ -60,7 +59,6 @@ def build_ResNet(input_shape):
         layers.ReLU(),
         layers.Dense(units=2, activation='sigmoid')
     ], name='ResNet')
-
     return model
 
 

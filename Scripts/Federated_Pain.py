@@ -19,6 +19,7 @@ ROOT = os.path.dirname(os.path.dirname(__file__))
 MODELS = os.path.join(ROOT, 'Models')
 FEDERATED_LOCAL_WEIGHTS_PATH = os.path.join(MODELS, 'Pain', 'Federated', 'Federated Weights')
 
+
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
@@ -86,7 +87,8 @@ def init_global_model(optimizer, loss, metrics, input_shape=(215, 215, 1), model
 # ------------------------------------------------ Federated Learning ---------------------------------------------- #
 
 
-def train_client_model(client, local_epochs, model, train_data=None, train_labels=None, df=None, weights_accountant=None,
+def train_client_model(client, local_epochs, model, train_data=None, train_labels=None, df=None,
+                       weights_accountant=None,
                        session=None):
     """
     Utility function training a simple CNN for 1 client in a federated setting and adding those weights to the
@@ -114,7 +116,10 @@ def train_client_model(client, local_epochs, model, train_data=None, train_label
     weights = model.get_weights()
 
     # Only append weights for updating the model, if there was an update
-    if not all([np.array_equal(w_1, w_2) for w_1, w_2 in zip(old_weights, weights)]):
+    update_check = [np.array_equal(w_1, w_2) for w_1, w_2 in zip(old_weights, weights)]
+    print("Number of layers: {} | Number of layers to update: {}".format(len(update_check),
+                                                                         len(update_check) - sum(update_check)))
+    if not all(update_check):
         weights_accountant.append_local_weights(weights)
 
 
