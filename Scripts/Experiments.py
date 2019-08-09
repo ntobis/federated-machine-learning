@@ -49,6 +49,15 @@ GROUP_2_TEST_PATH = os.path.join(DATA, "group_2_test")
 
 class GoogleCloudMonitor:
     def __init__(self, project='smooth-drive-248209', zone='us-west1-b', instance='federated-imperial-vm'):
+        """
+        Set up Google Cloud Monitor Instance. This allows to automatically switch off the Google Cloud instance once
+        training stops or an error occurs, thus prevents excessive billing.
+
+        :param project:                     string, Google project name
+        :param zone:                        string, Google project zone
+        :param instance:                    string, Google project instance name
+        """
+
         # Google Credentials Set Up
         self.credentials = GoogleCredentials.get_application_default()
         self.service = discovery.build('compute', 'v1', credentials=self.credentials)
@@ -63,12 +72,22 @@ class GoogleCloudMonitor:
         self.instance = instance
 
     def shutdown(self):
+        """
+        API call to shuts down a Google instance.
+        :return:
+        """
+
         request = self.service.instances().stop(project=self.project, zone=self.zone, instance=self.instance)
         return request.execute()
 
 
 class Twilio(Client):
     def __init__(self):
+        """
+        Instantiate a Twilio Client that sends text messages when training is complete or an error occurs. Parses login
+        credentials from the command line.
+        """
+
         # Parse Commandline Arguments
         parser = argparse.ArgumentParser()
         parser.add_argument("--sms_acc", help="Enter Twilio Account Here")
@@ -79,6 +98,13 @@ class Twilio(Client):
         super(Twilio, self).__init__(self.args.sms_acc, self.args.sms_pw)
 
     def send_message(self, msg=None):
+        """
+        Sends a text message.
+
+        :param msg:                 string, message sent. If not specified one of the default messages will be sent.
+        :return:
+        """
+
         body = ['Sir, this is Google speaking. Your Federated model trained like a boss. Google out.',
                 "Nico you garstige Schlange. What a training session. I'm going to sleep",
                 "Wow, what a ride. Training complete.",
@@ -89,14 +115,29 @@ class Twilio(Client):
 
 
 def training_setup(seed):
+    """
+    Sets seed for experiments and tests if a GPU is available for training.
+    :param seed:                    int, seed to be set
+    :return:
+    """
+
     # Training setup
     print("GPU Available: ", tf.test.is_gpu_available())
-    # tf.debugging.set_log_device_placement(True)
     tf.random.set_seed(seed)
     np.random.seed(seed)
 
 
 def find_newest_model_path(path, sub_string):
+    """
+    Utility function, identifying the newest model in a given directory, given that a "sub_string" is found in the model
+    file name.
+
+    :param path:                    string, root path from where to start the search
+    :param sub_string:              string, substring that must be found in the f_name
+    :return:
+        file_path:                  string, path to the latest model
+    """
+
     files = []
     for dir_path, dirname, filenames in os.walk(path):
         files.extend([os.path.join(dir_path, f_name) for f_name in filenames])
@@ -106,6 +147,17 @@ def find_newest_model_path(path, sub_string):
 
 
 def save_results(dataset, experiment, history, model, folder):
+    """
+    Utility function saving training results (training history and latest model) to a folder.
+
+    :param dataset:                 string, name of the dataset used for training
+    :param experiment:              string, name of the experiment conducted
+    :param history:                 Pandas DataFrame, to be saved as CSV
+    :param model:                   Tensorflow Graph, to be saved as .h5 file
+    :param folder:                  string, absolute path where to save the model
+    :return:
+    """
+
     # Save full model
     if not os.path.isdir(folder):
         os.mkdir(folder)
@@ -121,6 +173,22 @@ def save_results(dataset, experiment, history, model, folder):
 
 
 def load_and_prepare_data(path, person, pain):
+    """
+    Utility function loading pain image data into memory, and preparing the labels for training.
+    Note, this function expects the image files to have the following naming convention:
+    "43_0_0_0_2_original_straight.jpg", to be converted into the following label array:
+    [person, session, culture, frame, pain_level, transformation_1, transformation_2]
+
+    :param path:                    string, root path to all images to be loaded
+    :param person:                  int, index where 'person' appears in the file name converted to an array.
+    :param pain:                    int, indext where 'pain_level' appears in the file name converted to an array.
+    :return:
+        data:                       4D numpy array, images as numpy array in shape (N, 215, 215, 1)
+        labels_binary:              2D numpy array, one-hot encoded labels [no pain, pain] (N, 2)
+        train_labels_people:        2D numpy array, only including the "person" label [person] (N, 1)
+        labels:                     2D numpy array, all labels as described above (N, 7)
+    """
+
     enc = OneHotEncoder(sparse=False, categories='auto')
     data, labels = dL.load_pain_data(path)
     labels_ord = labels[:, pain].astype(np.int)
@@ -131,6 +199,22 @@ def load_and_prepare_data(path, person, pain):
 
 
 def split_data_into_clients(train_data, train_labels, clients, subjects_per_client, person):
+    """
+    Utility function splitting image data into clients for federated learning. Adds one dimension to input numpy arrays.
+
+    :param train_data:              4D numpy array, images as numpy array in shape (N, 215, 215, 1)
+    :param train_labels:            2D numpy array, one-hot encoded labels [no pain, pain] (N, 2)
+    :param clients:                 int or None, if int then data is split into specified number of clients,
+                                    if None then data is split according to the unique number of people in train_labels
+    :param subjects_per_client:     int, allocates a specified number of test subjects to a given client
+    :param person:                  int, index where 'person' appears in the file name converted to an array.
+    :return:
+        clients:                    int or numpy array, if int then number of clients the data was broken into, if numpy
+                                    array, then 2D numpy array, all labels (N, 7)
+        train_data                  5D numpy array, images as numpy array in shape (clients, N_per_client, 215, 215, 1)
+        train_labels_binary         3D numpy array, one-hot encoded labels (clients, N_per_client, 2)
+    """
+
     if clients is None:
         client_arr = np.unique(train_labels[:, person])
         train_data, train_labels_binary, all_labels = \
