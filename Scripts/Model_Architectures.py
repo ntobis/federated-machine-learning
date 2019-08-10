@@ -2,6 +2,7 @@ import tensorflow as tf
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 layers = tf.keras.layers  # like 'from tensorflow.keras import layers' (PyCharm import issue workaround)
+LESS_PARAMS = False
 
 
 def build_CNN(input_shape):
@@ -33,7 +34,11 @@ def build_CNN(input_shape):
     model.add(layers.Conv2D(filters=32, kernel_size=(5, 5), strides=(2, 2), input_shape=input_shape))
     model.add(layers.Conv2D(filters=64, kernel_size=(5, 5), strides=(2, 2)))
     model.add(layers.Conv2D(filters=128, kernel_size=(5, 5), strides=(2, 2)))
-    model.add(layers.Flatten())
+
+    if LESS_PARAMS:
+        model.add(layers.GlobalAveragePooling2D())
+    else:
+        model.add(layers.Flatten())
     model.add(layers.Dense(units=128))
     model.add(layers.BatchNormalization())
     model.add(layers.ReLU())
@@ -53,10 +58,8 @@ def build_ResNet(input_shape):
     # Layer classification head with feature detector
     model = tf.keras.Sequential([
         base_model,
-        layers.Flatten(),
+        layers.GlobalAveragePooling2D(),
         layers.Dense(units=128),
-        layers.BatchNormalization(),
-        layers.ReLU(),
         layers.Dense(units=2, activation='sigmoid')
     ], name='ResNet')
     return model
@@ -67,3 +70,8 @@ def build_model(input_shape, model_type):
     model_types = {'cnn': build_CNN,
                    'resnet': build_ResNet}
     return model_types[model_type](input_shape=input_shape)
+
+
+if __name__ == '__main__':
+    model_1 = build_model((215, 215, 1), 'ResNet')
+    model_1.summary()

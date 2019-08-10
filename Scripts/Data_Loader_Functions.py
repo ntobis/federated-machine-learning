@@ -391,7 +391,7 @@ def load_greyscale_image_data(path, label_type=None):
     """
 
     if type(path) is str:
-        img_paths = get_image_paths(path)[:2000]
+        img_paths = get_image_paths(path)
     else:
         img_paths = path
     np.random.shuffle(img_paths)
@@ -779,7 +779,7 @@ def prepare_pain_images(root_path, distribution='unbalanced'):
 
 
 def create_pain_df(path):
-    img_paths = np.array(get_image_paths(path))[:10000]
+    img_paths = np.array(get_image_paths(path))
     labels = np.array(get_labels(img_paths))
     df = pd.DataFrame(labels, columns=['Person', 'Session', 'Culture', 'Frame', 'Pain', 'Trans_1', 'Trans_2'])
     df[['Person', 'Session', 'Culture', 'Frame', 'Pain']] = df[

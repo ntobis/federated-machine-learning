@@ -30,13 +30,14 @@ RESULTS = os.path.join(ROOT, 'Results')
 # ------------------------------------------------- Set-Up Functions ----------------------------------------------- #
 
 
-def set_up_train_test_generators(df, model, session):
+def set_up_train_test_generators(df, model, session, balance_train):
     train_gen, predict_gen, df_train, df_test = [None] * 4  # Initializing values
     if df is not None:
         df_train = df[df['Session'] <= session]
         df_test = df[(df['Trans_1'] == 'original') & (df['Trans_2'] == 'straight')]
         if sum(df_train['Pain'] != '0'):
-            train_gen = set_up_data_generator(df_train, model.name, shuffle=True, balanced=True, gen_type='Train')
+            train_gen = set_up_data_generator(df_train, model.name, shuffle=True, balanced=balance_train,
+                                              gen_type='Train')
         if len(df_test):
             predict_gen = set_up_data_generator(df_test, model.name, shuffle=False, balanced=False, gen_type='Test')
     return df_train, df_test, train_gen, predict_gen
@@ -76,12 +77,12 @@ def set_up_history():
 
 
 def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None, test_labels=None,
-              df=None, people=None, evaluate=True, loss=None, session=-1):
+              df=None, people=None, evaluate=True, loss=None, session=-1, federated=False, balanced=True):
     # Set up data frames for logging
     history = set_up_history()
 
     # Set up Keras data generators
-    df_train, df_test, train_gen, predict_gen = set_up_train_test_generators(df, model, session)
+    df_train, df_test, train_gen, predict_gen = set_up_train_test_generators(df, model, session, balance_train=balanced)
 
     # Start training
     for epoch in range(epochs):
@@ -99,10 +100,13 @@ def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None,
             print("Not training, since input data was empty.")
 
         # Evaluating
-        if evaluate:
+        if evaluate and not federated:
             history = evaluate_pain_cnn(model, epoch, test_data, test_labels, predict_gen, history, people, loss,
                                         df_test)
 
+    # if evaluate and federated:
+    #     history = evaluate_pain_cnn(model, 0, test_data, test_labels, predict_gen, history, people, model.loss,
+    #                                 df_test)
     return model, history
 
 
@@ -120,9 +124,8 @@ def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, predict_ge
 
     elif df_test is not None:
         # Instantiate OneHotEncoder and encode Pain Labels
-        enc = OneHotEncoder(sparse=False, categories='auto')
+        enc = OneHotEncoder(sparse=False, categories=[range(2)])
         test_labels = enc.fit_transform(df_test['Pain'].astype(int).values.reshape(len(df_test), 1))
-
         predictions = model.predict_generator(predict_gen, use_multiprocessing=True)
         current_loss = compute_loss(loss, predictions, test_labels)
         y_pred = np.argmax(predictions, axis=1)
@@ -132,8 +135,7 @@ def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, predict_ge
     else:
         raise ValueError('Either "test_data" or "df_test" must be not None.')
 
-    history = history.append(df_metrics, ignore_index=True, sort=False)
-    return history
+    return pd.concat((history, df_metrics), ignore_index=True, sort=False)
 
 
 # ------------------------------------------------ End Model Runners ----------------------------------------------- #
@@ -166,8 +168,7 @@ def compute_individual_metrics(epoch, loss, people, test_labels, y_pred, predict
 
     results = []
     for session, df_session in df.groupby('Session'):
-        for person, df_person in df.groupby('Person'):
-            df_person = df[df['Person'] == person]
+        for person, df_person in df_session.groupby('Person'):
             tn, fp, fn, tp = confusion_matrix(df_person['Y_True'], df_person['Y_Pred'], labels=[0, 1]).ravel()
             ind_avg_precision = average_precision_score(df_person['Y_True'], df_person['Predictions'])
             results.append([epoch, loss, session, person, tn, fp, fn, tp, ind_avg_precision])
