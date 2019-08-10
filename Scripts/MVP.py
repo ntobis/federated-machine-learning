@@ -29,7 +29,7 @@ def main():
     for idx, folder in enumerate(sorted(os.listdir(GROUP_2_PATH))):
         f_path = os.path.join(GROUP_2_PATH, folder)
         df = dL.create_pain_df(f_path)
-        df = df[df['Person'] == 80]
+        # df = df[df['Person'] == 80]
         f_path = df['img_path'].values
         val_data, val_labels_binary, val_labels_people, val_labels = Experiments.load_and_prepare_data(f_path, 0, 4,
                                                                                                        'CNN')
