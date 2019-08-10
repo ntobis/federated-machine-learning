@@ -28,26 +28,26 @@ def custom_metric(y_true, y_pred):
 
 
 def TP(y_true, y_pred):
-    y_pred = tf.argmax(y_pred, 1)
-    y_true = tf.argmax(y_true, 1)
+    # y_pred = tf.argmax(y_pred, 1)
+    # y_true = tf.argmax(y_true, 1)
     return tf.math.count_nonzero(y_pred * y_true)
 
 
 def FP(y_true, y_pred):
-    y_pred = tf.argmax(y_pred, 1)
-    y_true = tf.argmax(y_true, 1)
+    # y_pred = tf.argmax(y_pred, 1)
+    # y_true = tf.argmax(y_true, 1)
     return tf.math.count_nonzero(y_pred * (y_true - 1))
 
 
 def TN(y_true, y_pred):
-    y_pred = tf.argmax(y_pred, 1)
-    y_true = tf.argmax(y_true, 1)
+    # y_pred = tf.argmax(y_pred, 1)
+    # y_true = tf.argmax(y_true, 1)
     return tf.math.count_nonzero((y_pred - 1) * (y_true - 1))
 
 
 def FN(y_true, y_pred):
-    y_pred = tf.argmax(y_pred, 1)
-    y_true = tf.argmax(y_true, 1)
+    # y_pred = tf.argmax(y_pred, 1)
+    # y_true = tf.argmax(y_true, 1)
     return tf.math.count_nonzero((y_pred - 1) * y_true)
 
 
