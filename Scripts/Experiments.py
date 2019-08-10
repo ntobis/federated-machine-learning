@@ -264,7 +264,7 @@ def run_pretraining(clients, dataset, experiment, local_epochs, loss, metrics, m
         # Train
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", model=model, rounds=rounds,
                              train_data=train_data, train_labels=train_labels, df=df, evaluate=False, loss=loss,
-                             balanced=False, pretraining=True)
+                             balanced=False, pretraining=False)
 
     elif pretraining == 'federated':
         print("Pre-training a federated model.")
