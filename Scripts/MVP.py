@@ -15,7 +15,7 @@ GROUP_2_PATH = os.path.join(DATA, "group_2")
 
 
 def customLoss(yTrue, yPred):
-    weights = 1 / 0.2
+    weights = 1 / 0.1
     return tf.nn.weighted_cross_entropy_with_logits(yTrue, yPred, weights)
 
 
