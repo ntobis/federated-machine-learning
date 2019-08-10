@@ -95,7 +95,7 @@ def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None,
         print('Epoch: {}'.format(epoch))
         # Training (on dataset)
         if train_data is not None and train_labels is not None:
-            model.fit(train_data, train_labels, epochs=1, batch_size=32, use_multiprocessing=True)
+            model.fit(train_data, train_labels, epochs=1, batch_size=32, use_multiprocessing=True, validation_split=0.2)
 
         # Training (on Keras iterator)
         elif train_gen is not None:
