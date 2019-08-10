@@ -399,6 +399,7 @@ def load_image_data(path, color=0, label_type=None):
     data = []
     for idx, path in enumerate(img_paths):
         img = np.expand_dims(cv2.imread(path, color), -1) if color == 0 else cv2.imread(path, color)
+        print(type(img))
         data.append(img)
         if not idx % 1000:
             print("{} images processed".format(idx))
@@ -420,7 +421,11 @@ def load_pain_data(train_path, test_path=None, label_type=None, color=0):
 
     train_data, train_labels = load_image_data(train_path, color, label_type)
     print("Normalization")
-    train_data = np.divide(train_data, 255.0)
+    try:
+        train_data = np.divide(train_data, 255.0)
+    except Exception as e:
+        print(e)
+        raise e
     if test_path:
         test_data, test_labels = load_image_data(test_path, label_type)
         print("Normalization")
