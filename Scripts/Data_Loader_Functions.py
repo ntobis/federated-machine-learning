@@ -392,13 +392,14 @@ def load_image_data(path, color=0, label_type=None):
     """
 
     if type(path) is str:
-        img_paths = get_image_paths(path)[:500]
+        img_paths = get_image_paths(path)
     else:
         img_paths = path
     np.random.shuffle(img_paths)
     data = []
     for idx, path in enumerate(img_paths):
-        data.append(np.expand_dims(cv2.imread(path, color), -1))
+        img = np.expand_dims(cv2.imread(path, color), -1) if color == 0 else cv2.imread(path, color)
+        data.append(img)
         if not idx % 1000:
             print("{} images processed".format(idx))
     data = np.array(data, dtype=np.float32)

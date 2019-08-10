@@ -254,7 +254,7 @@ def run_pretraining(clients, dataset, experiment, local_epochs, loss, metrics, m
         # Prepare labels for training and evaluation
         train_data, train_labels, train_labels_people, raw_labels = load_and_prepare_data(GROUP_1_TRAIN_PATH, person=0,
                                                                                           pain=4, model_type=model_type)
-
+        print(train_data.shape)
         # Train
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", model=model, rounds=rounds,
                              train_data=train_data, train_labels=train_labels, evaluate=False, loss=loss,
