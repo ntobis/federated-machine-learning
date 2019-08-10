@@ -7,18 +7,23 @@ import numpy as np
 from Scripts import Model_Architectures as mA
 from Scripts import Experiments
 from Scripts import Data_Loader_Functions as dL
+import keras.backend as K
 
 ROOT = os.path.dirname(os.path.dirname(__file__))
 DATA = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
 GROUP_2_PATH = os.path.join(DATA, "group_2")
 
 
+def customLoss(yTrue, yPred):
+    weights = 1 / 0.2
+    return tf.nn.weighted_cross_entropy_with_logits(yTrue, yPred, weights)
+
+
 def main():
     model = mA.build_model((215, 215, 1), model_type='CNN')
     optimizer = tf.keras.optimizers.RMSprop()
-    loss = tf.nn.weighted_cross_entropy_with_logits()
 
-    model.compile(optimizer, loss, ['accuracy'])
+    model.compile(optimizer, customLoss, ['accuracy'])
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
                                                       baseline=None, restore_best_weights=True)
     train_data, train_labels_binary = None, None
