@@ -43,7 +43,10 @@ def main():
         # df = dL.balance_data(df, threshold=200)
         # train_data, train_labels_binary, train_labels_people, train_labels = Experiments.load_and_prepare_data(
         #     df['img_path'].values, 0, 4, 'CNN')
-        train_data, train_labels_binary, train_labels_people, train_labels = val_data, val_labels_binary, val_labels_people, val_labels
+        if idx <= 0:
+            train_data, train_labels_binary = val_data, val_labels_binary
+        else:
+            train_data, train_labels_binary = np.concatenate((train_data, val_data)), np.concatenate((train_labels_binary, val_labels_binary))
 
 
 if __name__ == '__main__':
