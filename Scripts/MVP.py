@@ -3,6 +3,7 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import tensorflow as tf
+import numpy as np
 from Scripts import Model_Architectures as mA
 from Scripts import Experiments
 from Scripts import Data_Loader_Functions as dL
@@ -15,8 +16,9 @@ GROUP_2_PATH = os.path.join(DATA, "group_2")
 def main():
     model = mA.build_model((215, 215, 1), model_type='CNN')
     optimizer = tf.keras.optimizers.RMSprop()
+    loss = tf.nn.weighted_cross_entropy_with_logits()
 
-    model.compile(optimizer, 'binary_crossentropy', ['accuracy'])
+    model.compile(optimizer, loss, ['accuracy'])
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
                                                       baseline=None, restore_best_weights=True)
     train_data, train_labels_binary = None, None
@@ -25,6 +27,7 @@ def main():
         val_data, val_labels_binary, val_labels_people, val_labels = Experiments.load_and_prepare_data(f_path, 0, 4,
                                                                                                        'CNN')
         if idx > 0:
+            print("Val_Balance: {:,.0%}".format(np.sum(val_labels_binary[:, 1])/len(val_labels_binary)))
             model.fit(train_data, train_labels_binary, batch_size=32, epochs=30,
                       validation_data=(val_data, val_labels_binary), callbacks=[early_stopping])
 
