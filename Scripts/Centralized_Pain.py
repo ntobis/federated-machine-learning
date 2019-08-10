@@ -48,10 +48,8 @@ def set_up_data_generator(df, model_name, shuffle=True, balanced=False, gen_type
     print("{}: Actual number of images: ".format(gen_type), len(df), "thereof pain: ", sum(df['Pain'] != '0'))
 
     # Balance data
-    if balanced and federated:
+    if balanced:
         df = dL.balance_data(df, threshold=200)
-    if balanced and not federated:
-        df = dL.balance_data(df, threshold=sum(df['Pain'] != '0'))
     data_gen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
 
     # Ensure that input channels are of correct size (1-channel for 'CNN', 3-channels for 'ResNet'
