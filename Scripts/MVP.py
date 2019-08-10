@@ -90,7 +90,7 @@ def main():
     model = mA.build_model((215, 215, 1), model_type='CNN')
     optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
 
-    model.compile(optimizer, 'binary_crossentropy', ['accuracy', tf.metrics.TruePositives(), tf.metrics.TrueNegatives(), tf.metrics.FalsePositives(), tf.metrics.FalseNegatives()])
+    model.compile(optimizer, 'binary_crossentropy', ['accuracy', tf.keras.metrics.TruePositives(), tf.keras.metrics.TrueNegatives(), tf.keras.metrics.FalsePositives(), tf.keras.metrics.FalseNegatives()])
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
                                                       baseline=None, restore_best_weights=True)
 
