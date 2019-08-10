@@ -7,7 +7,6 @@ import numpy as np
 from Scripts import Model_Architectures as mA
 from Scripts import Experiments
 from Scripts import Data_Loader_Functions as dL
-import keras.backend as K
 
 ROOT = os.path.dirname(os.path.dirname(__file__))
 DATA = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
@@ -21,7 +20,7 @@ def customLoss(yTrue, yPred):
 
 def main():
     model = mA.build_model((215, 215, 1), model_type='CNN')
-    optimizer = tf.keras.optimizers.RMSprop()
+    optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.0001)
 
     model.compile(optimizer, 'binary_crossentropy', ['accuracy'])
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
