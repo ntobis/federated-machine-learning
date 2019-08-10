@@ -28,8 +28,10 @@ def custom_metric(y_true, y_pred):
 
 
 def TP(y_true, y_pred):
-    y_pred = tf.argmax(y_pred, 1)
-    y_true = tf.argmax(y_true, 1)
+    # y_pred = tf.argmax(y_pred, 1)
+    # y_true = tf.argmax(y_true, 1)
+    y_pred = y_pred[:, 1]
+    y_true = y_true[:, 1]
     return tf.math.count_nonzero(y_pred * y_true)
 
 
@@ -90,7 +92,7 @@ def main():
     model = mA.build_model((215, 215, 1), model_type='CNN')
     optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
 
-    model.compile(optimizer, 'binary_crossentropy', ['accuracy', tf.keras.metrics.TruePositives(), tf.keras.metrics.TrueNegatives(), tf.keras.metrics.FalsePositives(), tf.keras.metrics.FalseNegatives()])
+    model.compile(optimizer, 'binary_crossentropy', ['accuracy', TP, FP, TN, FN])
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
                                                       baseline=None, restore_best_weights=True)
 
