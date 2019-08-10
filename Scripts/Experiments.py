@@ -672,23 +672,23 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             #                 )
             # twilio.send_message("Experiment 16 Complete")
             #
-            training_setup(seed)
-            Output.print_experiment("17 - Sessions: Centralized Pre Training")
-            experiment_pain(algorithm='centralized',
-                            dataset='PAIN',
-                            experiment='17-sessions-Centralized-pre-training',
-                            rounds=30,
-                            shards=None,
-                            clients=None,
-                            model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
-                            pretraining='centralized',
-                            cumulative=True,
-                            optimizer=optimizer,
-                            loss=loss,
-                            metrics=metrics,
-                            model_type='CNN',
-                            )
-            twilio.send_message("Experiment 17 Complete")
+            # training_setup(seed)
+            # Output.print_experiment("17 - Sessions: Centralized Pre Training")
+            # experiment_pain(algorithm='centralized',
+            #                 dataset='PAIN',
+            #                 experiment='17-sessions-Centralized-pre-training',
+            #                 rounds=30,
+            #                 shards=None,
+            #                 clients=None,
+            #                 model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
+            #                 pretraining='centralized',
+            #                 cumulative=True,
+            #                 optimizer=optimizer,
+            #                 loss=loss,
+            #                 metrics=metrics,
+            #                 model_type='CNN',
+            #                 )
+            # twilio.send_message("Experiment 17 Complete")
 
             # training_setup(seed)
             # Output.print_experiment("18 - Sessions: Centralized RMSProp")
@@ -763,25 +763,25 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             #                 )
             # twilio.send_message("Experiment 21 Complete")
 
-            mA.LESS_PARAMS = True
-
-            training_setup(seed)
-            Output.print_experiment("22 - Sessions: Centralized Less Parameters")
-            experiment_pain(algorithm='centralized',
-                            dataset='PAIN',
-                            experiment='22-sessions-Centralized-pre-training-Less-Parameters',
-                            rounds=30,
-                            shards=None,
-                            clients=None,
-                            model_path=None,
-                            pretraining='centralized',
-                            cumulative=True,
-                            optimizer=optimizer,
-                            loss=loss,
-                            metrics=metrics,
-                            model_type='CNN',
-                            )
-            twilio.send_message("Experiment 22 Complete")
+            # mA.LESS_PARAMS = True
+            #
+            # training_setup(seed)
+            # Output.print_experiment("22 - Sessions: Centralized Less Parameters")
+            # experiment_pain(algorithm='centralized',
+            #                 dataset='PAIN',
+            #                 experiment='22-sessions-Centralized-pre-training-Less-Parameters',
+            #                 rounds=30,
+            #                 shards=None,
+            #                 clients=None,
+            #                 model_path=None,
+            #                 pretraining='centralized',
+            #                 cumulative=True,
+            #                 optimizer=optimizer,
+            #                 loss=loss,
+            #                 metrics=metrics,
+            #                 model_type='CNN',
+            #                 )
+            # twilio.send_message("Experiment 22 Complete")
 
             # training_setup(seed)
             # Output.print_experiment("23 - Sessions: Federated Less Parameters")
@@ -801,23 +801,23 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             #                 )
             # twilio.send_message("Experiment 23 Complete")
             #
-            # training_setup(seed)
-            # Output.print_experiment("24 - Sessions: Centralized ResNet")
-            # experiment_pain(algorithm='centralized',
-            #                 dataset='PAIN',
-            #                 experiment='24-sessions-Centralized-pre-training-ResNet',
-            #                 rounds=30,
-            #                 shards=None,
-            #                 clients=None,
-            #                 model_path=None,
-            #                 pretraining='centralized',
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 model_type='ResNet',
-            #                 )
-            # twilio.send_message("Experiment 24 Complete")
+            training_setup(seed)
+            Output.print_experiment("24 - Sessions: Centralized ResNet")
+            experiment_pain(algorithm='centralized',
+                            dataset='PAIN',
+                            experiment='24-sessions-Centralized-pre-training-ResNet',
+                            rounds=30,
+                            shards=None,
+                            clients=None,
+                            model_path=None,
+                            pretraining='centralized',
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            model_type='ResNet',
+                            )
+            twilio.send_message("Experiment 24 Complete")
 
         twilio.send_message()
 
