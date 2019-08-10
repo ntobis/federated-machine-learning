@@ -30,21 +30,20 @@ RESULTS = os.path.join(ROOT, 'Results')
 # ------------------------------------------------- Set-Up Functions ----------------------------------------------- #
 
 
-def set_up_train_test_generators(df, model, session, balance_train, federated=False):
+def set_up_train_test_generators(df, model, session, balance_train):
     train_gen, predict_gen, df_train, df_test = [None] * 4  # Initializing values
     if df is not None:
         df_train = df[df['Session'] <= session]
         df_test = df[(df['Trans_1'] == 'original') & (df['Trans_2'] == 'straight')]
         if sum(df_train['Pain'] != '0'):
             train_gen = set_up_data_generator(df_train, model.name, shuffle=True, balanced=balance_train,
-                                              gen_type='Train', federated=federated)
+                                              gen_type='Train')
         if len(df_test):
-            predict_gen = set_up_data_generator(df_test, model.name, shuffle=False, balanced=False, gen_type='Test',
-                                                federated=federated)
+            predict_gen = set_up_data_generator(df_test, model.name, shuffle=False, balanced=False, gen_type='Test')
     return df_train, df_test, train_gen, predict_gen
 
 
-def set_up_data_generator(df, model_name, shuffle=True, balanced=False, gen_type='Data_Gen', federated=False):
+def set_up_data_generator(df, model_name, shuffle=True, balanced=False, gen_type='Data_Gen'):
     print("{}: Actual number of images: ".format(gen_type), len(df), "thereof pain: ", sum(df['Pain'] != '0'))
 
     # Balance data
@@ -78,13 +77,18 @@ def set_up_history():
 
 
 def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None, test_labels=None,
-              df=None, people=None, evaluate=True, loss=None, session=-1, federated=False, balanced=True):
+              df=None, people=None, evaluate=True, loss=None, session=-1, federated=False, balanced=True,
+              pretraining=False):
     # Set up data frames for logging
     history = set_up_history()
 
     # Set up Keras data generators
-    df_train, df_test, train_gen, predict_gen = set_up_train_test_generators(df, model, session, balance_train=balanced,
-                                                                             federated=federated)
+    if pretraining:
+        train_gen = set_up_data_generator(df, model.name, shuffle=True, balanced=False, gen_type='Train')
+        df_test, predict_gen = None, None
+    else:
+        df_train, df_test, train_gen, predict_gen = set_up_train_test_generators(df, model, session,
+                                                                                 balance_train=balanced)
 
     # Start training
     for epoch in range(epochs):

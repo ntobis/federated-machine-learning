@@ -252,13 +252,16 @@ def run_pretraining(clients, dataset, experiment, local_epochs, loss, metrics, m
         model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
         # Prepare labels for training and evaluation
-        train_data, train_labels, train_labels_people, raw_labels = load_and_prepare_data(GROUP_1_TRAIN_PATH, person=0,
-                                                                                          pain=4, model_type=model_type)
-        print(train_data.shape)
+        # train_data, train_labels, train_labels_people, raw_labels = load_and_prepare_data(GROUP_1_TRAIN_PATH,
+        #                                                                                   person=0,
+        #                                                                                   pain=4,
+        #                                                                                   model_type=model_type)
+        df = dL.create_pain_df(GROUP_1_TRAIN_PATH)
+        print(len(df))
         # Train
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", model=model, rounds=rounds,
-                             train_data=train_data, train_labels=train_labels, evaluate=False, loss=loss,
-                             balanced=balanced)
+                             train_data=None, train_labels=None, df=df, evaluate=False, loss=loss,
+                             balanced=False, pretraining=True)
 
     elif pretraining == 'federated':
         print("Pre-training a federated model.")
@@ -338,10 +341,11 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
                  test_data=None,
                  test_labels=None, df=None, people=None, evaluate=True, loss=None, session=False, clients=None,
                  local_epochs=1, participants=None, optimizer=None, metrics=None, model_type='CNN',
-                 personalization=False, balanced=True):
+                 personalization=False, balanced=True, pretraining=False):
     """
     Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
 
+    :param pretraining:
     :param balanced:
     :param personalization:
     :param algorithm:
@@ -386,7 +390,7 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
         model, history = cP.train_cnn(model=model, epochs=rounds, train_data=train_data,
                                       train_labels=train_labels, test_data=test_data,
                                       test_labels=test_labels, df=df, people=people, evaluate=evaluate,
-                                      loss=loss, session=session, balanced=balanced)
+                                      loss=loss, session=session, balanced=balanced, pretraining=pretraining)
 
     else:
         raise ValueError("'runner_type' must be either 'centralized' or 'federated', was: {}".format(algorithm))
