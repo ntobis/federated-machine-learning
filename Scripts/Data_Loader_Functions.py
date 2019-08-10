@@ -392,7 +392,7 @@ def load_image_data(path, color=0, label_type=None):
     """
 
     if type(path) is str:
-        img_paths = get_image_paths(path)
+        img_paths = get_image_paths(path)[:20000]
     else:
         img_paths = path
     np.random.shuffle(img_paths)
