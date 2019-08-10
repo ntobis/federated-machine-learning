@@ -58,7 +58,9 @@ def build_ResNet(input_shape):
     # Layer classification head with feature detector
     model = tf.keras.Sequential([
         base_model,
-        layers.GlobalAveragePooling2D(),
+        # layers.GlobalAveragePooling2D(),
+        layers.MaxPooling2D(),
+        layers.Flatten(),
         layers.Dense(units=128),
         layers.Dense(units=2, activation='sigmoid')
     ], name='ResNet')
