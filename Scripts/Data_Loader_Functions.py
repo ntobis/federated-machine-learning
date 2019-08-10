@@ -422,7 +422,7 @@ def load_pain_data(train_path, test_path=None, label_type=None, color=0):
     train_data, train_labels = load_image_data(train_path, color, label_type)
     print("Normalization")
     try:
-        train_data = np.divide(train_data, 255.0)
+        train_data = np.divide(train_data, 255.0, out=train_data)
     except Exception as e:
         print(e)
         raise e
