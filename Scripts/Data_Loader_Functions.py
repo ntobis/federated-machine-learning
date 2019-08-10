@@ -401,12 +401,7 @@ def load_image_data(path, color=0, label_type=None):
         data.append(np.expand_dims(cv2.imread(path, color), -1))
         if not idx % 1000:
             print("{} images processed".format(idx))
-    try:
-        data = np.array(data, dtype=np.float32)
-    except Exception as e:
-        print(e)
-        raise e
-
+    data = np.array(data, dtype=np.float32)
     labels = np.array(get_labels(img_paths, label_type=label_type))
     return data, labels
 
