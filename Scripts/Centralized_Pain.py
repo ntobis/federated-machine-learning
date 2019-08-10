@@ -86,7 +86,7 @@ def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None,
 
     # Start training
     for epoch in range(epochs):
-
+        print('Epoch: {}'.format(epoch))
         # Training (on dataset)
         if train_data is not None and train_labels is not None:
             model.fit(train_data, train_labels, epochs=1, batch_size=32, use_multiprocessing=True)
@@ -127,6 +127,7 @@ def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, predict_ge
         enc = OneHotEncoder(sparse=False, categories=[range(2)])
         test_labels = enc.fit_transform(df_test['Pain'].astype(int).values.reshape(len(df_test), 1))
         predictions = model.predict_generator(predict_gen, use_multiprocessing=True)
+        print("Done Predicting.")
         current_loss = compute_loss(loss, predictions, test_labels)
         y_pred = np.argmax(predictions, axis=1)
         df_metrics = compute_metrics(current_loss, epoch, df_test['Person'], predictions, test_labels,
@@ -134,7 +135,7 @@ def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, predict_ge
 
     else:
         raise ValueError('Either "test_data" or "df_test" must be not None.')
-
+    print('Done Evaluating')
     return pd.concat((history, df_metrics), ignore_index=True, sort=False)
 
 
