@@ -2,7 +2,6 @@ import tensorflow as tf
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 layers = tf.keras.layers  # like 'from tensorflow.keras import layers' (PyCharm import issue workaround)
-LESS_PARAMS = False
 
 
 def build_CNN(input_shape):
@@ -55,7 +54,6 @@ def build_ResNet(input_shape):
     # Layer classification head with feature detector
     model = tf.keras.Sequential([
         base_model,
-        # layers.GlobalAveragePooling2D(),
         layers.MaxPooling2D(),
         layers.Flatten(),
         layers.Dense(units=128),
@@ -72,6 +70,5 @@ def build_model(input_shape, model_type):
 
 
 if __name__ == '__main__':
-    LESS_PARAMS = True
     model_1 = build_model((215, 215, 1), 'CNN')
     model_1.summary()
