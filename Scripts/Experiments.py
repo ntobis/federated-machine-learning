@@ -172,7 +172,7 @@ def save_results(dataset, experiment, history, model, folder):
     history.to_csv(os.path.join(folder, f_name))
 
 
-def load_and_prepare_data(path, person, pain):
+def load_and_prepare_data(path, person, pain, model_type):
     """
     Utility function loading pain image data into memory, and preparing the labels for training.
     Note, this function expects the image files to have the following naming convention:
@@ -181,7 +181,8 @@ def load_and_prepare_data(path, person, pain):
 
     :param path:                    string, root path to all images to be loaded
     :param person:                  int, index where 'person' appears in the file name converted to an array.
-    :param pain:                    int, indext where 'pain_level' appears in the file name converted to an array.
+    :param pain:                    int, index where 'pain_level' appears in the file name converted to an array.
+    :param model_type:              string, specifying the model_type (CNN, or ResNet)
     :return:
         data:                       4D numpy array, images as numpy array in shape (N, 215, 215, 1)
         labels_binary:              2D numpy array, one-hot encoded labels [no pain, pain] (N, 2)
@@ -190,7 +191,8 @@ def load_and_prepare_data(path, person, pain):
     """
 
     enc = OneHotEncoder(sparse=False, categories=[range(2)])
-    data, labels = dL.load_pain_data(path)
+    color = 0 if model_type == 'CNN' else 1
+    data, labels = dL.load_pain_data(path, color=color)
     labels_ord = labels[:, pain].astype(np.int)
     labels_binary = dL.reduce_pain_label_categories(labels_ord, max_pain=1)
     train_labels_people = labels[:, person].astype(np.int)
@@ -251,7 +253,7 @@ def run_pretraining(clients, dataset, experiment, local_epochs, loss, metrics, m
 
         # Prepare labels for training and evaluation
         train_data, train_labels, train_labels_people, raw_labels = load_and_prepare_data(GROUP_1_TRAIN_PATH, person=0,
-                                                                                          pain=4)
+                                                                                          pain=4, model_type=model_type)
 
         # Train
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", model=model, rounds=rounds,
@@ -262,7 +264,7 @@ def run_pretraining(clients, dataset, experiment, local_epochs, loss, metrics, m
         print("Pre-training a federated model.")
         # Load data
         train_data, train_labels, train_labels_people, raw_labels = load_and_prepare_data(GROUP_1_TRAIN_PATH, person=0,
-                                                                                          pain=4)
+                                                                                          pain=4, model_type=model_type)
 
         # Split data into clients
         clients, train_data, train_labels = split_data_into_clients(train_data, train_labels, clients,
@@ -288,10 +290,10 @@ def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, loss, m
                rounds, shards, subjects_per_client, personalization, balanced):
     # Load test data
     test_data, test_labels, test_labels_people, raw_labels = load_and_prepare_data(GROUP_2_TEST_PATH, person=0,
-                                                                                   pain=4)
+                                                                                   pain=4, model_type=model_type)
     # Load group 2 training data
     train_data, train_labels, train_labels_people, raw_labels = load_and_prepare_data(GROUP_2_TRAIN_PATH, person=0,
-                                                                                      pain=4)
+                                                                                      pain=4, model_type=model_type)
     # Split group 2 training data into shards
     train_data, train_labels, raw_labels = dL.split_data_into_shards(
         array=[train_data, train_labels, raw_labels], split=shards, cumulative=cumulative)
@@ -320,7 +322,7 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
     # Prepare df for data generator
     df = dL.create_pain_df(GROUP_2_PATH)
     df_test = df[(df['Trans_1'] == 'original') & (df['Trans_2'] == 'straight')]['img_path'].values
-    test_data, test_labels, test_labels_people, raw_labels = load_and_prepare_data(df_test, 0, 4)
+    test_data, test_labels, test_labels_people, raw_labels = load_and_prepare_data(df_test, 0, 4, model_type=model_type)
     # Run Sessions
     for session in df['Session'].unique():
         Output.print_session(session)

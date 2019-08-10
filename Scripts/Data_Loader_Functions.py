@@ -380,10 +380,11 @@ def prepare_dataset_for_training(ds, batch_size, ds_size):
     return ds
 
 
-def load_greyscale_image_data(path, label_type=None):
+def load_image_data(path, color=0, label_type=None):
     """
     Utility function, loading all images in a directory and its sub-directories into a numpy array, labeled
 
+    :param color:               int, if 0 then greyscale, if 1 then color
     :param path:                string, root directory or list of strings (image paths)
     :param label_type:          string, if not None, only a specific label will be attached to each image
     :return:
@@ -397,7 +398,7 @@ def load_greyscale_image_data(path, label_type=None):
     np.random.shuffle(img_paths)
     data = []
     for idx, path in enumerate(img_paths):
-        data.append(np.expand_dims(cv2.imread(path, 0), -1))
+        data.append(np.expand_dims(cv2.imread(path, color), -1))
         if not idx % 1000:
             print("{} images processed".format(idx))
     data = np.array(data, dtype=np.float32)
@@ -405,21 +406,22 @@ def load_greyscale_image_data(path, label_type=None):
     return data, labels
 
 
-def load_pain_data(train_path, test_path=None, label_type=None):
+def load_pain_data(train_path, test_path=None, label_type=None, color=0):
     """
     Load function, loading pain dataset into numpy arrays with labels. Either just loads train data, or train and test.
 
+    :param color:               int, if 0 then greyscale, if 1 then color
     :param train_path:          string, root directory
     :param test_path:           string, optional, root test directory
     :param label_type:          string, if not None, only a specific label will be attached to each image
     :return:
     """
 
-    train_data, train_labels = load_greyscale_image_data(train_path, label_type)
+    train_data, train_labels = load_image_data(train_path, color, label_type)
     print("Normalization")
     np.divide(train_data, 255.0, out=train_data, dtype=np.float32)
     if test_path:
-        test_data, test_labels = load_greyscale_image_data(test_path, label_type)
+        test_data, test_labels = load_image_data(test_path, label_type)
         print("Normalization")
         test_data = np.divide(test_data, 255.0, out=test_data, dtype=np.float32)
         return train_data, train_labels, test_data, test_labels
