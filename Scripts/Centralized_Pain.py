@@ -30,25 +30,28 @@ RESULTS = os.path.join(ROOT, 'Results')
 # ------------------------------------------------- Set-Up Functions ----------------------------------------------- #
 
 
-def set_up_train_test_generators(df, model, session, balance_train):
+def set_up_train_test_generators(df, model, session, balance_train, federated=False):
     train_gen, predict_gen, df_train, df_test = [None] * 4  # Initializing values
     if df is not None:
         df_train = df[df['Session'] <= session]
         df_test = df[(df['Trans_1'] == 'original') & (df['Trans_2'] == 'straight')]
         if sum(df_train['Pain'] != '0'):
             train_gen = set_up_data_generator(df_train, model.name, shuffle=True, balanced=balance_train,
-                                              gen_type='Train')
+                                              gen_type='Train', federated=federated)
         if len(df_test):
-            predict_gen = set_up_data_generator(df_test, model.name, shuffle=False, balanced=False, gen_type='Test')
+            predict_gen = set_up_data_generator(df_test, model.name, shuffle=False, balanced=False, gen_type='Test',
+                                                federated=federated)
     return df_train, df_test, train_gen, predict_gen
 
 
-def set_up_data_generator(df, model_name, shuffle=True, balanced=False, gen_type='Data_Gen'):
+def set_up_data_generator(df, model_name, shuffle=True, balanced=False, gen_type='Data_Gen', federated=False):
     print("{}: Actual number of images: ".format(gen_type), len(df), "thereof pain: ", sum(df['Pain'] != '0'))
 
     # Balance data
-    if balanced:
+    if balanced and federated:
         df = dL.balance_data(df, threshold=200)
+    if balanced and not federated:
+        df = dL.balance_data(df, threshold=sum(df['Pain'] != '0'))
     data_gen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
 
     # Ensure that input channels are of correct size (1-channel for 'CNN', 3-channels for 'ResNet'
@@ -82,7 +85,8 @@ def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None,
     history = set_up_history()
 
     # Set up Keras data generators
-    df_train, df_test, train_gen, predict_gen = set_up_train_test_generators(df, model, session, balance_train=balanced)
+    df_train, df_test, train_gen, predict_gen = set_up_train_test_generators(df, model, session, balance_train=balanced,
+                                                                             federated=federated)
 
     # Start training
     for epoch in range(epochs):

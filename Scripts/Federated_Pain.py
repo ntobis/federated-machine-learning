@@ -313,7 +313,7 @@ def evaluate_federated_cnn(comm_round, test_data=None, test_labels=None, df=None
             client_df = df[df['Person'] == client] if df is not None else None
             if client_df is not None:
                 predict_gen = cP.set_up_data_generator(client_df, model.name, shuffle=False, balanced=False,
-                                                       gen_type="Client {}".format(client))
+                                                       gen_type="Client {}".format(client), federated=True)
 
             personal_weights = weights_accountant.get_localized_layers(client)
             weights = np.concatenate((conv_weights, personal_weights))
