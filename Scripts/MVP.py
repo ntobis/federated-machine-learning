@@ -33,7 +33,7 @@ def TP(y_true, y_pred):
     y_true = tf.argmax(y_true, 1)
     m = tf.keras.metrics.TruePositives()
     m.update_state(y_true, y_pred)
-    return m.result()
+    return m.result().numpy()
 
 
 def FP(y_true, y_pred):
