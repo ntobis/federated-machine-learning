@@ -319,11 +319,14 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
                  personalization, balanced):
     # Prepare df for data generator
     df = dL.create_pain_df(GROUP_2_PATH)
+    df_test = df[(df['Trans_1'] == 'original') & (df['Trans_2'] == 'straight')]['img_path'].values
+    test_data, test_labels, test_labels_people, raw_labels = load_and_prepare_data(df_test, 0, 4)
     # Run Sessions
     for session in df['Session'].unique():
         Output.print_session(session)
         experiment_current = experiment + "_shard-{}".format(session)
-        model = model_runner(algorithm, dataset, experiment_current, model=model, rounds=rounds, df=df,
+        model = model_runner(algorithm, dataset, experiment_current, model=model, rounds=rounds, test_data=test_data,
+                             test_labels=test_labels, df=df, people=test_labels_people,
                              evaluate=True, loss=loss, session=session, local_epochs=local_epochs,
                              optimizer=optimizer, metrics=metrics, model_type=model_type,
                              personalization=personalization, balanced=balanced)
@@ -401,7 +404,6 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
 def experiment_pain(algorithm, dataset, experiment, rounds, shards=None, clients=None, model_path=None,
                     pretraining=None, cumulative=True, optimizer=None, loss=None, metrics=None,
                     subjects_per_client=None, local_epochs=1, model_type='CNN', personalization=False, balanced=True):
-
     # Perform pre-training on group 1
     model = run_pretraining(clients, dataset, experiment, local_epochs, loss, metrics, model_path, model_type,
                             optimizer, pretraining, rounds, subjects_per_client, personalization, balanced)
