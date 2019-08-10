@@ -252,7 +252,7 @@ def run_pretraining(clients, dataset, experiment, local_epochs, loss, metrics, m
         model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
         # Prepare labels for training and evaluation
-        if model_type.lower() == 'resnet':
+        if model_type.lower() == 'renet':
             train_data, train_labels = None, None
             df = dL.create_pain_df(GROUP_1_TRAIN_PATH)
         else:
