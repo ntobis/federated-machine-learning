@@ -399,11 +399,10 @@ def load_image_data(path, color=0, label_type=None):
     data = []
     for idx, path in enumerate(img_paths):
         img = np.expand_dims(cv2.imread(path, color), -1) if color == 0 else cv2.imread(path, color)
-        print(type(img))
         data.append(img)
         if not idx % 1000:
             print("{} images processed".format(idx))
-    data = np.array(data)
+    data = np.array(data, dtype=np.float)
     labels = np.array(get_labels(img_paths, label_type=label_type))
     return data, labels
 
