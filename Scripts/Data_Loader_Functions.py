@@ -420,7 +420,7 @@ def load_pain_data(train_path, test_path=None, label_type=None, color=0):
 
     train_data, train_labels = load_image_data(train_path, color, label_type)
     print("Normalization")
-    np.divide(train_data, 255.0, out=train_data, dtype=np.float32)
+    train_data = np.divide(train_data, 255.0, dtype=np.float32)
     if test_path:
         test_data, test_labels = load_image_data(test_path, label_type)
         print("Normalization")
