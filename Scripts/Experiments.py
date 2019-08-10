@@ -680,7 +680,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             rounds=30,
                             shards=None,
                             clients=None,
-                            model_path=None,
+                            model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
                             pretraining='centralized',
                             cumulative=True,
                             optimizer=optimizer,
@@ -690,78 +690,78 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             )
             twilio.send_message("Experiment 17 Complete")
 
-            training_setup(seed)
-            Output.print_experiment("18 - Sessions: Centralized RMSProp")
-            experiment_pain(algorithm='centralized',
-                            dataset='PAIN',
-                            experiment='18-sessions-Centralized-pre-training-RMS',
-                            rounds=30,
-                            shards=None,
-                            clients=None,
-                            model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
-                            pretraining='centralized',
-                            cumulative=True,
-                            optimizer=tf.keras.optimizers.RMSprop(learning_rate=0.001),
-                            loss=loss,
-                            metrics=metrics,
-                            model_type='CNN'
-                            )
-            twilio.send_message("Experiment 18 Complete")
-
-            training_setup(seed)
-            Output.print_experiment("19 - Sessions: Federated Central pretraining")
-            experiment_pain(algorithm='federated',
-                            dataset='PAIN',
-                            experiment='19-sessions-Federated-pre-training',
-                            rounds=30,
-                            shards=None,
-                            clients=None,
-                            model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
-                            pretraining='centralized',
-                            cumulative=True,
-                            optimizer=optimizer,
-                            loss=loss,
-                            metrics=metrics,
-                            model_type='CNN'
-                            )
-            twilio.send_message("Experiment 19 Complete")
-
-            training_setup(seed)
-            Output.print_experiment("20 - Sessions: Federated RMSProp")
-            experiment_pain(algorithm='federated',
-                            dataset='PAIN',
-                            experiment='20-sessions-Federated-pre-training-RMSProp',
-                            rounds=30,
-                            shards=None,
-                            clients=None,
-                            model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
-                            pretraining='centralized',
-                            cumulative=True,
-                            optimizer=tf.keras.optimizers.RMSprop(learning_rate=0.001),
-                            loss=loss,
-                            metrics=metrics,
-                            model_type='CNN'
-                            )
-            twilio.send_message("Experiment 20 Complete")
-
-            training_setup(seed)
-            Output.print_experiment("21 - Sessions: Federated Local Epochs")
-            experiment_pain(algorithm='federated',
-                            dataset='PAIN',
-                            experiment='21-sessions-Federated-pre-training-Local-Epochs',
-                            rounds=30,
-                            shards=None,
-                            clients=None,
-                            model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
-                            pretraining='centralized',
-                            cumulative=True,
-                            optimizer=optimizer,
-                            loss=loss,
-                            metrics=metrics,
-                            model_type='CNN',
-                            local_epochs=5
-                            )
-            twilio.send_message("Experiment 21 Complete")
+            # training_setup(seed)
+            # Output.print_experiment("18 - Sessions: Centralized RMSProp")
+            # experiment_pain(algorithm='centralized',
+            #                 dataset='PAIN',
+            #                 experiment='18-sessions-Centralized-pre-training-RMS',
+            #                 rounds=30,
+            #                 shards=None,
+            #                 clients=None,
+            #                 model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
+            #                 pretraining='centralized',
+            #                 cumulative=True,
+            #                 optimizer=tf.keras.optimizers.RMSprop(learning_rate=0.001),
+            #                 loss=loss,
+            #                 metrics=metrics,
+            #                 model_type='CNN'
+            #                 )
+            # twilio.send_message("Experiment 18 Complete")
+            #
+            # training_setup(seed)
+            # Output.print_experiment("19 - Sessions: Federated Central pretraining")
+            # experiment_pain(algorithm='federated',
+            #                 dataset='PAIN',
+            #                 experiment='19-sessions-Federated-pre-training',
+            #                 rounds=30,
+            #                 shards=None,
+            #                 clients=None,
+            #                 model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
+            #                 pretraining='centralized',
+            #                 cumulative=True,
+            #                 optimizer=optimizer,
+            #                 loss=loss,
+            #                 metrics=metrics,
+            #                 model_type='CNN'
+            #                 )
+            # twilio.send_message("Experiment 19 Complete")
+            #
+            # training_setup(seed)
+            # Output.print_experiment("20 - Sessions: Federated RMSProp")
+            # experiment_pain(algorithm='federated',
+            #                 dataset='PAIN',
+            #                 experiment='20-sessions-Federated-pre-training-RMSProp',
+            #                 rounds=30,
+            #                 shards=None,
+            #                 clients=None,
+            #                 model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
+            #                 pretraining='centralized',
+            #                 cumulative=True,
+            #                 optimizer=tf.keras.optimizers.RMSprop(learning_rate=0.001),
+            #                 loss=loss,
+            #                 metrics=metrics,
+            #                 model_type='CNN'
+            #                 )
+            # twilio.send_message("Experiment 20 Complete")
+            #
+            # training_setup(seed)
+            # Output.print_experiment("21 - Sessions: Federated Local Epochs")
+            # experiment_pain(algorithm='federated',
+            #                 dataset='PAIN',
+            #                 experiment='21-sessions-Federated-pre-training-Local-Epochs',
+            #                 rounds=30,
+            #                 shards=None,
+            #                 clients=None,
+            #                 model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
+            #                 pretraining='centralized',
+            #                 cumulative=True,
+            #                 optimizer=optimizer,
+            #                 loss=loss,
+            #                 metrics=metrics,
+            #                 model_type='CNN',
+            #                 local_epochs=5
+            #                 )
+            # twilio.send_message("Experiment 21 Complete")
 
             mA.LESS_PARAMS = True
 
