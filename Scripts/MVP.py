@@ -20,7 +20,7 @@ def customLoss(yTrue, yPred):
 
 def main():
     model = mA.build_model((215, 215, 1), model_type='CNN')
-    optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.0001)
+    optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
 
     model.compile(optimizer, customLoss, ['accuracy'])
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
