@@ -402,7 +402,7 @@ def load_image_data(path, color=0, label_type=None):
         data.append(img)
         if not idx % 1000:
             print("{} images processed".format(idx))
-    # data = np.array(data, dtype=np.float32)
+    data = np.array(data)
     labels = np.array(get_labels(img_paths, label_type=label_type))
     return data, labels
 
