@@ -1,4 +1,6 @@
+import csv
 import os
+import pandas as pd
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -11,6 +13,7 @@ from Scripts import Data_Loader_Functions as dL
 ROOT = os.path.dirname(os.path.dirname(__file__))
 DATA = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
 GROUP_2_PATH = os.path.join(DATA, "group_2")
+RESULTS = os.path.join(ROOT, "Results")
 
 
 def customLoss(yTrue, yPred):
@@ -26,18 +29,24 @@ def main():
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
                                                       baseline=None, restore_best_weights=True)
     train_data, train_labels_binary = None, None
+    d = {}
     for idx, folder in enumerate(sorted(os.listdir(GROUP_2_PATH))):
+        print("Session: {}".format(idx))
         f_path = os.path.join(GROUP_2_PATH, folder)
         df = dL.create_pain_df(f_path)
-        # df = df[df['Person'] == 80]
+        # df = df[df['Person'] == 52]
         f_path = df['img_path'].values
         val_data, val_labels_binary, val_labels_people, val_labels = Experiments.load_and_prepare_data(f_path, 0, 4,
                                                                                                        'CNN')
-        print("Session: {}".format(idx))
         if idx > 0:
-            print("Val_Balance: {:,.0%}".format(np.sum(val_labels_binary[:, 1])/len(val_labels_binary)))
-            model.fit(train_data, train_labels_binary, batch_size=32, epochs=30,
-                      validation_data=(val_data, val_labels_binary), callbacks=[early_stopping])
+            print("Val_Balance: {:,.0%}".format(np.sum(val_labels_binary[:, 1]) / len(val_labels_binary)))
+            history = model.fit(train_data, train_labels_binary, batch_size=32, epochs=2,
+                                validation_data=(val_data, val_labels_binary), callbacks=[early_stopping])
+            if not d:
+                d = history.history
+            else:
+                for key, val in history.history.items():
+                    d[key].extend(val)
 
         # df = dL.create_pain_df(f_path)
         # print("{}: Actual number of images: ".format(folder), len(df), "thereof pain: ", sum(df['Pain'] != '0'))
@@ -47,7 +56,11 @@ def main():
         if idx <= 0:
             train_data, train_labels_binary = val_data, val_labels_binary
         else:
-            train_data, train_labels_binary = np.concatenate((train_data, val_data)), np.concatenate((train_labels_binary, val_labels_binary))
+            train_data, train_labels_binary = np.concatenate((train_data, val_data)), np.concatenate(
+                (train_labels_binary, val_labels_binary))
+
+    file = os.path.join(RESULTS, 'No_data_balancing.csv')
+    pd.DataFrame(d).to_csv(file)
 
 
 if __name__ == '__main__':

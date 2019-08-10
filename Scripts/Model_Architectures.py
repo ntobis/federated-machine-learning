@@ -31,11 +31,8 @@ def build_CNN(input_shape):
 
     # Add layers
     model.add(layers.Conv2D(filters=32, kernel_size=(5, 5), strides=(2, 2), input_shape=input_shape))
-    # model.add(layers.ReLU())
     model.add(layers.Conv2D(filters=64, kernel_size=(5, 5), strides=(2, 2)))
-    # model.add(layers.ReLU())
     model.add(layers.Conv2D(filters=128, kernel_size=(5, 5), strides=(2, 2)))
-    model.add(layers.MaxPooling2D()),
     model.add(layers.Flatten())
     model.add(layers.Dense(units=128))
     model.add(layers.BatchNormalization())
