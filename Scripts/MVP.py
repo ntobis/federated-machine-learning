@@ -30,7 +30,7 @@ def custom_metric(y_true, y_pred):
 def TP(y_true, y_pred):
     y_pred = tf.argmax(y_pred, 1)
     y_true = tf.argmax(y_true, 1)
-    return K.sum(y_pred == y_true)
+    return K.sum(K.equal(y_pred, y_true))
 
 
 def FP(y_true, y_pred):
