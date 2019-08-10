@@ -252,15 +252,18 @@ def run_pretraining(clients, dataset, experiment, local_epochs, loss, metrics, m
         model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
         # Prepare labels for training and evaluation
-        # train_data, train_labels, train_labels_people, raw_labels = load_and_prepare_data(GROUP_1_TRAIN_PATH,
-        #                                                                                   person=0,
-        #                                                                                   pain=4,
-        #                                                                                   model_type=model_type)
-        df = dL.create_pain_df(GROUP_1_TRAIN_PATH)
-        print(len(df))
+        if model_type.lower() == 'resnet':
+            train_data, train_labels = None, None
+            df = dL.create_pain_df(GROUP_1_TRAIN_PATH)
+        else:
+            df = None
+            train_data, train_labels, train_labels_people, raw_labels = load_and_prepare_data(GROUP_1_TRAIN_PATH,
+                                                                                              person=0,
+                                                                                              pain=4,
+                                                                                              model_type=model_type)
         # Train
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", model=model, rounds=rounds,
-                             train_data=None, train_labels=None, df=df, evaluate=False, loss=loss,
+                             train_data=train_data, train_labels=train_labels, df=df, evaluate=False, loss=loss,
                              balanced=False, pretraining=True)
 
     elif pretraining == 'federated':

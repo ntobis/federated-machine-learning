@@ -402,7 +402,7 @@ def load_image_data(path, color=0, label_type=None):
         data.append(img)
         if not idx % 1000:
             print("{} images processed".format(idx))
-    data = np.array(data, dtype=np.float)
+    data = np.array(data, dtype=np.float32)
     labels = np.array(get_labels(img_paths, label_type=label_type))
     return data, labels
 
@@ -420,11 +420,7 @@ def load_pain_data(train_path, test_path=None, label_type=None, color=0):
 
     train_data, train_labels = load_image_data(train_path, color, label_type)
     print("Normalization")
-    try:
-        train_data = np.divide(train_data, 255.0, out=train_data)
-    except Exception as e:
-        print(e)
-        raise e
+    np.divide(train_data, 255.0, out=train_data, dtype=np.float32)
     if test_path:
         test_data, test_labels = load_image_data(test_path, label_type)
         print("Normalization")
