@@ -392,7 +392,7 @@ def load_image_data(path, color=0, label_type=None):
     """
 
     if type(path) is str:
-        img_paths = get_image_paths(path)
+        img_paths = get_image_paths(path)[:500]
     else:
         img_paths = path
     np.random.shuffle(img_paths)
@@ -401,7 +401,12 @@ def load_image_data(path, color=0, label_type=None):
         data.append(np.expand_dims(cv2.imread(path, color), -1))
         if not idx % 1000:
             print("{} images processed".format(idx))
-    data = np.array(data, dtype=np.float32)
+    try:
+        data = np.array(data, dtype=np.float32)
+    except Exception as e:
+        print(e)
+        raise e
+
     labels = np.array(get_labels(img_paths, label_type=label_type))
     return data, labels
 
