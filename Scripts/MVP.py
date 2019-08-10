@@ -106,7 +106,7 @@ def main():
                                                                                                        'CNN')
         if idx > 0:
             print("Val_Balance: {:,.0%}".format(np.sum(val_labels_binary[:, 1]) / len(val_labels_binary)))
-            history = model.fit(train_data, train_labels_binary, batch_size=32, epochs=30,
+            history = model.fit(train_data, train_labels_binary, batch_size=None, epochs=30,
                                 validation_data=(val_data, val_labels_binary), callbacks=[early_stopping])
             if not d:
                 d = history.history
