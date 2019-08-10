@@ -26,11 +26,14 @@ def weighted_loss(y_true, y_pred):
 def custom_metric(y_true, y_pred):
     return K.argmax(y_true, axis=1)
 
+# a = tf.math.count_nonzero(y_pred * y_true)
 
 def TP(y_true, y_pred):
-    # y_pred = tf.argmax(y_pred, 1)
-    # y_true = tf.argmax(y_true, 1)
-    return tf.math.count_nonzero(y_pred * y_true)
+    y_pred = tf.argmax(y_pred, 1)
+    y_true = tf.argmax(y_true, 1)
+    m = tf.keras.metrics.TruePositives()
+    m.update_state(y_true, y_pred)
+    return m.result()
 
 
 def FP(y_true, y_pred):
