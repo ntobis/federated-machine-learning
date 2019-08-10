@@ -14,7 +14,7 @@ GROUP_2_PATH = os.path.join(DATA, "group_2")
 
 
 def customLoss(yTrue, yPred):
-    weights = 1
+    weights = 1 / 0.2
     return tf.nn.weighted_cross_entropy_with_logits(yTrue, yPred, weights)
 
 
@@ -22,7 +22,7 @@ def main():
     model = mA.build_model((215, 215, 1), model_type='CNN')
     optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.0001)
 
-    model.compile(optimizer, 'binary_crossentropy', ['accuracy'])
+    model.compile(optimizer, customLoss, ['accuracy'])
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
                                                       baseline=None, restore_best_weights=True)
     train_data, train_labels_binary = None, None
@@ -33,6 +33,7 @@ def main():
         f_path = df['img_path'].values
         val_data, val_labels_binary, val_labels_people, val_labels = Experiments.load_and_prepare_data(f_path, 0, 4,
                                                                                                        'CNN')
+        print("Session: {}".format(idx))
         if idx > 0:
             print("Val_Balance: {:,.0%}".format(np.sum(val_labels_binary[:, 1])/len(val_labels_binary)))
             model.fit(train_data, train_labels_binary, batch_size=32, epochs=30,
