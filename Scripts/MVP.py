@@ -109,9 +109,9 @@ def main():
         f_path = os.path.join(GROUP_2_PATH, folder)
         df = dL.create_pain_df(f_path)
         # df = df[df['Person'] == person]
-        f_path = df['img_path'].values
-        if len(f_path) > 0:
-            val_data, val_labels_binary, val_labels_people, val_labels = Experiments.load_and_prepare_data(f_path, 0, 4,
+        f_paths = df['img_path'].values
+        if len(f_paths) > 0:
+            val_data, val_labels_binary, val_labels_people, val_labels = Experiments.load_and_prepare_data(f_paths, 0, 4,
                                                                                                            model_type)
             if idx > 0:
                 print("Val_Balance: {:,.0%}".format(np.sum(val_labels_binary[:, 1]) / len(val_labels_binary)))
