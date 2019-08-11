@@ -95,6 +95,7 @@ def main():
     model_type = 'ResNet'
     model = mA.build_model((215, 215, 1), model_type=model_type)
     optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
+    # optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
 
     model.compile(optimizer, weighted_loss, ['accuracy', TP, TN, FP, FN])
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
@@ -124,13 +125,13 @@ def main():
                     d_new['Session'] = idx
                     d = pd.concat((d, d_new))
 
-            # df = dL.create_pain_df(f_path)
-            # print("{}: Actual number of images: ".format(folder), len(df), "thereof pain: ", sum(df['Pain'] != '0'))
-            # df = dL.balance_data(df, threshold=200)
-            # train_data, train_labels_binary, train_labels_people, train_labels = Experiments.load_and_prepare_data(
-            #     df['img_path'].values, 0, 4, 'CNN')
+            df = dL.create_pain_df(f_path)
+            print("{}: Actual number of images: ".format(folder), len(df), "thereof pain: ", sum(df['Pain'] != '0'))
+            df = dL.balance_data(df, threshold=200)
+            train_data, train_labels_binary, train_labels_people, train_labels = Experiments.load_and_prepare_data(
+                df['img_path'].values, 0, 4, 'CNN')
             # if idx <= 0:
-            train_data, train_labels_binary = val_data, val_labels_binary
+            #     train_data, train_labels_binary = val_data, val_labels_binary
             # else:
             #     train_data, train_labels_binary = np.concatenate((train_data, val_data)), np.concatenate(
             #         (train_labels_binary, val_labels_binary))
