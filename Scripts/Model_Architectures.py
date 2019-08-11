@@ -6,18 +6,7 @@ layers = tf.keras.layers  # like 'from tensorflow.keras import layers' (PyCharm 
 
 def build_CNN(input_shape):
     """
-    Compile and return a simple CNN model for image recognition.
-
-    Configuration:
-    Layer 1: Convolution Layer | Filters: 32 | Kernel Size: 3x3 | Activation: Relu
-    Layer 2: Max Pooling Layer | Filter: 2x2
-    Layer 3: Dense Layer       | Neurons: 32 | Activation: Relu
-    Layer 4: Dense Layer       | Neurons: 10 | Activation: Softmax
-
-    Optimizer:      Adam
-    Loss function:  Sparse Categorical Cross Entropy
-    Loss metric:    Accuracy
-
+    Return a simple CNN model for image classification.
 
     :param input_shape:     image input shape (tuple), e.g. (28, 28, 1)
 
@@ -44,6 +33,14 @@ def build_CNN(input_shape):
 
 
 def build_ResNet(input_shape):
+    """
+    Return a tensorflow model with ResNet 50 as teh feature extractor and two dense layers with Relu and Sigmoid
+    activation respectively as classification layers.
+
+    :param input_shape:          image input shape (tuple), e.g. (28, 28, 3)
+    :return:
+        model                    Tensorflow model
+    """
 
     print("Setting up ResNet")
     base_model = tf.keras.applications.ResNet50(include_top=False, input_shape=(input_shape[0], input_shape[1], 3),
