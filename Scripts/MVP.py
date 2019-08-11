@@ -144,7 +144,8 @@ def main():
 
         file = os.path.join(RESULTS, 'CNN Individual Training_Validation Balancing Person {}.csv'.format(person))
         # file = os.path.join(RESULTS, 'CNN Data Balancing .csv')
-        d.to_csv(file)
+        if d is not None:
+            d.to_csv(file)
         del model
         print("Initializing new model")
         model = mA.build_model((215, 215, 1), model_type=model_type)
