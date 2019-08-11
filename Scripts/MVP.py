@@ -1,6 +1,7 @@
 import os
 import sys
 
+import keras
 import pandas as pd
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -80,6 +81,12 @@ def avg_precision(y_true, y_pred):
     return
 
 
+def prec(y_true, y_pred):
+    # y_true = tf.cast(tf.argmax(y_true, 1), tf.int64)
+    # y_pred = tf.cast(y_pred, tf.int64)
+    # y_true = tf.cast(y_true, tf.int64)
+    return tf.compat.v1.metrics.precision_at_k(y_true, y_pred, 1)
+
 def main():
     # Cumulative Training
     # Non-cumulative training
@@ -90,7 +97,7 @@ def main():
     model = mA.build_model((215, 215, 1), model_type='CNN')
     optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
 
-    model.compile(optimizer, 'binary_crossentropy', ['accuracy', tf.keras.metrics.TruePositives([1, 0.5])])
+    model.compile(optimizer, 'binary_crossentropy', ['accuracy', TP, FP, FN, TN])
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
                                                       baseline=None, restore_best_weights=True)
 
@@ -101,11 +108,14 @@ def main():
         f_path = os.path.join(GROUP_2_PATH, folder)
         df = dL.create_pain_df(f_path)
         # df = df[df['Person'] == 52]
-        f_path = df['img_path'].values
+        f_path = df['img_path'].values[:40]
         val_data, val_labels_binary, val_labels_people, val_labels = Experiments.load_and_prepare_data(f_path, 0, 4,
                                                                                                        'CNN')
+        # val_labels_binary = np.argmax(val_labels_binary, 1)
         if idx > 0:
-            print("Val_Balance: {:,.0%}".format(np.sum(val_labels_binary[:, 1]) / len(val_labels_binary)))
+            # print("Val_Balance: {:,.0%}".format(np.sum(val_labels_binary[:, 1]) / len(val_labels_binary)))
+            print(train_labels_binary)
+            print(val_labels_binary)
             history = model.fit(train_data, train_labels_binary, batch_size=32, epochs=30,
                                 validation_data=(val_data, val_labels_binary), callbacks=[early_stopping])
             if not d:
