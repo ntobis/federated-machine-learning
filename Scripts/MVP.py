@@ -128,7 +128,7 @@ def main():
                         d_new['Session'] = idx
                         d = pd.concat((d, d_new))
 
-                df = train_df[(train_df['Session'] <= idx)]
+                df = train_df[(train_df['Session'] <= idx) & (train_df['Person'] == person)]
                 print("{}: Actual number of images: ".format(folder), len(df), "thereof pain: ", sum(df['Pain'] != '0'))
                 df = dL.balance_data(df, threshold=200)
                 train_data, train_labels_binary, train_labels_people, train_labels = Experiments.load_and_prepare_data(
