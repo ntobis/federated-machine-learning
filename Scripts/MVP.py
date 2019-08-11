@@ -142,14 +142,14 @@ def main():
                 #     train_data, train_labels_binary = np.concatenate((train_data, val_data)), np.concatenate(
                 #         (train_labels_binary, val_labels_binary))
 
-        file = os.path.join(RESULTS, 'CNN Individual Training_Validation Balancing Person {}.csv'.format(person))
+        file = os.path.join(RESULTS, 'CNN Individual Training_Validation small LR Balancing Person  {}.csv'.format(person))
         # file = os.path.join(RESULTS, 'CNN Data Balancing .csv')
         if d is not None:
             d.to_csv(file)
         del model
         print("Initializing new model")
         model = mA.build_model((215, 215, 1), model_type=model_type)
-        optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
+        optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.0001)
         # optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
 
         model.compile(optimizer, 'binary_crossentropy', ['accuracy', TP, TN, FP, FN])
