@@ -116,7 +116,7 @@ def main():
                     f_paths,
                     0, 4, model_type)
 
-                if idx > 0:
+                if idx > 0 and train_data is not None:
                     print("Val_Balance: {:,.0%}".format(np.sum(val_labels_binary[:, 1]) / len(val_labels_binary)))
                     history = model.fit(train_data, train_labels_binary, batch_size=32, epochs=30,
                                         validation_data=(val_data, val_labels_binary), callbacks=[early_stopping])
@@ -131,8 +131,11 @@ def main():
                 df = train_df[(train_df['Session'] <= idx) & (train_df['Person'] == person)]
                 print("{}: Actual number of images: ".format(folder), len(df), "thereof pain: ", sum(df['Pain'] != '0'))
                 df = dL.balance_data(df, threshold=200)
-                train_data, train_labels_binary, train_labels_people, train_labels = Experiments.load_and_prepare_data(
-                    df['img_path'].values, 0, 4, model_type)
+                if len(df) > 0:
+                    train_data, train_labels_binary, train_labels_people, train_labels = Experiments.load_and_prepare_data(
+                        df['img_path'].values, 0, 4, model_type)
+                else:
+                    train_data, train_labels_binary, train_labels_people, train_labels = [None] * 4
                 # if idx <= 0:
                 #     train_data, train_labels_binary = val_data, val_labels_binary
                 # else:
