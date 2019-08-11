@@ -104,6 +104,7 @@ def main():
     # for person in [43,  48,  52,  59,  64,  80,  92,  96, 107, 109, 115, 120]:
     train_data, train_labels_binary = None, None
     d = None
+    train_df = dL.create_pain_df(GROUP_2_PATH)
     for idx, folder in enumerate(sorted(os.listdir(GROUP_2_PATH))):
         print("Session: {}".format(idx))
         f_path = os.path.join(GROUP_2_PATH, folder)
@@ -125,7 +126,7 @@ def main():
                     d_new['Session'] = idx
                     d = pd.concat((d, d_new))
 
-            df = dL.create_pain_df(f_path)
+            df = train_df[train_df['Session'] <= idx]
             print("{}: Actual number of images: ".format(folder), len(df), "thereof pain: ", sum(df['Pain'] != '0'))
             df = dL.balance_data(df, threshold=200)
             train_data, train_labels_binary, train_labels_people, train_labels = Experiments.load_and_prepare_data(
