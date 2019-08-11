@@ -128,7 +128,7 @@ def main():
                         d_new['Session'] = idx
                         d = pd.concat((d, d_new))
 
-                df = train_df[(train_df['Session'] <= idx) & train_df['Person'] == person]
+                df = train_df[(train_df['Session'] <= idx)]
                 print("{}: Actual number of images: ".format(folder), len(df), "thereof pain: ", sum(df['Pain'] != '0'))
                 df = dL.balance_data(df, threshold=200)
                 train_data, train_labels_binary, train_labels_people, train_labels = Experiments.load_and_prepare_data(
@@ -139,9 +139,15 @@ def main():
                 #     train_data, train_labels_binary = np.concatenate((train_data, val_data)), np.concatenate(
                 #         (train_labels_binary, val_labels_binary))
 
-        file = os.path.join(RESULTS, 'CNN Individual Training_Validation Balancing Person {}.csv'.format(person))
+        file = os.path.join(RESULTS, 'CNN Individual Training Balancing Person {}.csv'.format(person))
         # file = os.path.join(RESULTS, 'CNN Data Balancing .csv')
         d.to_csv(file)
+        del model
+        model = mA.build_model((215, 215, 1), model_type=model_type)
+        optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
+        # optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
+
+        model.compile(optimizer, 'binary_crossentropy', ['accuracy', TP, TN, FP, FN])
 
     twilio.send_message("Training Done")
 
