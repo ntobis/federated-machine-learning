@@ -57,6 +57,8 @@ def build_ResNet(input_shape):
         layers.MaxPooling2D(),
         layers.Flatten(),
         layers.Dense(units=128),
+        layers.BatchNormalization(),
+        layers.ReLU(),
         layers.Dense(units=2, activation='sigmoid')
     ], name='ResNet')
     return model
@@ -70,5 +72,5 @@ def build_model(input_shape, model_type):
 
 
 if __name__ == '__main__':
-    model_1 = build_model((215, 215, 1), 'CNN')
+    model_1 = build_model((215, 215, 1), 'ResNet')
     model_1.summary()

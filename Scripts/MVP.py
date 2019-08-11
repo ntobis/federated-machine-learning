@@ -93,7 +93,7 @@ def main():
     # Training with moving training window for balancing cumulative
     # Repeat training with ResNet
 
-    model = mA.build_model((215, 215, 1), model_type='CNN')
+    model = mA.build_model((215, 215, 1), model_type='ResNet')
     optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
 
     model.compile(optimizer, 'binary_crossentropy', ['accuracy', TP, TN, FP, FN])
@@ -135,7 +135,7 @@ def main():
                 #     train_data, train_labels_binary = np.concatenate((train_data, val_data)), np.concatenate(
                 #         (train_labels_binary, val_labels_binary))
 
-        file = os.path.join(RESULTS, 'Individual Training No Balancing Person {}.csv'.format(person))
+        file = os.path.join(RESULTS, 'ResNet Individual Training No Balancing Person {}.csv'.format(person))
         d.to_csv(file)
 
     twilio.send_message("Training Done")
