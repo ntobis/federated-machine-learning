@@ -106,7 +106,7 @@ def main():
         f_path = os.path.join(GROUP_2_PATH, folder)
         df = dL.create_pain_df(f_path)
         # df = df[df['Person'] == 52]
-        f_path = df['img_path'].values[:40]
+        f_path = df['img_path'].values
         val_data, val_labels_binary, val_labels_people, val_labels = Experiments.load_and_prepare_data(f_path, 0, 4,
                                                                                                        'CNN')
         if idx > 0:
