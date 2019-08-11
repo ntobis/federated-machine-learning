@@ -86,8 +86,8 @@ def main():
     twilio = Experiments.Twilio()
 
     # Cumulative Training - DONE
-    # Non-cumulative training
-    # Training with just 1 person
+    # Non-cumulative training - DONE
+    # Training with just 1 person - DONE
     # Training with weighted loss
     # Training with moving training window for balancing non-cumulative
     # Training with moving training window for balancing cumulative
@@ -96,8 +96,8 @@ def main():
     model = mA.build_model((215, 215, 1), model_type=model_type)
     optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
 
-    model.compile(optimizer, 'binary_crossentropy', ['accuracy', TP, TN, FP, FN])
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, verbose=1, mode='auto',
+    model.compile(optimizer, weighted_loss, ['accuracy', TP, TN, FP, FN])
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
                                                       baseline=None, restore_best_weights=True)
 
     # for person in [43,  48,  52,  59,  64,  80,  92,  96, 107, 109, 115, 120]:
