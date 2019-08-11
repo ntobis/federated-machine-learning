@@ -90,33 +90,36 @@ def main():
     # Training with just 1 person
     # Training with weighted loss
     # Training with moving training window for balancing
+    # Training with ResNet
 
     model = mA.build_model((215, 215, 1), model_type='CNN')
     optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
 
-    model.compile(optimizer, 'binary_crossentropy', ['accuracy'])
+    model.compile(optimizer, 'binary_crossentropy', ['accuracy', TP, TN, FP, FN])
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, verbose=1, mode='auto',
                                                       baseline=None, restore_best_weights=True)
 
     train_data, train_labels_binary = None, None
-    d = {}
+    d = None
     for idx, folder in enumerate(sorted(os.listdir(GROUP_2_PATH))):
         print("Session: {}".format(idx))
         f_path = os.path.join(GROUP_2_PATH, folder)
         df = dL.create_pain_df(f_path)
         # df = df[df['Person'] == 52]
-        f_path = df['img_path'].values
+        f_path = df['img_path'].values[:40]
         val_data, val_labels_binary, val_labels_people, val_labels = Experiments.load_and_prepare_data(f_path, 0, 4,
                                                                                                        'CNN')
         if idx > 0:
             print("Val_Balance: {:,.0%}".format(np.sum(val_labels_binary[:, 1]) / len(val_labels_binary)))
             history = model.fit(train_data, train_labels_binary, batch_size=32, epochs=30,
                                 validation_data=(val_data, val_labels_binary), callbacks=[early_stopping])
-            if not d:
-                d = history.history
+            if d is None:
+                d = pd.DataFrame(history.history)
+                d['Session'] = idx
             else:
-                for key, val in history.history.items():
-                    d[key].extend(val)
+                d_new = pd.DataFrame(history.history)
+                d_new['Session'] = idx
+                d = pd.concat((d, d_new))
 
         # df = dL.create_pain_df(f_path)
         # print("{}: Actual number of images: ".format(folder), len(df), "thereof pain: ", sum(df['Pain'] != '0'))
@@ -130,7 +133,7 @@ def main():
                 (train_labels_binary, val_labels_binary))
 
     file = os.path.join(RESULTS, 'No_data_balancing.csv')
-    pd.DataFrame(d).to_csv(file)
+    d.to_csv(file)
 
     twilio.send_message("Training Done")
 
