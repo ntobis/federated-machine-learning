@@ -83,6 +83,8 @@ def prec(y_true, y_pred):
 
 
 def main():
+    twilio = Experiments.Twilio()
+
     # Cumulative Training
     # Non-cumulative training
     # Training with just 1 person
@@ -92,8 +94,8 @@ def main():
     model = mA.build_model((215, 215, 1), model_type='CNN')
     optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
 
-    model.compile(optimizer, 'binary_crossentropy', ['accuracy', TP, FP, FN, TN])
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
+    model.compile(optimizer, 'binary_crossentropy', ['accuracy'])
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, verbose=1, mode='auto',
                                                       baseline=None, restore_best_weights=True)
 
     train_data, train_labels_binary = None, None
@@ -103,14 +105,11 @@ def main():
         f_path = os.path.join(GROUP_2_PATH, folder)
         df = dL.create_pain_df(f_path)
         # df = df[df['Person'] == 52]
-        f_path = df['img_path'].values[:40]
+        f_path = df['img_path'].values
         val_data, val_labels_binary, val_labels_people, val_labels = Experiments.load_and_prepare_data(f_path, 0, 4,
                                                                                                        'CNN')
-        # val_labels_binary = np.argmax(val_labels_binary, 1)
         if idx > 0:
-            # print("Val_Balance: {:,.0%}".format(np.sum(val_labels_binary[:, 1]) / len(val_labels_binary)))
-            print(train_labels_binary)
-            print(val_labels_binary)
+            print("Val_Balance: {:,.0%}".format(np.sum(val_labels_binary[:, 1]) / len(val_labels_binary)))
             history = model.fit(train_data, train_labels_binary, batch_size=32, epochs=30,
                                 validation_data=(val_data, val_labels_binary), callbacks=[early_stopping])
             if not d:
@@ -133,7 +132,6 @@ def main():
     file = os.path.join(RESULTS, 'No_data_balancing.csv')
     pd.DataFrame(d).to_csv(file)
 
-    twilio = Experiments.Twilio()
     twilio.send_message("Training Done")
 
 
