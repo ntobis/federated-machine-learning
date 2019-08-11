@@ -92,8 +92,8 @@ def main():
     # Training with moving training window for balancing non-cumulative
     # Training with moving training window for balancing cumulative
     # Repeat training with ResNet
-
-    model = mA.build_model((215, 215, 1), model_type='ResNet')
+    model_type = 'ResNet'
+    model = mA.build_model((215, 215, 1), model_type=model_type)
     optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
 
     model.compile(optimizer, 'binary_crossentropy', ['accuracy', TP, TN, FP, FN])
@@ -111,7 +111,7 @@ def main():
             f_path = df['img_path'].values
             if len(f_path) > 0:
                 val_data, val_labels_binary, val_labels_people, val_labels = Experiments.load_and_prepare_data(f_path, 0, 4,
-                                                                                                               'CNN')
+                                                                                                               model_type)
                 if idx > 0:
                     print("Val_Balance: {:,.0%}".format(np.sum(val_labels_binary[:, 1]) / len(val_labels_binary)))
                     history = model.fit(train_data, train_labels_binary, batch_size=32, epochs=30,
