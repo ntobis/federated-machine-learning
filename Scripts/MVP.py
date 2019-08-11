@@ -138,7 +138,7 @@ def main():
             #         (train_labels_binary, val_labels_binary))
 
     # file = os.path.join(RESULTS, 'ResNet Individual Training No Balancing Person {}.csv'.format(person))
-    file = os.path.join(RESULTS, 'ResNet Data Balancing.csv')
+    file = os.path.join(RESULTS, 'CNN Data Balancing.csv')
     d.to_csv(file)
 
     twilio.send_message("Training Done")
