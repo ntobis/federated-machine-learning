@@ -85,7 +85,7 @@ def prec(y_true, y_pred):
 def main():
     twilio = Experiments.Twilio()
 
-    # Cumulative Training
+    # Cumulative Training - DONE
     # Non-cumulative training
     # Training with just 1 person
     # Training with weighted loss
@@ -126,13 +126,13 @@ def main():
         # df = dL.balance_data(df, threshold=200)
         # train_data, train_labels_binary, train_labels_people, train_labels = Experiments.load_and_prepare_data(
         #     df['img_path'].values, 0, 4, 'CNN')
-        if idx <= 0:
-            train_data, train_labels_binary = val_data, val_labels_binary
-        else:
-            train_data, train_labels_binary = np.concatenate((train_data, val_data)), np.concatenate(
-                (train_labels_binary, val_labels_binary))
+        # if idx <= 0:
+        train_data, train_labels_binary = val_data, val_labels_binary
+        # else:
+        #     train_data, train_labels_binary = np.concatenate((train_data, val_data)), np.concatenate(
+        #         (train_labels_binary, val_labels_binary))
 
-    file = os.path.join(RESULTS, 'No_data_balancing.csv')
+    file = os.path.join(RESULTS, 'No_data_balancing_non-cum.csv')
     d.to_csv(file)
 
     twilio.send_message("Training Done")
