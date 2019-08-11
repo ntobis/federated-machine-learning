@@ -100,43 +100,44 @@ def main():
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, verbose=1, mode='auto',
                                                       baseline=None, restore_best_weights=True)
 
-    for person in [43,  48,  52,  59,  64,  80,  92,  96, 107, 109, 115, 120]:
-        train_data, train_labels_binary = None, None
-        d = None
-        for idx, folder in enumerate(sorted(os.listdir(GROUP_2_PATH))):
-            print("Session: {}".format(idx))
-            f_path = os.path.join(GROUP_2_PATH, folder)
-            df = dL.create_pain_df(f_path)
-            df = df[df['Person'] == person]
-            f_path = df['img_path'].values
-            if len(f_path) > 0:
-                val_data, val_labels_binary, val_labels_people, val_labels = Experiments.load_and_prepare_data(f_path, 0, 4,
-                                                                                                               model_type)
-                if idx > 0:
-                    print("Val_Balance: {:,.0%}".format(np.sum(val_labels_binary[:, 1]) / len(val_labels_binary)))
-                    history = model.fit(train_data, train_labels_binary, batch_size=32, epochs=30,
-                                        validation_data=(val_data, val_labels_binary), callbacks=[early_stopping])
-                    if d is None:
-                        d = pd.DataFrame(history.history)
-                        d['Session'] = idx
-                    else:
-                        d_new = pd.DataFrame(history.history)
-                        d_new['Session'] = idx
-                        d = pd.concat((d, d_new))
+    # for person in [43,  48,  52,  59,  64,  80,  92,  96, 107, 109, 115, 120]:
+    train_data, train_labels_binary = None, None
+    d = None
+    for idx, folder in enumerate(sorted(os.listdir(GROUP_2_PATH))):
+        print("Session: {}".format(idx))
+        f_path = os.path.join(GROUP_2_PATH, folder)
+        df = dL.create_pain_df(f_path)
+        # df = df[df['Person'] == person]
+        f_path = df['img_path'].values
+        if len(f_path) > 0:
+            val_data, val_labels_binary, val_labels_people, val_labels = Experiments.load_and_prepare_data(f_path, 0, 4,
+                                                                                                           model_type)
+            if idx > 0:
+                print("Val_Balance: {:,.0%}".format(np.sum(val_labels_binary[:, 1]) / len(val_labels_binary)))
+                history = model.fit(train_data, train_labels_binary, batch_size=32, epochs=30,
+                                    validation_data=(val_data, val_labels_binary), callbacks=[early_stopping])
+                if d is None:
+                    d = pd.DataFrame(history.history)
+                    d['Session'] = idx
+                else:
+                    d_new = pd.DataFrame(history.history)
+                    d_new['Session'] = idx
+                    d = pd.concat((d, d_new))
 
-                # df = dL.create_pain_df(f_path)
-                # print("{}: Actual number of images: ".format(folder), len(df), "thereof pain: ", sum(df['Pain'] != '0'))
-                # df = dL.balance_data(df, threshold=200)
-                # train_data, train_labels_binary, train_labels_people, train_labels = Experiments.load_and_prepare_data(
-                #     df['img_path'].values, 0, 4, 'CNN')
-                # if idx <= 0:
+            # df = dL.create_pain_df(f_path)
+            # print("{}: Actual number of images: ".format(folder), len(df), "thereof pain: ", sum(df['Pain'] != '0'))
+            # df = dL.balance_data(df, threshold=200)
+            # train_data, train_labels_binary, train_labels_people, train_labels = Experiments.load_and_prepare_data(
+            #     df['img_path'].values, 0, 4, 'CNN')
+            if idx <= 0:
                 train_data, train_labels_binary = val_data, val_labels_binary
-                # else:
-                #     train_data, train_labels_binary = np.concatenate((train_data, val_data)), np.concatenate(
-                #         (train_labels_binary, val_labels_binary))
+            else:
+                train_data, train_labels_binary = np.concatenate((train_data, val_data)), np.concatenate(
+                    (train_labels_binary, val_labels_binary))
 
-        file = os.path.join(RESULTS, 'ResNet Individual Training No Balancing Person {}.csv'.format(person))
-        d.to_csv(file)
+    # file = os.path.join(RESULTS, 'ResNet Individual Training No Balancing Person {}.csv'.format(person))
+    file = os.path.join(RESULTS, 'ResNet No_data_balancing.csv')
+    d.to_csv(file)
 
     twilio.send_message("Training Done")
 
