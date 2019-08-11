@@ -1,5 +1,4 @@
 import tensorflow as tf
-from tensorflow.keras import models, layers
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 layers = tf.keras.layers  # like 'from tensorflow.keras import layers' (PyCharm import issue workaround)
