@@ -92,7 +92,7 @@ def main():
     # Training with moving training window for balancing non-cumulative
     # Training with moving training window for balancing cumulative
     # Repeat training with ResNet
-    model_type = 'ResNet'
+    model_type = 'CNN'
     model = mA.build_model((215, 215, 1), model_type=model_type)
     optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
     # optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
