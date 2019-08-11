@@ -139,7 +139,7 @@ def main():
                 #     train_data, train_labels_binary = np.concatenate((train_data, val_data)), np.concatenate(
                 #         (train_labels_binary, val_labels_binary))
 
-        file = os.path.join(RESULTS, 'CNN Individual Training Balancing Person {}.csv'.format(person))
+        file = os.path.join(RESULTS, 'CNN Individual Training_Validation Balancing Person {}.csv'.format(person))
         # file = os.path.join(RESULTS, 'CNN Data Balancing .csv')
         d.to_csv(file)
         del model
