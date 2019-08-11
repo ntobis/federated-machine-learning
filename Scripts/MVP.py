@@ -1,7 +1,6 @@
 import os
 import sys
 
-import keras
 import pandas as pd
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -11,7 +10,6 @@ from Scripts import Model_Architectures as mA
 from Scripts import Experiments
 from Scripts import Data_Loader_Functions as dL
 import keras.backend as K
-from sklearn.metrics import confusion_matrix, average_precision_score
 
 ROOT = os.path.dirname(os.path.dirname(__file__))
 DATA = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
@@ -77,15 +75,12 @@ def f1_score(y_true, y_pred):
     return 2 * (p * r) / (p + r)
 
 
-def avg_precision(y_true, y_pred):
-    return
-
-
 def prec(y_true, y_pred):
     # y_true = tf.cast(tf.argmax(y_true, 1), tf.int64)
     # y_pred = tf.cast(y_pred, tf.int64)
     # y_true = tf.cast(y_true, tf.int64)
     return tf.compat.v1.metrics.precision_at_k(y_true, y_pred, 1)
+
 
 def main():
     # Cumulative Training
