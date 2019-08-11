@@ -97,7 +97,7 @@ def main():
     optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
     # optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
 
-    model.compile(optimizer, weighted_loss, ['accuracy', TP, TN, FP, FN])
+    model.compile(optimizer, 'binary_crossentropy', ['accuracy', TP, TN, FP, FN])
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
                                                       baseline=None, restore_best_weights=True)
 
