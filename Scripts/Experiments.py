@@ -202,36 +202,6 @@ def load_and_prepare_data(path, person, pain, model_type):
     return data, labels_binary, train_labels_people, labels
 
 
-def split_data_into_clients(train_data, train_labels, clients, subjects_per_client, person):
-    """
-    Utility function splitting image data into clients for federated learning. Adds one dimension to input numpy arrays.
-
-    :param train_data:              4D numpy array, images as numpy array in shape (N, 215, 215, 1)
-    :param train_labels:            2D numpy array, one-hot encoded labels [no pain, pain] (N, 2)
-    :param clients:                 int or None, if int then data is split into specified number of clients,
-                                    if None then data is split according to the unique number of people in train_labels
-    :param subjects_per_client:     int, allocates a specified number of test subjects to a given client
-    :param person:                  int, index where 'person' appears in the file name converted to an array.
-    :return:
-        clients:                    int or numpy array, if int then number of clients the data was broken into, if numpy
-                                    array, then 2D numpy array, all labels (N, 7)
-        train_data                  5D numpy array, images as numpy array in shape (clients, N_per_client, 215, 215, 1)
-        train_labels_binary         3D numpy array, one-hot encoded labels (clients, N_per_client, 2)
-    """
-
-    if clients is None:
-        client_arr = np.unique(train_labels[:, person])
-        train_data, train_labels_binary, all_labels = \
-            dL.split_data_into_clients('person', train_data, train_labels, len(client_arr), train_labels,
-                                       subjects_per_client=subjects_per_client)
-
-        # If no clients are specified, clients will be separated according to the "person" label
-        clients = all_labels
-    else:
-        train_data, train_labels_binary = dL.split_data_into_clients('random', train_data, train_labels, clients)
-    return clients, train_data, train_labels_binary
-
-
 # ---------------------------------------------- End Utility Functions --------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
@@ -240,8 +210,8 @@ def split_data_into_clients(train_data, train_labels, clients, subjects_per_clie
 # ------------------------------------------------ Experiment Runners ---------------------------------------------- #
 
 
-def run_pretraining(clients, dataset, experiment, local_epochs, loss, metrics, model_path, model_type, optimizer,
-                    pretraining, rounds, subjects_per_client, personalization):
+def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path, model_type, optimizer,
+                    pretraining, rounds, personalization):
     if model_path is not None:
         print("Loading pre-trained model: {}".format(os.path.basename(model_path)))
         model = tf.keras.models.load_model(model_path, custom_objects={'TP': TP, 'TN': TN, 'FN': FN, 'FP': FP})
@@ -267,13 +237,9 @@ def run_pretraining(clients, dataset, experiment, local_epochs, loss, metrics, m
         train_data, train_labels, train_labels_people, raw_labels = load_and_prepare_data(GROUP_1_TRAIN_PATH, person=0,
                                                                                           pain=4, model_type=model_type)
 
-        # Split data into clients
-        clients, train_data, train_labels = split_data_into_clients(train_data, train_labels, clients,
-                                                                    subjects_per_client, person=0)
-
         # Train
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", rounds=rounds, train_data=train_data,
-                             train_labels=train_labels, loss=loss, clients=clients,
+                             train_labels=train_labels, loss=loss, clients=train_labels_people,
                              local_epochs=local_epochs, optimizer=optimizer, metrics=metrics, model_type=model_type,
                              personalization=personalization)
 
@@ -416,12 +382,12 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------ Experiments - PAIN ---------------------------------------------- #
 
-def experiment_pain(algorithm, dataset, experiment, rounds, shards=None, clients=None, model_path=None,
+def experiment_pain(algorithm, dataset, experiment, rounds, shards=None, model_path=None,
                     pretraining=None, cumulative=True, optimizer=None, loss=None, metrics=None,
                     subjects_per_client=None, local_epochs=1, model_type='CNN', personalization=False):
     # Perform pre-training on group 1
-    model = run_pretraining(clients, dataset, experiment, local_epochs, loss, metrics, model_path, model_type,
-                            optimizer, pretraining, rounds, subjects_per_client, personalization)
+    model = run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path, model_type,
+                            optimizer, pretraining, rounds, personalization)
 
     # If shards are specified, this experiment will be run
     if shards is not None:
@@ -480,7 +446,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             training_setup(seed)
             Output.print_experiment("3 - Unbalanced: Federated without pre-training")
             experiment_pain("federated", 'PAIN', '3-unbalanced-Federated-no-pre-training', 30, shards=test_shards,
-                            clients=None, pretraining=None, cumulative=True, optimizer=optimizer, loss=loss,
+                            pretraining=None, cumulative=True, optimizer=optimizer, loss=loss,
                             metrics=metrics, subjects_per_client=1)
             twilio.send_message("Experiment 3 Complete")
 
@@ -490,7 +456,6 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             centralized_model_path = find_newest_model_path(os.path.join(CENTRAL_PAIN_MODELS),
                                                             "shard-0.00.h5")
             experiment_pain("federated", 'PAIN', '4-unbalanced-Federated-central-pre-training', 30, shards=test_shards,
-                            clients=None,
                             model_path=centralized_model_path, pretraining='centralized', cumulative=True,
                             optimizer=optimizer, loss=loss, metrics=metrics, subjects_per_client=1)
             twilio.send_message("Experiment 4 Complete")
@@ -500,7 +465,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             Output.print_experiment("5 - Unbalanced: Federated with federated pretraining")
             experiment_pain("federated", 'PAIN', '5-unbalanced-Federated-federated-pre-training', 30,
                             shards=test_shards,
-                            clients=None, pretraining='federated', cumulative=True, optimizer=optimizer, loss=loss,
+                            pretraining='federated', cumulative=True, optimizer=optimizer, loss=loss,
                             metrics=metrics, subjects_per_client=1)
             twilio.send_message("Experiment 5 Complete")
 
@@ -531,7 +496,6 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             training_setup(seed)
             Output.print_experiment("8 - Balanced: Federated without pre-training")
             experiment_pain("federated", 'PAIN', '3-balanced-Federated-no-pre-training', 30, shards=test_shards,
-                            clients=None,
                             pretraining=None, cumulative=True, optimizer=optimizer, loss=loss, metrics=metrics,
                             subjects_per_client=1)
             twilio.send_message("Experiment 8 Complete")
@@ -542,7 +506,6 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             centralized_model_path = find_newest_model_path(os.path.join(CENTRAL_PAIN_MODELS),
                                                             "shard-0.00.h5")
             experiment_pain("federated", 'PAIN', '4-balanced-Federated-central-pre-training', 30, shards=test_shards,
-                            clients=None,
                             model_path=centralized_model_path, pretraining='centralized', cumulative=True,
                             optimizer=optimizer, loss=loss, metrics=metrics, subjects_per_client=1)
             twilio.send_message("Experiment 9 Complete")
@@ -551,7 +514,6 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             training_setup(seed)
             Output.print_experiment("10 - Balanced: Federated with federated pretraining")
             experiment_pain("federated", 'PAIN', '5-balanced-Federated-federated-pre-training', 30, shards=test_shards,
-                            clients=None,
                             pretraining='federated', cumulative=True, optimizer=optimizer, loss=loss, metrics=metrics,
                             subjects_per_client=1)
             twilio.send_message("Experiment 10 Complete")
@@ -629,7 +591,6 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             experiment='4-sessions-Federated-central-pre-training',
                             rounds=2,
                             shards=None,
-                            clients=None,
                             model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
                             # model_path=None,
                             pretraining='centralized',
@@ -651,7 +612,6 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             experiment='5-sessions-Federated-federated-pre-training',
                             rounds=2,
                             shards=None,
-                            clients=None,
                             pretraining='federated',
                             model_path=None,
                             cumulative=True,
