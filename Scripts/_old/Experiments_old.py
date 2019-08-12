@@ -61,7 +61,7 @@ def runner_federated_mnist(clients, dataset, experiment, train_data, train_label
     :return:
     """
 
-    train_data, train_labels = dL.split_data_into_clients(clients, split, train_data, train_labels)
+    train_data, train_labels = dL.split_data_into_clients(split, train_data, train_labels, clients)
 
     # Reset federated model
     fed_CNN.reset_federated_model()

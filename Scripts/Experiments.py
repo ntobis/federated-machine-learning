@@ -5,6 +5,8 @@ import traceback
 
 from sklearn.preprocessing import OneHotEncoder
 
+from Scripts.Keras_Custom import TP, TN, FP, FN
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import time
@@ -220,14 +222,13 @@ def split_data_into_clients(train_data, train_labels, clients, subjects_per_clie
     if clients is None:
         client_arr = np.unique(train_labels[:, person])
         train_data, train_labels_binary, all_labels = \
-            dL.split_data_into_clients(len(client_arr), 'person', train_data, train_labels,
-                                       train_labels, subjects_per_client=subjects_per_client)
+            dL.split_data_into_clients('person', train_data, train_labels, len(client_arr), train_labels,
+                                       subjects_per_client=subjects_per_client)
 
         # If no clients are specified, clients will be separated according to the "person" label
         clients = all_labels
     else:
-        train_data, train_labels_binary = dL.split_data_into_clients(clients, 'random', train_data,
-                                                                     train_labels)
+        train_data, train_labels_binary = dL.split_data_into_clients('random', train_data, train_labels, clients)
     return clients, train_data, train_labels_binary
 
 
@@ -307,7 +308,7 @@ def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, loss, m
         # Split data into clients
         if algorithm is 'federated':
             client_arr = np.unique(all_labels[:, 0])
-            data, labels, all_labels = dL.split_data_into_clients(len(client_arr), 'person', data, labels,
+            data, labels, all_labels = dL.split_data_into_clients('person', data, labels, len(client_arr),
                                                                   all_labels=all_labels,
                                                                   subjects_per_client=subjects_per_client)
 
@@ -319,30 +320,48 @@ def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, loss, m
 
 
 def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, model, model_type, optimizer, rounds,
-                 personalization, balanced):
+                 personalization, balanced, subjects_per_client):
     # Prepare df for data generator
     df = dL.create_pain_df(GROUP_2_PATH)
-    df_test = df[(df['Trans_1'] == 'original') & (df['Trans_2'] == 'straight')]['img_path'].values
-    test_data, test_labels, test_labels_people, raw_labels = load_and_prepare_data(df_test, 0, 4, model_type=model_type)
+
     # Run Sessions
+    train_data, train_labels, train_people, train_all_labels, client_arr = [None] * 5
     for session in df['Session'].unique():
         Output.print_session(session)
         experiment_current = experiment + "_shard-{}".format(session)
-        model = model_runner(algorithm, dataset, experiment_current, model=model, rounds=rounds, test_data=test_data,
-                             test_labels=test_labels, df=df, people=test_labels_people,
-                             evaluate=True, loss=loss, session=session, local_epochs=local_epochs,
-                             optimizer=optimizer, metrics=metrics, model_type=model_type,
-                             personalization=personalization, balanced=balanced)
+
+        if session > 0:
+            df_test = df[df['Session'] == session]
+            test_data, test_labels, test_people, test_all_labels = load_and_prepare_data(
+                df_test['img_path'].values[:500],
+                person=0,
+                pain=4,
+                model_type=model_type)
+
+            model = model_runner(algorithm, dataset, experiment_current, model=model, rounds=rounds,
+                                 train_data=train_data, train_labels=train_labels, test_data=test_data,
+                                 test_labels=test_labels, df=df, people=test_people,
+                                 evaluate=True, loss=loss, session=session, clients=train_people,
+                                 local_epochs=local_epochs,
+                                 optimizer=optimizer, metrics=metrics, model_type=model_type,
+                                 personalization=personalization, balanced=balanced, all_labels=test_all_labels)
+        df_train = df[df['Session'] <= session]
+        df_train = dL.balance_data(df_train, threshold=200)
+        train_data, train_labels, train_people, train_all_labels = load_and_prepare_data(
+            df_train['img_path'].values[:500],
+            person=0, pain=4, model_type=model_type)
 
 
 def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_data=None, train_labels=None,
                  test_data=None,
-                 test_labels=None, df=None, people=None, evaluate=True, loss=None, session=False, clients=None,
+                 test_labels=None, df=None, people=None, evaluate=True, loss=None, session=-1, clients=None,
                  local_epochs=1, participants=None, optimizer=None, metrics=None, model_type='CNN',
-                 personalization=False, balanced=True, pretraining=False):
+                 personalization=False, balanced=True, pretraining=False, all_labels=None):
     """
     Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
 
+    :param train_people:
+    :param all_labels:
     :param pretraining:
     :param balanced:
     :param personalization:
@@ -377,18 +396,16 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
         # Train Model
         history, model = fP.federated_learning(model=model, global_epochs=rounds, train_data=train_data,
                                                train_labels=train_labels, test_data=test_data, test_labels=test_labels,
-                                               df=df, evaluate=evaluate, loss=loss, people=people, session=session,
-                                               clients=clients, local_epochs=local_epochs,
+                                               loss=loss, people=people, clients=clients, local_epochs=local_epochs,
                                                participating_clients=participants, optimizer=optimizer, metrics=metrics,
                                                model_type=model_type, personalization=personalization,
-                                               balanced=balanced)
+                                               all_labels=all_labels)
 
     elif algorithm is 'centralized':
         folder = CENTRAL_PAIN_MODELS
         model, history = cP.train_cnn(model=model, epochs=rounds, train_data=train_data,
                                       train_labels=train_labels, test_data=test_data,
-                                      test_labels=test_labels, df=df, people=people, evaluate=evaluate,
-                                      loss=loss, session=session, balanced=balanced, pretraining=pretraining)
+                                      test_labels=test_labels, people=people, all_labels=all_labels)
 
     else:
         raise ValueError("'runner_type' must be either 'centralized' or 'federated', was: {}".format(algorithm))
@@ -420,7 +437,7 @@ def experiment_pain(algorithm, dataset, experiment, rounds, shards=None, clients
     # Else, split group 2 into sessions and run this experiment
     else:
         run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, model, model_type, optimizer, rounds,
-                     personalization, balanced)
+                     personalization, balanced, subjects_per_client)
 
 
 # ------------------------------------------------ End Experiments - 3 --------------------------------------------- #
@@ -436,7 +453,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
     loss = tf.keras.losses.BinaryCrossentropy()
-    metrics = ['accuracy']
+    metrics = ['accuracy', TP, TN, FP, FN]
 
     # Define shards
     test_shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
@@ -551,14 +568,14 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             if redistribution:
                 training_setup(seed)
                 dL.prepare_pain_images(data_loc, distribution='sessions')
-            #
-            # # Experiment 11 - Sessions: Centralized without pre-training
+
+            # Experiment 11 - Sessions: Centralized without pre-training
             # training_setup(seed)
             # Output.print_experiment("11 - Sessions: Centralized without pre-training")
             # experiment_pain(algorithm='centralized',
             #                 dataset='PAIN',
             #                 experiment='1-sessions-Centralized-no-pre-training',
-            #                 rounds=30,
+            #                 rounds=2,
             #                 shards=None,
             #                 clients=None,
             #                 model_path=None,
@@ -591,24 +608,24 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             # twilio.send_message("Experiment 12 Complete")
             #
             # # Experiment 13 - Sessions: Federated without pre-training
-            # training_setup(seed)
-            # Output.print_experiment("13 - Sessions: Federated without pre-training")
-            # experiment_pain(algorithm="federated",
-            #                 dataset='PAIN',
-            #                 experiment='3-sessions-Federated-no-pre-training',
-            #                 rounds=2,
-            #                 shards=None,
-            #                 clients=None,
-            #                 model_path=None,
-            #                 pretraining=None,
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 subjects_per_client=1,
-            #                 local_epochs=1,
-            #                 model_type='ResNet'
-            #                 )
+            training_setup(seed)
+            Output.print_experiment("13 - Sessions: Federated without pre-training")
+            experiment_pain(algorithm="federated",
+                            dataset='PAIN',
+                            experiment='3-sessions-Federated-no-pre-training',
+                            rounds=2,
+                            shards=None,
+                            clients=None,
+                            model_path=None,
+                            pretraining=None,
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            subjects_per_client=1,
+                            local_epochs=1,
+                            model_type='CNN'
+                            )
             # twilio.send_message("Experiment 13 Complete")
             #
             # # Experiment 14 - Sessions: Federated with centralized pretraining
@@ -805,28 +822,28 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             #                 )
             # twilio.send_message("Experiment 23 Complete")
             #
-            training_setup(seed)
-            Output.print_experiment("24 - Sessions: Centralized ResNet")
-            experiment_pain(algorithm='centralized',
-                            dataset='PAIN',
-                            experiment='24-sessions-Centralized-pre-training-ResNet',
-                            rounds=30,
-                            shards=None,
-                            clients=None,
-                            model_path=None,
-                            pretraining='centralized',
-                            cumulative=True,
-                            optimizer=optimizer,
-                            loss=loss,
-                            metrics=metrics,
-                            model_type='CNN',
-                            )
+            # training_setup(seed)
+            # Output.print_experiment("24 - Sessions: Centralized ResNet")
+            # experiment_pain(algorithm='centralized',
+            #                 dataset='PAIN',
+            #                 experiment='24-sessions-Centralized-pre-training-ResNet',
+            #                 rounds=30,
+            #                 shards=None,
+            #                 clients=None,
+            #                 model_path=None,
+            #                 pretraining='centralized',
+            #                 cumulative=True,
+            #                 optimizer=optimizer,
+            #                 loss=loss,
+            #                 metrics=metrics,
+            #                 model_type='CNN',
+            #                 )
             twilio.send_message("Experiment 24 Complete")
 
         twilio.send_message()
 
     except Exception as e:
-        twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
+        # twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
         traceback.print_tb(e.__traceback__)
         print(e)
 

@@ -216,7 +216,7 @@ def split_train_data(num_of_clients, train_data, train_labels):
     return train_data, train_labels
 
 
-def split_data_into_clients(clients, split, train_data, train_labels, all_labels=None, subjects_per_client=None):
+def split_data_into_clients(split, train_data, train_labels, clients=None, all_labels=None, subjects_per_client=None):
     """
     Utility function to split train data and labels into a specified number of clients, in accordance with a specified
     type of split.
@@ -252,6 +252,7 @@ def split_data_into_clients(clients, split, train_data, train_labels, all_labels
                                                      len(train_data) / (clients * 2)))
     elif split.lower() == 'person':
         assert all_labels is not None
+
         all_labels, train_data, train_labels = split_data_into_labels(0, all_labels, False, train_data, train_labels)
         if subjects_per_client is not None:
             train_data, train_labels, all_labels = merge_clients(subjects_per_client, train_data, train_labels,
@@ -262,6 +263,22 @@ def split_data_into_clients(clients, split, train_data, train_labels, all_labels
             "Invalid value for 'Split'. Value can be 'random', 'overlap', 'no_overlap', "
             "'person', value was: {}".format(split))
     return train_data, train_labels
+
+
+def split_data_into_clients_dict(people, *args):
+    array = []
+    for arg in args:
+        dic = {}
+        for key, value in zip(people, arg):
+            # noinspection PyTypeChecker
+            dic.setdefault(key, []).append(value)
+        for key in dic.keys():
+            dic[key] = np.array(dic[key])
+        if len(args) == 1:
+            return dic
+        else:
+            array.append(dic)
+    return tuple(array)
 
 
 def merge_clients(categories_per_client, *args):
