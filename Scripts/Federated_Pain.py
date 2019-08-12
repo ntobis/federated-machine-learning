@@ -208,10 +208,10 @@ def communication_round(model, clients, train_data, train_labels, test_data, tes
     for client in client_arr:
         client_data = train_data.get(client)
         client_labels = train_labels.get(client)
-        client_test_data = test_data.get(client)
-        client_test_labels = test_labels.get(client)
-        client_test_people = test_people.get(client)
-        client_all_labels = all_labels.get(client)
+        client_test_data = test_data.get(client) if test_data is not None else None
+        client_test_labels = test_labels.get(client) if test_labels is not None else None
+        client_test_people = test_people.get(client) if test_people is not None else None
+        client_all_labels = all_labels.get(client) if all_labels is not None else None
         client_id = client[0, 0].astype(int) if type(client) is np.ndarray else client
 
         Output.print_client_id(client_id)
