@@ -8,6 +8,7 @@ from Scripts import Model_Architectures as mA
 from Scripts import Data_Loader_Functions as dL
 from Scripts import Print_Functions as Output
 from Scripts import Reset_Model as Reset
+from Scripts.Keras_Custom import EarlyStopping
 from Scripts.Weights_Accountant import WeightsAccountant
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
@@ -265,8 +266,9 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
                                             communication rounds
     """
 
-    # Create history object
+    # Create history object and callbacks
     history = {}
+    early_stopping = EarlyStopping(patience=5)
 
     # Initialize a random global model and store the weights
     if model is None:
@@ -297,6 +299,11 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
         for (key_1, val_1), (key_2, val_2) in zip(train_history.items(), test_history.items()):
             history.setdefault(key_1, []).append(val_1)
             history.setdefault(key_2, []).append(val_2)
+
+        # Early stopping
+        if early_stopping(test_history['val_loss']):
+            print("Early Stopping, Communication round {}".format(comm_round))
+            break
 
     weights = weights_accountant.get_client_weights() if personalization else weights_accountant.get_global_weights()
     model.set_weights(weights)

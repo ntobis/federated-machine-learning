@@ -55,6 +55,22 @@ def f1_score(y_true, y_pred):
     return 2 * (p * r) / (p + r)
 
 
+class EarlyStopping:
+    def __init__(self, patience):
+        self.patience = patience
+        self.stopping_metric = []
+        self.min_counter = 0
+
+    def __call__(self, stopping_metric):
+        if len(self.stopping_metric) == 0:
+            pass
+        elif min(self.stopping_metric) > stopping_metric:
+            self.stopping_metric = []
+        self.stopping_metric.append(stopping_metric)
+        self.min_counter = len(self.stopping_metric)
+        return True if self.min_counter > self.patience else False
+
+
 class AdditionalValidationSets(tf.keras.callbacks.Callback):
     def __init__(self, validation_sets, verbose=1, batch_size=None):
         """
