@@ -241,7 +241,7 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", rounds=rounds, train_data=train_data,
                              train_labels=train_labels, loss=loss, clients=train_labels_people,
                              local_epochs=local_epochs, optimizer=optimizer, metrics=metrics, model_type=model_type,
-                             personalization=personalization)
+                             personalization=personalization, all_labels=raw_labels)
 
     elif pretraining is None:
         model = mA.build_model((215, 215, 1), model_type)
