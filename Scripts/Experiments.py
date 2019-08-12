@@ -6,7 +6,6 @@ import traceback
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 
-
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import time
@@ -245,7 +244,7 @@ def run_pretraining(clients, dataset, experiment, local_epochs, loss, metrics, m
                     pretraining, rounds, subjects_per_client, personalization):
     if model_path is not None:
         print("Loading pre-trained model: {}".format(os.path.basename(model_path)))
-        model = tf.keras.models.load_model(model_path)
+        model = tf.keras.models.load_model(model_path, custom_objects={'TP': TP, 'TN': TN, 'FN': FN, 'FP': FP})
         model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     elif pretraining is 'centralized':
