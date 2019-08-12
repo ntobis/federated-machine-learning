@@ -583,26 +583,26 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             #                 model_type='CNN'
             #                 )
             # twilio.send_message("Experiment 13 Complete")
-            # Experiment 14 - Sessions: Federated with centralized pretraining
-            training_setup(seed)
-            Output.print_experiment("14 - Sessions: Federated with centralized pretraining")
-            experiment_pain(algorithm="federated",
-                            dataset='PAIN',
-                            experiment='4-sessions-Federated-central-pre-training',
-                            rounds=2,
-                            shards=None,
-                            model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
-                            # model_path=None,
-                            pretraining='centralized',
-                            cumulative=True,
-                            optimizer=optimizer,
-                            loss=loss,
-                            metrics=metrics,
-                            subjects_per_client=1,
-                            local_epochs=5,
-                            model_type='CNN')
-
-            twilio.send_message("Experiment 14 Complete")
+            # # Experiment 14 - Sessions: Federated with centralized pretraining
+            # training_setup(seed)
+            # Output.print_experiment("14 - Sessions: Federated with centralized pretraining")
+            # experiment_pain(algorithm="federated",
+            #                 dataset='PAIN',
+            #                 experiment='4-sessions-Federated-central-pre-training',
+            #                 rounds=2,
+            #                 shards=None,
+            #                 model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
+            #                 # model_path=None,
+            #                 pretraining='centralized',
+            #                 cumulative=True,
+            #                 optimizer=optimizer,
+            #                 loss=loss,
+            #                 metrics=metrics,
+            #                 subjects_per_client=1,
+            #                 local_epochs=5,
+            #                 model_type='CNN')
+            #
+            # twilio.send_message("Experiment 14 Complete")
 
             # Experiment 15 - Sessions: Federated with federated pretraining
             training_setup(seed)
