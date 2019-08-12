@@ -622,7 +622,6 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             #                 model_type='CNN'
             #                 )
             # twilio.send_message("Experiment 13 Complete")
-            print(find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"))
             # Experiment 14 - Sessions: Federated with centralized pretraining
             training_setup(seed)
             Output.print_experiment("14 - Sessions: Federated with centralized pretraining")
@@ -632,8 +631,8 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             rounds=2,
                             shards=None,
                             clients=None,
-                            # model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
-                            model_path=None,
+                            model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
+                            # model_path=None,
                             pretraining='centralized',
                             cumulative=True,
                             optimizer=optimizer,
