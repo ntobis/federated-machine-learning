@@ -199,8 +199,9 @@ def communication_round(model, clients, train_data, train_labels, test_data, tes
 
     train_data, train_labels = dL.split_data_into_clients_dict(clients, train_data, train_labels)
 
-    test_data, test_labels, test_all_labels, test_people, all_labels = \
-        dL.split_data_into_clients_dict(test_people, test_data, test_labels, all_labels, test_people, all_labels)
+    if test_data is not None:
+        test_data, test_labels, test_all_labels, test_people, all_labels = \
+            dL.split_data_into_clients_dict(test_people, test_data, test_labels, all_labels, test_people, all_labels)
 
     # Train each client
     history = {}
