@@ -6,7 +6,6 @@ import traceback
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 
-from Scripts.Keras_Custom import TP, TN, FP, FN
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
@@ -24,6 +23,7 @@ from Scripts import Data_Loader_Functions as dL
 from Scripts import Centralized_Pain as cP
 from Scripts import Federated_Pain as fP
 from Scripts import Model_Architectures as mA
+from Scripts.Keras_Custom import TP, TN, FP, FN
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
