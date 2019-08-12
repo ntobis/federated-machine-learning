@@ -6,16 +6,6 @@ def weighted_loss(y_true, y_pred):
     return tf.nn.weighted_cross_entropy_with_logits(y_true, y_pred, weights)
 
 
-class TruePositive(tf.keras.metrics.Metric):
-    def __init__(self, name='TP', dtype=None):
-        super(TruePositive, self).__init__(name, dtype)
-
-    def __call__(self, y_true, y_pred):
-        y_pred = tf.argmax(y_pred, 1)
-        y_true = tf.argmax(y_true, 1)
-        return tf.math.count_nonzero(y_pred * y_true)
-
-
 def TP(y_true, y_pred):
     y_pred = tf.argmax(y_pred, 1)
     y_true = tf.argmax(y_true, 1)

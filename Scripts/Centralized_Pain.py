@@ -5,9 +5,7 @@ import os
 
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import OneHotEncoder
 import tensorflow as tf
-from sklearn.metrics import confusion_matrix, average_precision_score
 
 from Scripts import Data_Loader_Functions as dL
 from Scripts import Keras_Custom as kC
@@ -99,7 +97,7 @@ def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None,
     model.fit(train_data, train_labels, epochs=epochs, batch_size=32, use_multiprocessing=True,
               validation_data=validation_data, callbacks=callbacks)
 
-    return model, pd.DataFrame(history_cb.history) if history_cb is not None else pd.DataFrame()
+    return model, history_cb.history if history_cb is not None else {}
 
 
 # def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, predict_gen=None, history=None, people=None,
@@ -156,7 +154,8 @@ def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None,
 #     predictions = predictions[:, 1]
 #
 #     sessions = [0] * len(y_pred) if sessions is None else sessions
-#     data = np.concatenate([np.expand_dims(x, 1) for x in [people, y_pred, test_labels, predictions, sessions]], axis=1)
+#     data = np.concatenate([np.expand_dims(x, 1) for x in [people, y_pred, test_labels, predictions, sessions]],
+#     axis=1)
 #     df = pd.DataFrame(data, columns=['Person', 'Y_Pred', 'Y_True', 'Predictions', 'Session'])
 #
 #     results = []

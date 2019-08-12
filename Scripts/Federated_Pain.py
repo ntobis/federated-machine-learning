@@ -177,7 +177,6 @@ def communication_round(model, clients, train_data, train_labels, test_data, tes
     a local model, updating its weights locally. When all clients have updated their weights, they are 'uploaded' to
     the server and averaged.
 
-    :param train_people:
     :param all_labels:
     :param test_people:
     :param test_labels:
@@ -200,12 +199,11 @@ def communication_round(model, clients, train_data, train_labels, test_data, tes
 
     train_data, train_labels = dL.split_data_into_clients_dict(clients, train_data, train_labels)
 
-    test_data, test_labels, test_all_labels, test_people = dL.split_data_into_clients_dict(test_people, test_data,
-                                                                                           test_labels,
-                                                                                           all_labels,
-                                                                                           test_people)
+    test_data, test_labels, test_all_labels, test_people, all_labels = \
+        dL.split_data_into_clients_dict(test_people, test_data, test_labels, all_labels, test_people, all_labels)
 
     # Train each client
+    history = {}
     for client in client_arr:
         client_data = train_data.get(client)
         client_labels = train_labels.get(client)
@@ -216,10 +214,17 @@ def communication_round(model, clients, train_data, train_labels, test_data, tes
         client_id = client[0, 0].astype(int) if type(client) is np.ndarray else client
 
         Output.print_client_id(client_id)
-        history = client_learning(model, client_id, local_epochs, client_data, client_labels, client_test_data,
+        results = client_learning(model, client_id, local_epochs, client_data, client_labels, client_test_data,
                                   client_test_labels, client_test_people, client_all_labels, weights_accountant,
                                   personalization)
-        history.to_csv(os.path.join('Client {}.csv'.format(client)))
+
+        for key, val in results.items():
+            history.setdefault(key, []).extend(val)
+
+    # Pop general metrics from history as these are duplicated with client level metrics, and thus not meaningful
+    for metric in model.metrics_names:
+        history.pop(metric, None)
+        history.pop("val_" + metric, None)
 
     # Average all local updates and store them as new 'global weights'
     if weights_accountant is not None:
@@ -234,7 +239,6 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
     """
     Train a federated model for a specified number of rounds until convergence.
 
-    :param train_people:
     :param all_labels:
     :param personalization:
     :param model_type:
@@ -258,14 +262,11 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
     """
 
     # Create history object
-    # history = cP.set_up_history()
+    history = {}
 
     # Initialize a random global model and store the weights
     if model is None:
         model = init_global_model(optimizer, loss, metrics, model_type=model_type)
-
-    # Set up data generators
-    # df_train, df_test, train_gen, predict_gen = cP.set_up_train_test_generators(df, model, session, balanced)
 
     # Initialize weights accountant
     weights = model.get_weights()
@@ -277,69 +278,77 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
         history = communication_round(model, clients, train_data, train_labels, test_data, test_labels, people,
                                       all_labels,
                                       local_epochs, weights_accountant, participating_clients, personalization)
-        # if evaluate:
-        #     history = evaluate_federated_cnn(comm_round, test_data, test_labels, df_test, model, weights_accountant,
-        #                                      history, people, optimizer, loss, metrics, model_type, predict_gen,
-        #                                      personalization)
 
+        # Only get the first of the local epochs
+        for key, val in history.items():
+            history[key] = history[key].pop(0)
+
+        # Evaluate the global model
         weights = weights_accountant.get_global_weights()
         model.set_weights(weights)
-        model.evaluate(test_data, test_labels)
+        train_metrics = model.metrics_names
+        validation_metrics = ["val_" + metric for metric in model.metrics_names]
+        train_history = dict(zip(train_metrics, model.evaluate(train_data, train_labels)))
+        test_history = dict(zip(validation_metrics, model.evaluate(test_data, test_labels)))
+        for (key_1, val_1), (key_2, val_2) in zip(train_history.items(), test_history.items()):
+            history.setdefault(key_1, []).append(val_1)
+            history.setdefault(key_2, []).append(val_2)
+
     weights = weights_accountant.get_client_weights() if personalization else weights_accountant.get_global_weights()
     model.set_weights(weights)
 
     return history, model
 
 
-def evaluate_federated_cnn(comm_round, test_data=None, test_labels=None, df=None, model=None, weights_accountant=None,
-                           history=None, people=None, optimizer=None, loss=None, metrics=None, model_type='CNN',
-                           predict_gen=None, personalization=False):
-    """
-    Evaluate the global CNN.
-
-    :param personalization:
-    :param predict_gen:
-    :param model_type:
-    :param df:
-    :param metrics:
-    :param loss:
-    :param optimizer:
-    :param test_data:                       numpy array
-    :param test_labels:                     numpy array
-    :param comm_round:                      int, specifying the current communication round
-    :param model:                           Tensorflow graph
-    :param weights_accountant:              WeightsAccountant object
-    :param history:                         History object, used for logging
-    :param people:                          numpy array, of len test_labels, containing client numbers
-
-    :return:
-        history                             history object
-    """
-
-    if model is None:
-        model = init_global_model(optimizer, loss, metrics, model_type)
-
-    if personalization:
-        clients = df['Person'].unique() if df is not None else np.unique(people)
-        conv_weights = weights_accountant.get_global_weights()
-        for client in clients:
-            client_df = df[df['Person'] == client] if df is not None else None
-            if client_df is not None:
-                predict_gen = cP.set_up_data_generator(client_df, model.name, shuffle=False, balanced=False,
-                                                       gen_type="Client {}".format(client))
-
-            personal_weights = weights_accountant.get_localized_layers(client)
-            weights = np.concatenate((conv_weights, personal_weights))
-            model.set_weights(weights)
-            history = cP.evaluate_pain_cnn(model, comm_round, test_data, test_labels, predict_gen, history, people,
-                                           loss, client_df)
-
-    else:
-        weights = weights_accountant.get_global_weights()
-        model.set_weights(weights)
-        history = cP.evaluate_pain_cnn(model, comm_round, test_data, test_labels, predict_gen, history, people, loss,
-                                       df)
-    return history
+# def evaluate_federated_cnn(comm_round, test_data=None, test_labels=None, df=None, model=None, weights_accountant=None,
+#                            history=None, people=None, optimizer=None, loss=None, metrics=None, model_type='CNN',
+#                            predict_gen=None, personalization=False):
+#     """
+#     Evaluate the global CNN.
+#
+#     :param personalization:
+#     :param predict_gen:
+#     :param model_type:
+#     :param df:
+#     :param metrics:
+#     :param loss:
+#     :param optimizer:
+#     :param test_data:                       numpy array
+#     :param test_labels:                     numpy array
+#     :param comm_round:                      int, specifying the current communication round
+#     :param model:                           Tensorflow graph
+#     :param weights_accountant:              WeightsAccountant object
+#     :param history:                         History object, used for logging
+#     :param people:                          numpy array, of len test_labels, containing client numbers
+#
+#     :return:
+#         history                             history object
+#     """
+#
+#     if model is None:
+#         model = init_global_model(optimizer, loss, metrics, model_type)
+#
+#     if personalization:
+#         clients = df['Person'].unique() if df is not None else np.unique(people)
+#         conv_weights = weights_accountant.get_global_weights()
+#         for client in clients:
+#             client_df = df[df['Person'] == client] if df is not None else None
+#             if client_df is not None:
+#                 predict_gen = cP.set_up_data_generator(client_df, model.name, shuffle=False, balanced=False,
+#                                                        gen_type="Client {}".format(client))
+#
+#             personal_weights = weights_accountant.get_localized_layers(client)
+#             weights = np.concatenate((conv_weights, personal_weights))
+#             model.set_weights(weights)
+#             history = cP.evaluate_pain_cnn(model, comm_round, test_data, test_labels, predict_gen, history, people,
+#                                            loss, client_df)
+#
+#     else:
+#         weights = weights_accountant.get_global_weights()
+#         model.set_weights(weights)
+#         history = cP.evaluate_pain_cnn(model, comm_round, test_data, test_labels, predict_gen, history, people, loss,
+#                                        df)
+#     return history
 
 # ---------------------------------------------- End Federated Learning -------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
