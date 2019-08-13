@@ -5,7 +5,7 @@ import numpy as np
 
 # Generate Data
 train_data = np.random.randint(0, 100, size=(10, 215, 215, 1))
-train_labels = np.eye(2)[np.random.randint(0, 2, size=(10, 1)).reshape(-1)]
+train_labels = np.random.randint(0, 2, size=(10, 1))
 
 
 # Set up metrics
@@ -26,7 +26,7 @@ model.add(layers.Flatten())
 model.add(layers.Dense(units=128))
 model.add(layers.BatchNormalization())
 model.add(layers.ReLU())
-model.add(layers.Dense(units=2, activation='sigmoid'))
+model.add(layers.Dense(units=1, activation='sigmoid'))
 model.compile('sgd', 'binary_crossentropy', metrics)
 
 history = model.fit(train_data, train_labels, batch_size=1, epochs=30)
