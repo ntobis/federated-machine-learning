@@ -79,7 +79,7 @@ def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test
               people=None, all_labels=None):
     # Create callbacks
     history_cb = None
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=2, verbose=1, mode='auto',
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=1, verbose=1, mode='auto',
                                                       baseline=None, restore_best_weights=True)
     callbacks = [early_stopping]
 
@@ -89,7 +89,7 @@ def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test
         validation_sets = [(val_data, val_labels, 'subject_{}'.format(person)) for val_data, val_labels, person in
                            zip(test_data_split, test_labels_split, np.unique(people))]
         history_cb = kC.AdditionalValidationSets(validation_sets)
-        callbacks.append(history_cb)
+        callbacks.insert(0, history_cb)
 
     # Train and evaluate
     validation_split, validation_data = None, None
