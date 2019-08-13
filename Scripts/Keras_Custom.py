@@ -91,7 +91,6 @@ class AdditionalValidationSets(tf.keras.callbacks.Callback):
         self.history = {}
         self.verbose = verbose
         self.batch_size = batch_size
-        self.stop_memory = False
 
     def on_train_begin(self, logs=None):
         self.epoch = []
@@ -99,8 +98,6 @@ class AdditionalValidationSets(tf.keras.callbacks.Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         print('\nPre-EVAL')
-        print(self.stop_memory)
-        print(self.model.stop_training)
         logs = logs or {}
         self.epoch.append(epoch)
 
@@ -131,4 +128,3 @@ class AdditionalValidationSets(tf.keras.callbacks.Callback):
                     valuename = validation_set_name + '_' + self.model.metrics[i-1].name
                 self.history.setdefault(valuename, []).append(result)
         print("POST EVAL")
-        print(self.model.stop_training)

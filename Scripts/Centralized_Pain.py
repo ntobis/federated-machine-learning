@@ -79,7 +79,7 @@ def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test
               people=None, all_labels=None):
     # Create callbacks
     history_cb = None
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=1, verbose=1, mode='auto',
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
                                                       baseline=None, restore_best_weights=True)
     callbacks = [early_stopping]
 
