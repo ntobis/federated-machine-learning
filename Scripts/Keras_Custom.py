@@ -91,12 +91,15 @@ class AdditionalValidationSets(tf.keras.callbacks.Callback):
         self.history = {}
         self.verbose = verbose
         self.batch_size = batch_size
+        self.stop_memory = self.model.stop_training
 
     def on_train_begin(self, logs=None):
         self.epoch = []
         self.history = {}
 
     def on_epoch_end(self, epoch, logs=None):
+        print(self.stop_memory)
+        print(self.model.stop_training)
         logs = logs or {}
         self.epoch.append(epoch)
 

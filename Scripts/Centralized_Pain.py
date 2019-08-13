@@ -79,17 +79,17 @@ def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test
               people=None, all_labels=None):
     # Create callbacks
     history_cb = None
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=2, verbose=1, mode='auto',
                                                       baseline=None, restore_best_weights=True)
     callbacks = [early_stopping]
 
     # Create validation sets
-    # if test_data is not None:
-    #     _, test_data_split, test_labels_split = dL.split_data_into_labels(0, all_labels, False, test_data, test_labels)
-    #     validation_sets = [(val_data, val_labels, 'subject_{}'.format(person)) for val_data, val_labels, person in
-    #                        zip(test_data_split, test_labels_split, np.unique(people))]
-    #     history_cb = kC.AdditionalValidationSets(validation_sets)
-    #     callbacks.append(history_cb)
+    if test_data is not None:
+        _, test_data_split, test_labels_split = dL.split_data_into_labels(0, all_labels, False, test_data, test_labels)
+        validation_sets = [(val_data, val_labels, 'subject_{}'.format(person)) for val_data, val_labels, person in
+                           zip(test_data_split, test_labels_split, np.unique(people))]
+        history_cb = kC.AdditionalValidationSets(validation_sets)
+        callbacks.append(history_cb)
 
     # Train and evaluate
     validation_split, validation_data = None, None
