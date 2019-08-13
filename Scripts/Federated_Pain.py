@@ -268,7 +268,9 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
 
     # Create history object and callbacks
     history = {}
-    for key in ['loss', 'accuracy', 'TP', 'TN', 'FN', 'FP']:
+    keys = [metric for metric in model.metrics_names]
+    keys.append('loss')
+    for key in keys:
         history[key] = []
         for client in clients:
             history["subject_" + str(client) + "_" + key] = []

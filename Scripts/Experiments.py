@@ -308,7 +308,7 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
         if session > 0:
             df_test = df[df['Session'] == session]
             test_data, test_labels, test_people, test_all_labels = load_and_prepare_data(
-                df_test['img_path'].values[:20],
+                df_test['img_path'].values,
                 person=0,
                 pain=4,
                 model_type=model_type)
@@ -323,7 +323,7 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
         df_train = df[df['Session'] <= session]
         df_train = dL.balance_data(df_train, threshold=200)
         train_data, train_labels, train_people, train_all_labels = load_and_prepare_data(
-            df_train['img_path'].values[:20],
+            df_train['img_path'].values,
             person=0, pain=4, model_type=model_type)
 
 
@@ -536,41 +536,41 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                 training_setup(seed)
                 dL.prepare_pain_images(data_loc, distribution='sessions')
 
-            # Experiment 11 - Sessions: Centralized without pre-training
-            training_setup(seed)
-            Output.print_experiment("11 - Sessions: Centralized without pre-training")
-            experiment_pain(algorithm='centralized',
-                            dataset='PAIN',
-                            experiment='1-sessions-Centralized-no-pre-training',
-                            rounds=30,
-                            shards=None,
-                            model_path=None,
-                            pretraining=None,
-                            cumulative=True,
-                            optimizer=optimizer,
-                            loss=loss,
-                            metrics=metrics,
-                            model_type='CNN'
-                            )
-            twilio.send_message("Experiment 11 Complete")
-
-            # Experiment 12 - Sessions: Centralized with pre-training
-            training_setup(seed)
-            Output.print_experiment("12 - Sessions: Centralized with pre-training")
-            experiment_pain(algorithm='centralized',
-                            dataset='PAIN',
-                            experiment='2-sessions-Centralized-pre-training',
-                            rounds=30,
-                            shards=None,
-                            model_path=None,
-                            pretraining='centralized',
-                            cumulative=True,
-                            optimizer=optimizer,
-                            loss=loss,
-                            metrics=metrics,
-                            model_type='CNN'
-                            )
-            twilio.send_message("Experiment 12 Complete")
+            # # Experiment 11 - Sessions: Centralized without pre-training
+            # training_setup(seed)
+            # Output.print_experiment("11 - Sessions: Centralized without pre-training")
+            # experiment_pain(algorithm='centralized',
+            #                 dataset='PAIN',
+            #                 experiment='1-sessions-Centralized-no-pre-training',
+            #                 rounds=30,
+            #                 shards=None,
+            #                 model_path=None,
+            #                 pretraining=None,
+            #                 cumulative=True,
+            #                 optimizer=optimizer,
+            #                 loss=loss,
+            #                 metrics=metrics,
+            #                 model_type='CNN'
+            #                 )
+            # twilio.send_message("Experiment 11 Complete")
+            #
+            # # Experiment 12 - Sessions: Centralized with pre-training
+            # training_setup(seed)
+            # Output.print_experiment("12 - Sessions: Centralized with pre-training")
+            # experiment_pain(algorithm='centralized',
+            #                 dataset='PAIN',
+            #                 experiment='2-sessions-Centralized-pre-training',
+            #                 rounds=30,
+            #                 shards=None,
+            #                 model_path=None,
+            #                 pretraining='centralized',
+            #                 cumulative=True,
+            #                 optimizer=optimizer,
+            #                 loss=loss,
+            #                 metrics=metrics,
+            #                 model_type='CNN'
+            #                 )
+            # twilio.send_message("Experiment 12 Complete")
 
             # Experiment 13 - Sessions: Federated without pre-training
             training_setup(seed)
