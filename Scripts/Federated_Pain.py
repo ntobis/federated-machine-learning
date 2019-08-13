@@ -314,8 +314,9 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
             history.setdefault(key_2, []).append(val_2)
 
         # Early stopping
-        if early_stopping(model, test_history['val_loss']) is not None:
+        if early_stopping(model, test_history['val_loss']):
             print("Early Stopping, Communication round {}".format(comm_round))
+            model = early_stopping.return_best_model(model)
             break
 
         print("\n\nHISTORY")
