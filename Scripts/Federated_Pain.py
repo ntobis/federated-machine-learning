@@ -273,7 +273,7 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
         for client in clients:
             history["subject_" + str(client) + "_" + key] = []
 
-    early_stopping = EarlyStopping(patience=5)
+    early_stopping = EarlyStopping(patience=1)
 
     # Initialize a random global model and store the weights
     if model is None:
@@ -314,7 +314,7 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
             history.setdefault(key_2, []).append(val_2)
 
         # Early stopping
-        if early_stopping(test_history['val_loss']):
+        if early_stopping(model, test_history['val_loss']) is not None:
             print("Early Stopping, Communication round {}".format(comm_round))
             break
 

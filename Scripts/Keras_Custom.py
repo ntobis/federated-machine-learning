@@ -59,16 +59,23 @@ class EarlyStopping:
     def __init__(self, patience):
         self.patience = patience
         self.stopping_metric = []
-        self.min_counter = 0
+        self.weights = []
 
-    def __call__(self, stopping_metric):
+    def __call__(self, model, metric):
         if len(self.stopping_metric) == 0:
             pass
-        elif min(self.stopping_metric) > stopping_metric:
-            self.stopping_metric = []
-        self.stopping_metric.append(stopping_metric)
-        self.min_counter = len(self.stopping_metric)
-        return True if self.min_counter > self.patience else False
+        elif min(self.stopping_metric) > metric:
+            self.stopping_metric.clear()
+            self.weights.clear()
+        self.stopping_metric.append(metric)
+        self.weights.append(model.get_weights())
+
+        if len(self.stopping_metric) > self.patience:
+            print("Restoring best model weights.")
+            model.set_weights(self.weights[0])
+            return model
+        else:
+            return None
 
 
 class AdditionalValidationSets(tf.keras.callbacks.Callback):
