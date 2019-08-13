@@ -69,5 +69,5 @@ def build_model(input_shape, model_type):
 
 
 if __name__ == '__main__':
-    model_1 = build_model((215, 215, 1), 'CNN')
+    model_1 = build_model((215, 215, 1), 'ResNet')
     model_1.summary()
