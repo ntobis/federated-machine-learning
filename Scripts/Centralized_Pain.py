@@ -84,7 +84,7 @@ def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test
     callbacks = [early_stopping]
 
     # Create validation sets
-    if test_data is not None and algorithm == 'federated':
+    if test_data is not None:
         _, test_data_split, test_labels_split = dL.split_data_into_labels(0, all_labels, False, test_data, test_labels)
         validation_sets = [(val_data, val_labels, 'subject_{}'.format(person)) for val_data, val_labels, person in
                            zip(test_data_split, test_labels_split, np.unique(people))]
@@ -97,8 +97,8 @@ def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test
         validation_split = 0.2
     elif test_data is not None:  # This applies to training any model
         validation_data = (test_data, test_labels)
-    model.fit(train_data, train_labels, epochs=epochs, batch_size=32, use_multiprocessing=True, validation_split=validation_split,
-              validation_data=validation_data, callbacks=callbacks)
+    model.fit(train_data, train_labels, epochs=epochs, batch_size=32, use_multiprocessing=True,
+              validation_split=validation_split, validation_data=validation_data, callbacks=callbacks)
 
     return model, history_cb.history if history_cb is not None else {}
 
