@@ -97,7 +97,6 @@ class AdditionalValidationSets(tf.keras.callbacks.Callback):
         self.history = {}
 
     def on_epoch_end(self, epoch, logs=None):
-        print('\nPre-EVAL')
         logs = logs or {}
         self.epoch.append(epoch)
 
