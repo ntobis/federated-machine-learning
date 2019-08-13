@@ -1,4 +1,5 @@
 import os
+import time
 
 import numpy as np
 import tensorflow as tf
@@ -281,13 +282,14 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
     # Start communication rounds and save the results of each round to the data frame
     for comm_round in range(global_epochs):
         Output.print_communication_round(comm_round + 1)
-        history = communication_round(model, clients, train_data, train_labels, test_data, test_labels, people,
+        results = communication_round(model, clients, train_data, train_labels, test_data, test_labels, people,
                                       all_labels,
                                       local_epochs, weights_accountant, participating_clients, personalization)
 
         # Only get the first of the local epochs
-        for key, val in history.items():
-            history[key] = history[key].pop(0)
+        for key, val in results.items():
+            first_epoch = results[key].pop(0)
+            history.setdefault(key, []).append(first_epoch)
 
         # Evaluate the global model
         weights = weights_accountant.get_global_weights()
@@ -307,6 +309,10 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
         if early_stopping(test_history['val_loss']):
             print("Early Stopping, Communication round {}".format(comm_round))
             break
+
+        print("\n\nHISTORY")
+        print(history)
+        time.sleep(3)
 
     weights = weights_accountant.get_client_weights() if personalization else weights_accountant.get_global_weights()
     model.set_weights(weights)

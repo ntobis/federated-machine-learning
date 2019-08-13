@@ -847,3 +847,37 @@ def balance_data(df, threshold):
         df_train.append(df_temp)
     df_train = pd.concat(df_train)
     return balance_session(df_train, threshold)
+
+
+def create_pivot(path, index, columns, values):
+    group_2 = get_image_paths(path)
+    labels = np.array(get_labels(group_2))
+    cols = ['Person', 'Session', 'Culture', 'Frame', 'Pain', 'Trans_1', 'Trans_2']
+    df = pd.DataFrame(labels, columns=cols)
+    df[['Person', 'Session', 'Culture', 'Frame', 'Pain']] = df[
+        ['Person', 'Session', 'Culture', 'Frame', 'Pain']].astype(int)
+
+    pivot = ~df[['Person', 'Session']].drop_duplicates().pivot(index=index, columns=columns, values=values).isnull() * 1
+    pivot['# of ' + columns + 's'] = pivot.sum(1)
+    pivot = pivot.sort_values('# of ' + columns + 's', ascending=False)
+
+    pivot['Pain'] = 0
+    pivot['No Pain'] = 0
+    for person, df_person in df.groupby(index):
+        pivot.at[person, 'No Pain'] = sum(df_person['Pain'] == 0)
+        pivot.at[person, 'Pain'] = sum(df_person['Pain'] > 0)
+        for col in pivot.columns:
+            if type(col) is int:
+                pivot.at[person, col] = sum(df_person[df_person[columns] == col]['Pain'] > 0)
+
+    if columns is 'Session':
+        for col in reversed(pivot.columns):
+            if type(col) is int:
+                pivot.rename(columns={col: col + 1}, inplace=True)
+    if index is 'Session':
+        for idx in reversed(pivot.index):
+            pivot.rename(index={idx: idx + 1}, inplace=True)
+    pivot = pivot.append(pivot.sum(0).rename("Total"))
+    pivot['Pain %'] = round(pivot['Pain'] / (pivot['Pain'] + pivot['No Pain']), 2)
+    pivot[pivot == 0] = ''
+    return pivot
