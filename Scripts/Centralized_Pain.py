@@ -75,9 +75,8 @@ def set_up_history():
 # -------------------------------------------------- Model Runners ------------------------------------------------- #
 
 
-def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None, test_labels=None,
+def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test_data=None, test_labels=None,
               people=None, all_labels=None):
-
     # Create callbacks
     history_cb = None
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
@@ -85,7 +84,7 @@ def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None,
     callbacks = [early_stopping]
 
     # Create validation sets
-    if test_data is not None:
+    if test_data is not None and algorithm == 'federated':
         _, test_data_split, test_labels_split = dL.split_data_into_labels(0, all_labels, False, test_data, test_labels)
         validation_sets = [(val_data, val_labels, 'subject_{}'.format(person)) for val_data, val_labels, person in
                            zip(test_data_split, test_labels_split, np.unique(people))]
@@ -93,12 +92,15 @@ def train_cnn(model, epochs, train_data=None, train_labels=None, test_data=None,
         callbacks.append(history_cb)
 
     # Train and evaluate
-    validation_data = (test_data, test_labels) if test_data is not None else None
-    model.fit(train_data, train_labels, epochs=epochs, batch_size=32, use_multiprocessing=True,
+    validation_split, validation_data = None, None
+    if test_data is None and algorithm == 'centralized':  # This applies to pre-training a centralized model
+        validation_split = 0.2
+    elif test_data is not None:  # This applies to training any model
+        validation_data = (test_data, test_labels)
+    model.fit(train_data, train_labels, epochs=epochs, batch_size=32, use_multiprocessing=True, validation_split=validation_split,
               validation_data=validation_data, callbacks=callbacks)
 
     return model, history_cb.history if history_cb is not None else {}
-
 
 # def evaluate_pain_cnn(model, epoch, test_data=None, test_labels=None, predict_gen=None, history=None, people=None,
 #                       loss=None, df_test=None):

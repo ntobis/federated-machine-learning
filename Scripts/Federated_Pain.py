@@ -119,8 +119,8 @@ def train_client_model(client, local_epochs, model, train_data, train_labels, te
     """
 
     old_weights = model.get_weights()
-    model, history = cP.train_cnn(model, local_epochs, train_data, train_labels, test_data, test_labels, test_people,
-                                  all_labels)
+    model, history = cP.train_cnn('federated', model, local_epochs, train_data, train_labels, test_data, test_labels,
+                                  test_people, all_labels)
 
     # Check if only the convolutional layers should be averaged
     if personalization:

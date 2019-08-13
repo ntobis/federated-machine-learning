@@ -362,7 +362,7 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
 
     elif algorithm is 'centralized':
         folder = CENTRAL_PAIN_MODELS
-        model, history = cP.train_cnn(model=model, epochs=rounds, train_data=train_data,
+        model, history = cP.train_cnn(algorithm=algorithm, model=model, epochs=rounds, train_data=train_data,
                                       train_labels=train_labels, test_data=test_data,
                                       test_labels=test_labels, people=people, all_labels=all_labels)
 
