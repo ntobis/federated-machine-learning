@@ -297,12 +297,11 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
         for key_1, val_1 in train_history.items():
             history.setdefault(key_1, []).append(val_1)
 
-        if test_data is not None:
-            validation_metrics = ["val_" + metric for metric in model.metrics_names]
-            test_history = dict(zip(validation_metrics, model.evaluate(test_data, test_labels)))
-            for (key_1, val_1), (key_2, val_2) in zip(train_history.items(), test_history.items()):
-                history.setdefault(key_1, []).append(val_1)
-                history.setdefault(key_2, []).append(val_2)
+        validation_metrics = ["val_" + metric for metric in model.metrics_names]
+        test_history = dict(zip(validation_metrics, model.evaluate(test_data, test_labels)))
+        for (key_1, val_1), (key_2, val_2) in zip(train_history.items(), test_history.items()):
+            history.setdefault(key_1, []).append(val_1)
+            history.setdefault(key_2, []).append(val_2)
 
         # Early stopping
         if early_stopping(test_history['val_loss']):
