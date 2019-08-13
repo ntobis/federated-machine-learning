@@ -1,0 +1,2 @@
+,FN,FP,TN,TP,accuracy,loss,subject_43_FN,subject_43_FP,subject_43_TN,subject_43_TP,subject_43_accuracy,subject_43_loss,subject_48_FN,subject_48_FP,subject_48_TN,subject_48_TP,subject_48_accuracy,subject_48_loss,val_FN,val_FP,val_TN,val_TP,val_accuracy,val_loss
+0,0.5,0.1875,12.3125,18.25,0.9649999737739563,0.1723237211704254,0.0,1.0,29.769229888916016,0.0,0.9725000262260437,0.13205122888088228,0.0,0.0,25.0,0.0,1.0,0.12572418570518493,0.0,0.5,30.75,0.0,0.984000027179718,0.12473878598213196
