@@ -266,6 +266,10 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
                                             communication rounds
     """
 
+    # Initialize a random global model and store the weights
+    if model is None:
+        model = init_global_model(optimizer, loss, metrics, model_type=model_type)
+
     # Create history object and callbacks
     history = {}
     keys = [metric for metric in model.metrics_names]
@@ -276,10 +280,6 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
             history["subject_" + str(client) + "_" + key] = []
 
     early_stopping = EarlyStopping(patience=5)
-
-    # Initialize a random global model and store the weights
-    if model is None:
-        model = init_global_model(optimizer, loss, metrics, model_type=model_type)
 
     # Initialize weights accountant
     weights = model.get_weights()
