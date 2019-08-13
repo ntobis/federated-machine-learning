@@ -268,7 +268,11 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
     """
 
     # Create history object and callbacks
-    history = {}
+    history = {key: [] for key in ['loss', 'accuracy', 'TP', 'TN', 'FN', 'FP']}
+    for key in history.keys():
+        for client in clients:
+            history["subject_" + str(client) + "_" + key]: []
+
     early_stopping = EarlyStopping(patience=5)
 
     # Initialize a random global model and store the weights
@@ -287,9 +291,14 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
                                       local_epochs, weights_accountant, participating_clients, personalization)
 
         # Only get the first of the local epochs
-        for key, val in results.items():
+        for key in results.keys():
             first_epoch = results[key].pop(0)
             history.setdefault(key, []).append(first_epoch)
+
+        # Append None, if no entry was present
+        for key in history.keys():
+            if key not in results and "subject_" in key:
+                history[key].append(None)
 
         # Evaluate the global model
         weights = weights_accountant.get_global_weights()
@@ -301,8 +310,7 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
 
         validation_metrics = ["val_" + metric for metric in model.metrics_names]
         test_history = dict(zip(validation_metrics, model.evaluate(test_data, test_labels)))
-        for (key_1, val_1), (key_2, val_2) in zip(train_history.items(), test_history.items()):
-            history.setdefault(key_1, []).append(val_1)
+        for key_2, val_2 in test_history.items():
             history.setdefault(key_2, []).append(val_2)
 
         # Early stopping
@@ -312,13 +320,11 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
 
         print("\n\nHISTORY")
         print(history)
-        time.sleep(3)
 
     weights = weights_accountant.get_client_weights() if personalization else weights_accountant.get_global_weights()
     model.set_weights(weights)
 
     return history, model
-
 
 # def evaluate_federated_cnn(comm_round, test_data=None, test_labels=None, df=None, model=None, weights_accountant=None,
 #                            history=None, people=None, optimizer=None, loss=None, metrics=None, model_type='CNN',

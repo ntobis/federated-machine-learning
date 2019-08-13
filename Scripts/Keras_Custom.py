@@ -126,4 +126,3 @@ class AdditionalValidationSets(tf.keras.callbacks.Callback):
                 else:
                     valuename = validation_set_name + '_' + self.model.metrics[i-1].name
                 self.history.setdefault(valuename, []).append(result)
-        print("POST EVAL")
