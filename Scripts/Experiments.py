@@ -237,9 +237,15 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
         train_data, train_labels, train_labels_people, raw_labels = load_and_prepare_data(GROUP_1_TRAIN_PATH, person=0,
                                                                                           pain=4, model_type=model_type)
 
+        # Split data into train and test
+        (train_data, test_data), (train_labels, test_labels), (train_labels_people, test_labels_people), \
+            (raw_labels, test_raw_labels) = \
+            train_test_split(0.2, train_data, train_labels, train_labels_people, raw_labels)
+
         # Train
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", rounds=rounds, train_data=train_data,
-                             train_labels=train_labels, loss=loss, clients=train_labels_people,
+                             train_labels=train_labels, test_data=test_data, test_labels=test_labels,
+                             people=test_labels_people, loss=loss, clients=train_labels_people,
                              local_epochs=local_epochs, optimizer=optimizer, metrics=metrics, model_type=model_type,
                              personalization=personalization, all_labels=raw_labels)
 
@@ -251,6 +257,12 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
         raise ValueError("Invalid Argument. You must either specify a 'model_path' or provide 'centralized' or "
                          "'federated' as arguments for 'pretraining'.")
     return model
+
+
+def train_test_split(test_ratio, *args):
+    split = int(len(args[0]) * test_ratio)
+    array = [(elem[split:], elem[:split]) for elem in args]
+    return tuple(array)
 
 
 def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, loss, metrics, model, model_type, optimizer,
