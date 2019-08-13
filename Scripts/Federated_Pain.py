@@ -316,10 +316,10 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
         # Early stopping
         if comm_round > 0:
             test_history['val_loss'] = 5
-            print(model)
-        if early_stopping(model, test_history['val_loss']):
+        if early_stopping(model.get_weights(), test_history['val_loss']):
             print("Early Stopping, Communication round {}".format(comm_round))
-            model = early_stopping.return_best_model(model)
+            weights = early_stopping.return_best_weights()
+            model.set_weights(weights)
             break
 
     weights = weights_accountant.get_client_weights() if personalization else weights_accountant.get_global_weights()
