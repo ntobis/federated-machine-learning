@@ -1,12 +1,11 @@
 import os
-import time
 
 import numpy as np
 import tensorflow as tf
 
 from Scripts import Centralized_Pain as cP
-from Scripts import Model_Architectures as mA
 from Scripts import Data_Loader_Functions as dL
+from Scripts import Model_Architectures as mA
 from Scripts import Print_Functions as Output
 from Scripts import Reset_Model as Reset
 from Scripts.Keras_Custom import EarlyStopping
@@ -271,7 +270,7 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
     history = {key: [] for key in ['loss', 'accuracy', 'TP', 'TN', 'FN', 'FP']}
     for key in history.keys():
         for client in clients:
-            history["subject_" + str(client) + "_" + key]: []
+            history["subject_" + str(client) + "_" + key] = []
 
     early_stopping = EarlyStopping(patience=5)
 
