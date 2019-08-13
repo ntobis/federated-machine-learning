@@ -27,7 +27,7 @@ def build_CNN(input_shape):
     model.add(layers.Dense(units=128))
     model.add(layers.BatchNormalization())
     model.add(layers.ReLU())
-    model.add(layers.Dense(units=2, activation='sigmoid'))
+    model.add(layers.Dense(units=1, activation='sigmoid'))
 
     return model
 
@@ -56,7 +56,7 @@ def build_ResNet(input_shape):
         layers.Dense(units=128),
         layers.BatchNormalization(),
         layers.ReLU(),
-        layers.Dense(units=2, activation='sigmoid')
+        layers.Dense(units=1, activation='sigmoid')
     ], name='ResNet')
     return model
 
@@ -69,5 +69,5 @@ def build_model(input_shape, model_type):
 
 
 if __name__ == '__main__':
-    model_1 = build_model((215, 215, 1), 'ResNet')
+    model_1 = build_model((215, 215, 1), 'CNN')
     model_1.summary()

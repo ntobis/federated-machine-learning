@@ -1,58 +1,18 @@
+from abc import ABCMeta, ABC
+
+import numpy as np
 import tensorflow as tf
+from tensorflow.python.keras.utils import metrics_utils
+from tensorflow.python.ops import init_ops, math_ops
+from tensorflow.python.keras.utils.generic_utils import to_list
+from tensorflow.python.keras import backend as K
+from tensorflow.python.keras.metrics import Metric
+from tensorflow.python.util.tf_export import keras_export
 
 
 def weighted_loss(y_true, y_pred):
     weights = 1 / 0.2
     return tf.nn.weighted_cross_entropy_with_logits(y_true, y_pred, weights)
-
-
-def TP(y_true, y_pred):
-    y_pred = tf.argmax(y_pred, 1)
-    y_true = tf.argmax(y_true, 1)
-    return tf.math.count_nonzero(y_pred * y_true)
-
-
-def FP(y_true, y_pred):
-    y_pred = tf.argmax(y_pred, 1)
-    y_true = tf.argmax(y_true, 1)
-    return tf.math.count_nonzero(y_pred * (y_true - 1))
-
-
-def TN(y_true, y_pred):
-    y_pred = tf.argmax(y_pred, 1)
-    y_true = tf.argmax(y_true, 1)
-    return tf.math.count_nonzero((y_pred - 1) * (y_true - 1))
-
-
-def FN(y_true, y_pred):
-    y_pred = tf.argmax(y_pred, 1)
-    y_true = tf.argmax(y_true, 1)
-    return tf.math.count_nonzero((y_pred - 1) * y_true)
-
-
-def conf_matrix(y_true, y_pred):
-    return TP(y_true, y_pred), FP(y_true, y_pred), TN(y_true, y_pred), FN(y_true, y_pred)
-
-
-def epoch_acc(y_true, y_pred):
-    tp, fp, tn, fn = conf_matrix(y_true, y_pred)
-    return (tp + tn) / (tp + fp + tn + fn)
-
-
-def recall(y_true, y_pred):
-    tp, fp, tn, fn = conf_matrix(y_true, y_pred)
-    return tp / (fn + tp)
-
-
-def precision(y_true, y_pred):
-    tp, fp, tn, fn = conf_matrix(y_true, y_pred)
-    return tp / (fp + tp)
-
-
-def f1_score(y_true, y_pred):
-    p = precision(y_true, y_pred)
-    r = recall(y_true, y_pred)
-    return 2 * (p * r) / (p + r)
 
 
 class EarlyStopping:
@@ -129,5 +89,6 @@ class AdditionalValidationSets(tf.keras.callbacks.Callback):
                 if i == 0:
                     valuename = validation_set_name + '_loss'
                 else:
-                    valuename = validation_set_name + '_' + self.model.metrics[i-1].name
+                    valuename = validation_set_name + '_' + self.model.metrics[i - 1].name
                 self.history.setdefault(valuename, []).append(result)
+
