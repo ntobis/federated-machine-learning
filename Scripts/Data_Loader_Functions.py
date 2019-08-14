@@ -424,7 +424,7 @@ def load_image_data(path, color=0, label_type=None):
     return data, labels
 
 
-def  load_pain_data(train_path, test_path=None, label_type=None, color=0):
+def load_pain_data(train_path, test_path=None, label_type=None, color=0):
     """
     Load function, loading pain dataset into numpy arrays with labels. Either just loads train data, or train and test.
 
@@ -434,7 +434,6 @@ def  load_pain_data(train_path, test_path=None, label_type=None, color=0):
     :param label_type:          string, if not None, only a specific label will be attached to each image
     :return:
     """
-
     train_data, train_labels = load_image_data(train_path, color, label_type)
     print("Normalization")
     np.divide(train_data, 255.0, out=train_data, dtype=np.float32)
@@ -826,10 +825,10 @@ def sample_df(df, threshold):
 def balance_session(df, threshold):
     df_train = []
     for person, df_person in df.groupby('Person'):
-        df_pain = df_person[df_person['Pain'] == '1']
+        df_pain = df_person[df_person['Pain'] == 1]
         if len(df_pain) > 0:
             df_pain = sample_df(df_pain, threshold)
-            df_no_pain = df_person[df_person['Pain'] == '0']
+            df_no_pain = df_person[df_person['Pain'] == 0]
             df_no_pain = sample_df(df_no_pain, threshold)
             df_train.append(pd.concat((df_pain, df_no_pain)))
     return pd.concat(df_train) if len(df_train) > 0 else pd.DataFrame(columns=df.columns)
@@ -841,8 +840,8 @@ def balance_data(df, threshold):
         df_temp_pain = []
         df_temp_no_pain = []
         for sess, df_sess in reversed(tuple(df_person.groupby('Session'))):
-            df_temp_pain.append(df_sess[df_sess['Pain'] == '1'])
-            df_temp_no_pain.append(df_sess[df_sess['Pain'] == '0'])
+            df_temp_pain.append(df_sess[df_sess['Pain'] == 1])
+            df_temp_no_pain.append(df_sess[df_sess['Pain'] == 0])
             if len(pd.concat(df_temp_pain)) > threshold and len(pd.concat(df_temp_no_pain)) > threshold:
                 break
         df_temp_pain.extend(df_temp_no_pain)

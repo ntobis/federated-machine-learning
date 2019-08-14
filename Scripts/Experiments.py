@@ -303,7 +303,6 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
                  personalization, pain_gap):
     # Prepare df for data generator
     df = dL.create_pain_df(GROUP_2_PATH, pain_gap=pain_gap)
-
     # Run Sessions
     train_data, train_labels, train_people, train_all_labels, client_arr = [None] * 5
     for session in df['Session'].unique():
@@ -422,7 +421,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
     # Setup
     data_loc = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
 
-    g_monitor = GoogleCloudMonitor()
+    # g_monitor = GoogleCloudMonitor()
     twilio = Twilio()
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
@@ -645,7 +644,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
         twilio.send_message()
 
     except Exception as e:
-        twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
+        # twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
         traceback.print_tb(e.__traceback__)
         print(e)
 
