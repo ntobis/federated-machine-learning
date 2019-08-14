@@ -424,7 +424,7 @@ def load_image_data(path, color=0, label_type=None):
     return data, labels
 
 
-def load_pain_data(train_path, test_path=None, label_type=None, color=0):
+def  load_pain_data(train_path, test_path=None, label_type=None, color=0):
     """
     Load function, loading pain dataset into numpy arrays with labels. Either just loads train data, or train and test.
 
@@ -800,7 +800,7 @@ def prepare_pain_images(root_path, distribution='unbalanced'):
             1))))
 
 
-def create_pain_df(path):
+def create_pain_df(path, pain_gap=()):
     img_paths = np.array(get_image_paths(path))
     labels = np.array(get_labels(img_paths))
     df = pd.DataFrame(labels, columns=['Person', 'Session', 'Culture', 'Frame', 'Pain', 'Trans_1', 'Trans_2'])
@@ -811,7 +811,8 @@ def create_pain_df(path):
     df = df.sort_values(['Person', 'Session', 'Frame', 'Trans_1', 'Trans_2'],
                         ascending=[True, True, True, False, False]).reset_index(drop=True)
     df['temp_id'] = df['Person'].astype(str) + df['Session'].astype(str) + df['Frame'].astype(str)
-    df['Pain'] = np.minimum(df['Pain'], 1).astype(str)
+    df = df[~df['Pain'].isin(pain_gap)]
+    df['Pain'] = np.minimum(df['Pain'], 1)
     return df
 
 
