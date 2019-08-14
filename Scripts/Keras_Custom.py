@@ -28,7 +28,7 @@ class EarlyStopping:
 
 
 class AdditionalValidationSets(tf.keras.callbacks.Callback):
-    def __init__(self, validation_sets, verbose=1, batch_size=None):
+    def __init__(self, validation_sets, verbose=1, batch_size=1):
         """
         :param validation_sets:
         a list of 3-tuples (validation_data, validation_targets, validation_set_name)
@@ -41,6 +41,7 @@ class AdditionalValidationSets(tf.keras.callbacks.Callback):
         super(AdditionalValidationSets, self).__init__()
         self.validation_sets = validation_sets
         for validation_set in self.validation_sets:
+            print(validation_set[2], len(validation_set[0]), len(validation_set[1]))
             if len(validation_set) not in [2, 3]:
                 raise ValueError()
         self.epoch = []
@@ -82,4 +83,8 @@ class AdditionalValidationSets(tf.keras.callbacks.Callback):
                 else:
                     valuename = validation_set_name + '_' + self.model.metrics[i - 1].name
                 self.history.setdefault(valuename, []).append(result)
-
+        if 'subject_59_true_positives' in self.history.keys():
+            print(self.history['subject_59_true_positives'])
+            print(self.history['subject_59_true_negatives'])
+            print(self.history['subject_59_false_positives'])
+            print(self.history['subject_59_false_negatives'])

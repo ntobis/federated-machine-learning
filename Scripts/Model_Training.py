@@ -220,7 +220,8 @@ def communication_round(model, clients, train_data, train_labels, test_data, tes
     return history
 
 
-def federated_learning(model, global_epochs, train_data, train_labels, test_data, test_labels, loss, people, clients,
+def federated_learning(model, global_epochs, train_data, train_labels, test_data, test_labels, loss, test_people,
+                       clients,
                        local_epochs, participating_clients, optimizer, metrics, model_type, personalization,
                        all_labels):
     """
@@ -241,7 +242,7 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
     :param test_labels:                     numpy array
     :param local_epochs:                    int, number of epochs each client will train in a given communication round
     :param participating_clients:       int, number of participating clients in a given communication round
-    :param people:                          numpy array, of length test_labels, used to enable individual metric logging
+    :param test_people:                          numpy array, of length test_labels, used to enable individual metric logging
 
     :return:
         history                             pandas data-frame, contains the history of loss & accuracy values off all
@@ -255,7 +256,6 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
     # Create history object and callbacks
     history = {}
     keys = [metric for metric in model.metrics_names]
-    keys.append('loss')
     for key in keys:
         history[key] = []
         for client in clients:
@@ -270,7 +270,7 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
     # Start communication rounds and save the results of each round to the data frame
     for comm_round in range(global_epochs):
         Output.print_communication_round(comm_round + 1)
-        results = communication_round(model, clients, train_data, train_labels, test_data, test_labels, people,
+        results = communication_round(model, clients, train_data, train_labels, test_data, test_labels, test_people,
                                       all_labels,
                                       local_epochs, weights_accountant, participating_clients, personalization)
 
@@ -311,7 +311,7 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
 
 
 def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test_data=None, test_labels=None,
-              people=None, all_labels=None):
+              test_people=None, all_labels=None):
     # Create callbacks
     history_cb = None
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
@@ -319,19 +319,26 @@ def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test
     callbacks = [early_stopping]
 
     # Create validation sets
+    validation_split, validation_data = None, None
+
     if test_data is not None:
-        _, test_data_split, test_labels_split = dL.split_data_into_labels(0, all_labels, False, test_data, test_labels)
-        validation_sets = [(val_data, val_labels, 'subject_{}'.format(person)) for val_data, val_labels, person in
-                           zip(test_data_split, test_labels_split, np.unique(people))]
+        _, test_data_split, test_labels_split, test_people_split = dL.split_data_into_labels(0, all_labels, False,
+                                                                                             test_data, test_labels,
+                                                                                             test_people)
+        for elem in _:
+            elem = np.array(elem)
+            print(np.mean(elem[:, 0].astype(int)), len(elem), sum(elem[:, 4].astype(int) > 0))
+        validation_sets = [(val_data, val_labels, 'subject_{}'.format(person[0]))
+                           for val_data, val_labels, person in
+                           zip(test_data_split, test_labels_split, test_people_split)]
+
         history_cb = kC.AdditionalValidationSets(validation_sets)
         callbacks.insert(0, history_cb)
+        validation_data = (test_data, test_labels)
 
     # Train and evaluate
-    validation_split, validation_data = None, None
     if test_data is None and algorithm == 'centralized':  # This applies to pre-training a centralized model
         validation_split = 0.2
-    elif test_data is not None:  # This applies to training any model
-        validation_data = (test_data, test_labels)
     model.fit(train_data, train_labels, epochs=epochs, batch_size=32, use_multiprocessing=True,
               validation_split=validation_split, validation_data=validation_data, callbacks=callbacks)
 

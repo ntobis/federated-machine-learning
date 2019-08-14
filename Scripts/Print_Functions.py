@@ -300,24 +300,58 @@ def make_pain_plot_grid(folder, metrics, params, final_epoch=29):
     plt.show()
 
 
+def concatenate_experiment(folder_path):
+    df_concat = pd.DataFrame()
+    for file in sorted(os.listdir(folder_path)):
+        if file[0] != '.':
+            f_path = os.path.join(folder_path, file)
+            df = pd.read_csv(f_path)
+            df['Session'] = file.split('shard-')[1].split(".")[0]
+            df_concat = pd.concat((df_concat, df), ignore_index=True, sort=False)
+    return df_concat.rename(columns={'Unnamed: 0': 'Epoch'})
+
+
+def create_simple_grid(folder_paths, y_ticks, metrics):
+    metrics = list(metrics)
+    fig = plt.figure(figsize=(16,10))
+    fig.subplots_adjust(hspace=0.4, wspace=0.4)
+    for i, folder_path in enumerate(folder_paths):
+        ax = fig.add_subplot(2, 3, i + 1)
+        df = concatenate_experiment(folder_path)
+        df[metrics].plot(ax=ax)
+        for i, val in enumerate(df[df['Epoch'] == 0].index.values):
+            ax.axvline(val, c='#C2C5CC', ls=':')
+            plt.text(val + 1, 0.02, 'S: {}'.format(i+1))
+        ax.set_title(folder_path.split('PAIN_')[1])
+        ax.set_yticks(y_ticks)
+        ax.set_xlabel('Federated Communication Rounds / Centralized Epochs')
+    plt.tight_layout()
+    plt.show()
+
+
+def model_comparison_plot(folder_paths, y_ticks, metrics):
+    fig = plt.figure(figsize=(12,8))
+    fig.subplots_adjust(hspace=0.4, wspace=0.4)
+    for idx, metric in enumerate(metrics):
+        ax = fig.add_subplot(2, 2, idx + 1)
+        for i, folder_path in enumerate(folder_paths):
+            df = concatenate_experiment(folder_path)
+            vals = df[df['Epoch'] == 0][metric].reset_index(drop=True)
+            vals.plot(ax=ax)
+        ax.set_title(metric)
+        ax.set_xticklabels(np.arange(1,10,1))
+        ax.set_ylim([min(y_ticks), max(y_ticks)])
+        plt.yticks(y_ticks)
+        plt.xlabel('Sessions')
+        plt.tight_layout()
+        legend = [f_path.split("PAIN_")[1] for f_path in folder_paths]
+        plt.legend(legend)
+    plt.show()
+
+
 if __name__ == '__main__':
-    parameters = PlotParams(
-        dataset='Pain',
-        experiment='Centralized',
-        metric='F1_Score',
-        legend_loc='lower right',
-        num_format="{:5.1%}",
-        max_epochs=None,
-        label_spaces=4
-    )
-    rep_metrics = ['Accuracy', 'Precision', 'Recall', 'F1_Score']
-    make_pain_plot_grid(RESULTS, rep_metrics, parameters)
 
-
-def print_shard_summary(labels, people):
-    print("Pain:     ", int(np.sum(labels[:, 1])))
-    print("No Pain:  ", int(len(labels) - np.sum(labels[:, 1])))
-    print("Total:    ", len(labels))
-    print("Ratio:     {:.1%}".format(int(np.sum(labels[:, 1])) / len(labels)))
-    print("People:   ", np.unique(people, return_counts=True)[0])
-    print("People(N):", np.unique(people, return_counts=True)[1])
+    # Results folder paths
+    folder_paths = sorted(
+        [os.path.join(RESULTS, 'Thesis', folder_path) for folder_path in os.listdir(os.path.join(RESULTS, 'Thesis')) if 'training' in folder_path])
+    create_simple_grid(folder_paths, np.arange(0, 1.2, 0.2), ('loss', 'val_loss'))

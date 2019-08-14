@@ -232,6 +232,24 @@ def evaluate_baseline(dataset, experiment, results_folder, model_path, optimizer
     history = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in history.items()]))
     save_results(dataset, experiment, history, model, results_folder)
 
+
+def evaluate_session(df, model, test_data, test_labels, test_people, test_all_labels, session):
+    _, test_data_split, test_labels_split, test_people_split = dL.split_data_into_labels(0, test_all_labels, False,
+                                                                                         test_data, test_labels,
+                                                                                         test_people)
+    test_session_results = []
+    for data, labels, people, in zip(test_data_split, test_labels_split, test_people_split):
+        columns = model.metrics_names
+        columns.extend(['Person', 'Session', 'Epoch'])
+
+        results = model.evaluate(data, labels)
+        results.extend(["subject_{}".format(people[0]), session, 0])
+        test_session_results.append(results)
+        df_test_session_results = pd.DataFrame(columns=columns, data=test_session_results)
+        df = pd.concat((df, df_test_session_results))
+    return df
+
+
 # ---------------------------------------------- End Utility Functions --------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
@@ -253,10 +271,10 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
 
         # Prepare labels for training and evaluation
         df = dL.create_pain_df(GROUP_1_TRAIN_PATH, pain_gap=pain_gap)
-        train_data, train_labels, train_labels_people, raw_labels = load_and_prepare_data(df['img_path'].values,
-                                                                                          person=0,
-                                                                                          pain=4,
-                                                                                          model_type=model_type)
+        train_data, train_labels, train_people, raw_labels = load_and_prepare_data(df['img_path'].values,
+                                                                                   person=0,
+                                                                                   pain=4,
+                                                                                   model_type=model_type)
         # Train
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", model=model, rounds=rounds,
                              train_data=train_data, train_labels=train_labels, loss=loss)
@@ -265,21 +283,23 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
         print("Pre-training a federated model.")
         # Load data
         df = dL.create_pain_df(GROUP_1_TRAIN_PATH, pain_gap=pain_gap)
-        train_data, train_labels, train_labels_people, raw_labels = load_and_prepare_data(df['img_path'].values,
-                                                                                          person=0,
-                                                                                          pain=4, model_type=model_type)
+        data, labels, people, all_labels = load_and_prepare_data(df['img_path'].values,
+                                                                 person=0,
+                                                                 pain=4, model_type=model_type)
 
         # Split data into train and test
-        (train_data, test_data), (train_labels, test_labels), (train_labels_people, test_labels_people), \
-        (raw_labels, test_raw_labels) = \
-            train_test_split(0.2, train_data, train_labels, train_labels_people, raw_labels)
+        data, labels, people, all_labels = train_test_split(0.2, data, labels, people, all_labels)
+        train_data, test_data = data
+        train_labels, test_labels = labels
+        train_people, test_people = people
+        train_labels_all, test_labels_all = all_labels
 
         # Train
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", rounds=rounds, train_data=train_data,
                              train_labels=train_labels, test_data=test_data, test_labels=test_labels,
-                             people=test_labels_people, loss=loss, clients=train_labels_people,
+                             test_people=test_people, loss=loss, clients=train_people,
                              local_epochs=local_epochs, optimizer=optimizer, metrics=metrics, model_type=model_type,
-                             personalization=personalization, all_labels=raw_labels)
+                             personalization=personalization, all_labels=train_labels_all)
 
     elif pretraining is None:
         model = mA.build_model((215, 215, 1), model_type)
@@ -314,7 +334,6 @@ def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, loss, m
     # Train on group 2 shards and evaluate performance
     for percentage, data, labels, all_labels in zip(shards, train_data, train_labels, raw_labels):
         pF.print_shard(percentage)
-        pF.print_shard_summary(labels, all_labels[:, 0])
         experiment_current = experiment + "_shard-{}".format(percentage)
 
         # Split data into clients
@@ -326,15 +345,18 @@ def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, loss, m
 
         model = model_runner(algorithm, dataset, experiment_current, model=model, rounds=rounds, train_data=data,
                              train_labels=labels, test_data=test_data, test_labels=test_labels,
-                             people=test_labels_people, loss=loss, clients=all_labels, local_epochs=local_epochs,
+                             test_people=test_labels_people, loss=loss, clients=all_labels, local_epochs=local_epochs,
                              optimizer=optimizer, metrics=metrics, model_type=model_type,
                              personalization=personalization)
 
 
 def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, model, model_type, optimizer, rounds,
                  personalization, pain_gap):
-    # Prepare df for data generator
+
+    # Prepare df for data loading and for history tracking
     df = dL.create_pain_df(GROUP_2_PATH, pain_gap=pain_gap)
+    df_history = pd.DataFrame()
+
     # Run Sessions
     train_data, train_labels, train_people, train_all_labels, client_arr = [None] * 5
     for session in df['Session'].unique():
@@ -342,6 +364,8 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
         experiment_current = experiment + "_shard-{}".format(session)
 
         if session > 0:
+
+            # Get test data
             df_test = df[df['Session'] == session]
             test_data, test_labels, test_people, test_all_labels = load_and_prepare_data(
                 df_test['img_path'].values,
@@ -349,23 +373,34 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
                 pain=4,
                 model_type=model_type)
 
+            # Evaluate the model on the test data
+            df_history = evaluate_session(df_history, model, test_data, test_labels, test_people, test_all_labels,
+                                          session)
+
+            # Train the model
             model = model_runner(algorithm, dataset, experiment_current, model=model, rounds=rounds,
                                  train_data=train_data, train_labels=train_labels, test_data=test_data,
-                                 test_labels=test_labels, people=test_people,
+                                 test_labels=test_labels, test_people=test_people,
                                  loss=loss, clients=train_people,
                                  local_epochs=local_epochs,
                                  optimizer=optimizer, metrics=metrics, model_type=model_type,
                                  personalization=personalization, all_labels=test_all_labels)
+
+        # Get Train Data for the next session
         df_train = df[df['Session'] <= session]
         df_train = dL.balance_data(df_train, threshold=200)
         train_data, train_labels, train_people, train_all_labels = load_and_prepare_data(
             df_train['img_path'].values,
             person=0, pain=4, model_type=model_type)
 
+    # Save history
+    f_name = time.strftime("%Y-%m-%d-%H%M%S") + "_{}_{}.csv".format(dataset, experiment + "_TEST")
+    df_history.to_csv(os.path.join(RESULTS, f_name))
+
 
 def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_data=None, train_labels=None,
                  test_data=None,
-                 test_labels=None, people=None, loss=None, clients=None,
+                 test_labels=None, test_people=None, loss=None, clients=None,
                  local_epochs=1, participants=None, optimizer=None, metrics=None, model_type='CNN',
                  personalization=False, all_labels=None):
     """
@@ -388,7 +423,7 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
     :param rounds:                  int, number of communication rounds that the federated clients average results for
     :param local_epochs:                  int, number of epochs that the client CNN trains for
     :param participants:            participants in a given communications round
-    :param people:                  numpy array of len test_labels, enabling individual client metrics
+    :param test_people:                  numpy array of len test_labels, enabling individual client metrics
     :param model:                   A compiled tensorflow model
     :return:
     """
@@ -399,7 +434,8 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
         # Train Model
         history, model = mT.federated_learning(model=model, global_epochs=rounds, train_data=train_data,
                                                train_labels=train_labels, test_data=test_data, test_labels=test_labels,
-                                               loss=loss, people=people, clients=clients, local_epochs=local_epochs,
+                                               loss=loss, test_people=test_people, clients=clients,
+                                               local_epochs=local_epochs,
                                                participating_clients=participants, optimizer=optimizer, metrics=metrics,
                                                model_type=model_type, personalization=personalization,
                                                all_labels=all_labels)
@@ -409,7 +445,7 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
         model, history = mT.train_cnn(algorithm=algorithm, model=model, epochs=rounds,
                                       train_data=train_data, train_labels=train_labels,
                                       test_data=test_data,
-                                      test_labels=test_labels, people=people, all_labels=all_labels)
+                                      test_labels=test_labels, test_people=test_people, all_labels=all_labels)
 
     else:
         raise ValueError("'runner_type' must be either 'centralized' or 'federated', was: {}".format(algorithm))
@@ -608,7 +644,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             pain_gap=[1]
                             )
             twilio.send_message("Experiment 12 Complete")
-            #
+
             # Experiment 13 - Sessions: Federated without pre-training
             training_setup(seed)
             pF.print_experiment("13 - Sessions: Federated without pre-training")
@@ -626,7 +662,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             subjects_per_client=1,
                             local_epochs=5,
                             model_type='CNN',
-                            pain_gap=[1]
+                            pain_gap=[]
                             )
             twilio.send_message("Experiment 13 Complete")
 
@@ -648,7 +684,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             subjects_per_client=1,
                             local_epochs=5,
                             model_type='CNN',
-                            pain_gap=[1]
+                            pain_gap=[]
                             )
             twilio.send_message("Experiment 14 Complete")
 
@@ -669,38 +705,38 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             subjects_per_client=1,
                             local_epochs=5,
                             model_type='CNN',
-                            pain_gap=[1]
+                            pain_gap=[]
                             )
             twilio.send_message("Experiment 15 Complete")
 
         twilio.send_message()
 
-        evaluate_baseline(dataset='PAIN',
-                          experiment='0-Centralized-Baseline',
-                          results_folder=RESULTS,
-                          model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "2019-08-13-212448"),
-                          optimizer=optimizer,
-                          loss=loss,
-                          metrics=metrics,
-                          model_type='CNN',
-                          pain_gap=()
-                          )
-
-        evaluate_baseline(dataset='PAIN',
-                          experiment='0-Federated-Baseline',
-                          results_folder=RESULTS,
-                          model_path=find_newest_model_path(FEDERATED_PAIN_MODELS, "2019-08-14-032031"),
-                          optimizer=optimizer,
-                          loss=loss,
-                          metrics=metrics,
-                          model_type='CNN',
-                          pain_gap=()
-                          )
+        # evaluate_baseline(dataset='PAIN',
+        #                   experiment='0-Centralized-Baseline',
+        #                   results_folder=RESULTS,
+        #                   model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "2019-08-13-212448"),
+        #                   optimizer=optimizer,
+        #                   loss=loss,
+        #                   metrics=metrics,
+        #                   model_type='CNN',
+        #                   pain_gap=()
+        #                   )
+        #
+        # evaluate_baseline(dataset='PAIN',
+        #                   experiment='0-Federated-Baseline',
+        #                   results_folder=RESULTS,
+        #                   model_path=find_newest_model_path(FEDERATED_PAIN_MODELS, "2019-08-14-032031"),
+        #                   optimizer=optimizer,
+        #                   loss=loss,
+        #                   metrics=metrics,
+        #                   model_type='CNN',
+        #                   pain_gap=()
+        #                   )
 
         twilio.send_message("Successfully evaluated models.")
 
     except Exception as e:
-        twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
+        # twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
         traceback.print_tb(e.__traceback__)
         print(e)
 
