@@ -199,13 +199,45 @@ def load_and_prepare_data(path, person, pain, model_type):
     return data, labels_binary, train_labels_people, labels
 
 
+def evaluate_baseline(dataset, experiment, results_folder, model_path, optimizer, loss, metrics, model_type,
+                      pain_gap=()):
+    # Load and compile model
+    print("Loading pre-trained model: {}".format(os.path.basename(model_path)))
+    model = tf.keras.models.load_model(model_path)
+    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+
+    # Prepare data
+    df = dL.create_pain_df(GROUP_2_PATH, pain_gap)
+
+    history = {metric: [] for metric in model.metrics_names}
+
+    for session in df['Session'].unique():
+        pF.print_session(session)
+        df_test = df[df['Session'] == session]
+        test_data, test_labels, test_people, test_all_labels = load_and_prepare_data(df_test['img_path'].values,
+                                                                                     person=0, pain=4,
+                                                                                     model_type=model_type)
+        results = model.evaluate(test_data, test_labels)
+        for key, val in results.items():
+            history.setdefault(key, []).append(val)
+        history.setdefault('Session', []).append(session)
+        for person, df_person in df_test.groupby('Person'):
+            test_data, test_labels, test_people, test_all_labels = load_and_prepare_data(df_person['img_path'].values,
+                                                                                         person=0, pain=4,
+                                                                                         model_type=model_type)
+            results = model.evaluate(test_data, test_labels)
+            for key in results.keys():
+                history.setdefault('subject_{}_'.format(person) + key, []).append(results[key])
+
+    history = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in history.items()]))
+    save_results(dataset, experiment, history, model, results_folder)
+
 # ---------------------------------------------- End Utility Functions --------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
 
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------ Experiment Runners ---------------------------------------------- #
-
 
 def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path, model_type, optimizer,
                     pretraining, rounds, personalization, pain_gap):
@@ -239,7 +271,7 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
 
         # Split data into train and test
         (train_data, test_data), (train_labels, test_labels), (train_labels_people, test_labels_people), \
-            (raw_labels, test_raw_labels) = \
+        (raw_labels, test_raw_labels) = \
             train_test_split(0.2, train_data, train_labels, train_labels_people, raw_labels)
 
         # Train
@@ -642,6 +674,30 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             twilio.send_message("Experiment 15 Complete")
 
         twilio.send_message()
+
+        evaluate_baseline(dataset='PAIN',
+                          experiment='0-Centralized-Baseline',
+                          results_folder=RESULTS,
+                          model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "2019-08-13-212448"),
+                          optimizer=optimizer,
+                          loss=loss,
+                          metrics=metrics,
+                          model_type='CNN',
+                          pain_gap=()
+                          )
+
+        evaluate_baseline(dataset='PAIN',
+                          experiment='0-Federated-Baseline',
+                          results_folder=RESULTS,
+                          model_path=find_newest_model_path(FEDERATED_PAIN_MODELS, "2019-08-14-032031"),
+                          optimizer=optimizer,
+                          loss=loss,
+                          metrics=metrics,
+                          model_type='CNN',
+                          pain_gap=()
+                          )
+
+        twilio.send_message("Successfully evaluated models.")
 
     except Exception as e:
         twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
