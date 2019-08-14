@@ -7,8 +7,6 @@ import pandas as pd
 from tensorflow.python.keras.metrics import TruePositives, TrueNegatives, FalsePositives, FalseNegatives, Recall, \
     Precision, AUC
 
-import Scripts.Model_Training
-
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import time
@@ -377,10 +375,10 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
 
     elif algorithm is 'centralized':
         folder = CENTRAL_PAIN_MODELS
-        model, history = Scripts.Model_Training.train_cnn(algorithm=algorithm, model=model, epochs=rounds,
-                                                          train_data=train_data, train_labels=train_labels,
-                                                          test_data=test_data,
-                                                          test_labels=test_labels, people=people, all_labels=all_labels)
+        model, history = mT.train_cnn(algorithm=algorithm, model=model, epochs=rounds,
+                                      train_data=train_data, train_labels=train_labels,
+                                      test_data=test_data,
+                                      test_labels=test_labels, people=people, all_labels=all_labels)
 
     else:
         raise ValueError("'runner_type' must be either 'centralized' or 'federated', was: {}".format(algorithm))
