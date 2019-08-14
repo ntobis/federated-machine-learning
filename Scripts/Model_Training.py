@@ -3,11 +3,10 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from Scripts import Centralized_Pain as cP
 from Scripts import Data_Loader_Functions as dL
+from Scripts import Keras_Custom as kC
 from Scripts import Model_Architectures as mA
 from Scripts import Print_Functions as Output
-from Scripts import Reset_Model as Reset
 from Scripts.Keras_Custom import EarlyStopping
 from Scripts.Weights_Accountant import WeightsAccountant
 
@@ -24,21 +23,6 @@ FEDERATED_LOCAL_WEIGHTS_PATH = os.path.join(MODELS, 'Pain', 'Federated', 'Federa
 
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
-
-
-def reset_federated_model():
-    """
-    Deletes the global model and weights, as well as all local weights (if any)
-    :return:
-    """
-    if os.path.isdir(FEDERATED_LOCAL_WEIGHTS_PATH):
-        Reset.remove_files(FEDERATED_LOCAL_WEIGHTS_PATH)
-    else:
-        os.mkdir(FEDERATED_LOCAL_WEIGHTS_PATH)
-    if os.path.isdir(MODELS):
-        Reset.remove_files(MODELS)
-    else:
-        os.mkdir(MODELS)
 
 
 def create_client_index_array(num_of_clients, num_participating_clients=None):
@@ -80,8 +64,6 @@ def init_global_model(optimizer, loss, metrics, input_shape=(215, 215, 1), model
     # Compile the model
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
-    # Save initial model
-
     return model
 
 
@@ -119,8 +101,8 @@ def train_client_model(client, local_epochs, model, train_data, train_labels, te
     """
 
     old_weights = model.get_weights()
-    model, history = cP.train_cnn('federated', model, local_epochs, train_data, train_labels, test_data, test_labels,
-                                  test_people, all_labels)
+    model, history = train_cnn('federated', model, local_epochs, train_data, train_labels, test_data, test_labels,
+                               test_people, all_labels)
 
     # Check if only the convolutional layers should be averaged
     if personalization:
@@ -327,55 +309,30 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
 
     return history, model
 
-# def evaluate_federated_cnn(comm_round, test_data=None, test_labels=None, df=None, model=None, weights_accountant=None,
-#                            history=None, people=None, optimizer=None, loss=None, metrics=None, model_type='CNN',
-#                            predict_gen=None, personalization=False):
-#     """
-#     Evaluate the global CNN.
-#
-#     :param personalization:
-#     :param predict_gen:
-#     :param model_type:
-#     :param df:
-#     :param metrics:
-#     :param loss:
-#     :param optimizer:
-#     :param test_data:                       numpy array
-#     :param test_labels:                     numpy array
-#     :param comm_round:                      int, specifying the current communication round
-#     :param model:                           Tensorflow graph
-#     :param weights_accountant:              WeightsAccountant object
-#     :param history:                         History object, used for logging
-#     :param people:                          numpy array, of len test_labels, containing client numbers
-#
-#     :return:
-#         history                             history object
-#     """
-#
-#     if model is None:
-#         model = init_global_model(optimizer, loss, metrics, model_type)
-#
-#     if personalization:
-#         clients = df['Person'].unique() if df is not None else np.unique(people)
-#         conv_weights = weights_accountant.get_global_weights()
-#         for client in clients:
-#             client_df = df[df['Person'] == client] if df is not None else None
-#             if client_df is not None:
-#                 predict_gen = cP.set_up_data_generator(client_df, model.name, shuffle=False, balanced=False,
-#                                                        gen_type="Client {}".format(client))
-#
-#             personal_weights = weights_accountant.get_localized_layers(client)
-#             weights = np.concatenate((conv_weights, personal_weights))
-#             model.set_weights(weights)
-#             history = cP.evaluate_pain_cnn(model, comm_round, test_data, test_labels, predict_gen, history, people,
-#                                            loss, client_df)
-#
-#     else:
-#         weights = weights_accountant.get_global_weights()
-#         model.set_weights(weights)
-#         history = cP.evaluate_pain_cnn(model, comm_round, test_data, test_labels, predict_gen, history, people, loss,
-#                                        df)
-#     return history
 
-# ---------------------------------------------- End Federated Learning -------------------------------------------- #
-# ------------------------------------------------------------------------------------------------------------------ #
+def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test_data=None, test_labels=None,
+              people=None, all_labels=None):
+    # Create callbacks
+    history_cb = None
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
+                                                      baseline=None, restore_best_weights=True)
+    callbacks = [early_stopping]
+
+    # Create validation sets
+    if test_data is not None:
+        _, test_data_split, test_labels_split = dL.split_data_into_labels(0, all_labels, False, test_data, test_labels)
+        validation_sets = [(val_data, val_labels, 'subject_{}'.format(person)) for val_data, val_labels, person in
+                           zip(test_data_split, test_labels_split, np.unique(people))]
+        history_cb = kC.AdditionalValidationSets(validation_sets)
+        callbacks.insert(0, history_cb)
+
+    # Train and evaluate
+    validation_split, validation_data = None, None
+    if test_data is None and algorithm == 'centralized':  # This applies to pre-training a centralized model
+        validation_split = 0.2
+    elif test_data is not None:  # This applies to training any model
+        validation_data = (test_data, test_labels)
+    model.fit(train_data, train_labels, epochs=epochs, batch_size=32, use_multiprocessing=True,
+              validation_split=validation_split, validation_data=validation_data, callbacks=callbacks)
+
+    return model, history_cb.history if history_cb is not None else {}

@@ -7,6 +7,8 @@ import pandas as pd
 from tensorflow.python.keras.metrics import TruePositives, TrueNegatives, FalsePositives, FalseNegatives, Recall, \
     Precision, AUC
 
+import Scripts.Model_Training
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import time
@@ -20,8 +22,7 @@ from oauth2client.client import GoogleCredentials
 
 from Scripts import Print_Functions as Output
 from Scripts import Data_Loader_Functions as dL
-from Scripts import Centralized_Pain as cP
-from Scripts import Federated_Pain as fP
+from Scripts import Model_Training as fP
 from Scripts import Model_Architectures as mA
 
 # ------------------------------------------------------------------------------------------------------------------ #
@@ -359,8 +360,6 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
 
     if algorithm is 'federated':
         folder = FEDERATED_PAIN_MODELS
-        # Reset federated model
-        fP.reset_federated_model()
 
         # Train Model
         history, model = fP.federated_learning(model=model, global_epochs=rounds, train_data=train_data,
@@ -372,9 +371,9 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
 
     elif algorithm is 'centralized':
         folder = CENTRAL_PAIN_MODELS
-        model, history = cP.train_cnn(algorithm=algorithm, model=model, epochs=rounds, train_data=train_data,
-                                      train_labels=train_labels, test_data=test_data,
-                                      test_labels=test_labels, people=people, all_labels=all_labels)
+        model, history = Scripts.Model_Training.train_cnn(algorithm=algorithm, model=model, epochs=rounds, train_data=train_data,
+                                                          train_labels=train_labels, test_data=test_data,
+                                                          test_labels=test_labels, people=people, all_labels=all_labels)
 
     else:
         raise ValueError("'runner_type' must be either 'centralized' or 'federated', was: {}".format(algorithm))

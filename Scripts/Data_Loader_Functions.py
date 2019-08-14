@@ -637,12 +637,14 @@ def prepare_pain_images(root_path, distribution='unbalanced'):
     :param distribution:        string, distribute the images "balanced" or "unbalanced"
     :return:
     """
+
     def allocate_group(d_frame, file_path):
         if not os.path.isdir(file_path):
             os.mkdir(file_path)
 
         for f_path in d_frame['img_path'].values:
             os.rename(f_path, os.path.join(file_path, os.path.basename(f_path)))
+
     print('# Moving all images into the "raw" subfolder')
     reset_to_raw(root_path)
 
@@ -849,7 +851,7 @@ def balance_data(df, threshold):
     return balance_session(df_train, threshold)
 
 
-def create_pivot(path, index, columns, values):
+def create_pivot(path, index, columns, values, pain_level=0):
     group_2 = get_image_paths(path)
     labels = np.array(get_labels(group_2))
     cols = ['Person', 'Session', 'Culture', 'Frame', 'Pain', 'Trans_1', 'Trans_2']
@@ -864,19 +866,19 @@ def create_pivot(path, index, columns, values):
     pivot['Pain'] = 0
     pivot['No Pain'] = 0
     for person, df_person in df.groupby(index):
-        pivot.at[person, 'No Pain'] = sum(df_person['Pain'] == 0)
-        pivot.at[person, 'Pain'] = sum(df_person['Pain'] > 0)
+        pivot.at[person, 'No Pain'] = sum(np.array(df_person['Pain'] <= pain_level))
+        pivot.at[person, 'Pain'] = sum(np.array(df_person['Pain'] > pain_level))
         for col in pivot.columns:
             if type(col) is int:
-                pivot.at[person, col] = sum(df_person[df_person[columns] == col]['Pain'] > 0)
+                pivot.at[person, col] = sum(np.array(df_person[df_person[columns] == col]['Pain'] > pain_level))
 
     if columns is 'Session':
         for col in reversed(pivot.columns):
             if type(col) is int:
-                pivot.rename(columns={col: col + 1}, inplace=True)
+                pivot.rename(columns={col: col}, inplace=True)
     if index is 'Session':
         for idx in reversed(pivot.index):
-            pivot.rename(index={idx: idx + 1}, inplace=True)
+            pivot.rename(index={idx: idx}, inplace=True)
     pivot = pivot.append(pivot.sum(0).rename("Total"))
     pivot['Pain %'] = round(pivot['Pain'] / (pivot['Pain'] + pivot['No Pain']), 2)
     pivot[pivot == 0] = ''
