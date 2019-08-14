@@ -852,13 +852,15 @@ def balance_data(df, threshold):
     return balance_session(df_train, threshold)
 
 
-def create_pivot(path, index, columns, values, pain_level=0):
+def create_pivot(path, index, columns, values, pain_level=0, pain_gap=()):
     group_2 = get_image_paths(path)
     labels = np.array(get_labels(group_2))
     cols = ['Person', 'Session', 'Culture', 'Frame', 'Pain', 'Trans_1', 'Trans_2']
     df = pd.DataFrame(labels, columns=cols)
     df[['Person', 'Session', 'Culture', 'Frame', 'Pain']] = df[
         ['Person', 'Session', 'Culture', 'Frame', 'Pain']].astype(int)
+
+    df = df[~df['Pain'].isin(pain_gap)]
 
     pivot = ~df[['Person', 'Session']].drop_duplicates().pivot(index=index, columns=columns, values=values).isnull() * 1
     pivot['# of ' + columns + 's'] = pivot.sum(1)
