@@ -28,7 +28,7 @@ class EarlyStopping:
 
 
 class AdditionalValidationSets(tf.keras.callbacks.Callback):
-    def __init__(self, validation_sets, verbose=1, batch_size=1):
+    def __init__(self, validation_sets, verbose=1, batch_size=None):
         """
         :param validation_sets:
         a list of 3-tuples (validation_data, validation_targets, validation_set_name)
