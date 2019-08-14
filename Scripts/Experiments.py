@@ -622,7 +622,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             loss=loss,
                             metrics=metrics,
                             model_type='CNN',
-                            pain_gap=[1]
+                            pain_gap=[]
                             )
             twilio.send_message("Experiment 11 Complete")
 
@@ -641,7 +641,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             loss=loss,
                             metrics=metrics,
                             model_type='CNN',
-                            pain_gap=[1]
+                            pain_gap=[]
                             )
             twilio.send_message("Experiment 12 Complete")
 
