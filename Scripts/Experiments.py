@@ -421,7 +421,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
     # Setup
     data_loc = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
 
-    # g_monitor = GoogleCloudMonitor()
+    g_monitor = GoogleCloudMonitor()
     twilio = Twilio()
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
@@ -644,7 +644,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
         twilio.send_message()
 
     except Exception as e:
-        # twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
+        twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
         traceback.print_tb(e.__traceback__)
         print(e)
 
