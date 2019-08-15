@@ -242,7 +242,7 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
     :param test_labels:                     numpy array
     :param local_epochs:                    int, number of epochs each client will train in a given communication round
     :param participating_clients:       int, number of participating clients in a given communication round
-    :param test_people:                          numpy array, of length test_labels, used to enable individual metric logging
+    :param test_people:              numpy array, of length test_labels, used to enable individual metric logging
 
     :return:
         history                             pandas data-frame, contains the history of loss & accuracy values off all
@@ -325,13 +325,9 @@ def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test
         _, test_data_split, test_labels_split, test_people_split = dL.split_data_into_labels(0, all_labels, False,
                                                                                              test_data, test_labels,
                                                                                              test_people)
-        for elem in _:
-            elem = np.array(elem)
-            print(np.mean(elem[:, 0].astype(int)), len(elem), sum(elem[:, 4].astype(int) > 0))
         validation_sets = [(val_data, val_labels, 'subject_{}'.format(person[0]))
                            for val_data, val_labels, person in
                            zip(test_data_split, test_labels_split, test_people_split)]
-
         history_cb = kC.AdditionalValidationSets(validation_sets)
         callbacks.insert(0, history_cb)
         validation_data = (test_data, test_labels)

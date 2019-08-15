@@ -199,38 +199,28 @@ def load_and_prepare_data(path, person, pain, model_type):
     return data, labels_binary, train_labels_people, labels
 
 
-def evaluate_baseline(dataset, experiment, results_folder, model_path, optimizer, loss, metrics, model_type,
-                      pain_gap=()):
-    # Load and compile model
-    print("Loading pre-trained model: {}".format(os.path.basename(model_path)))
-    model = tf.keras.models.load_model(model_path)
-    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+def evaluate_baseline(model, test_data, test_labels, test_people, test_all_labels, session):
 
     # Prepare data
-    df = dL.create_pain_df(GROUP_2_PATH, pain_gap)
-
     history = {metric: [] for metric in model.metrics_names}
 
-    for session in df['Session'].unique():
-        pF.print_session(session)
-        df_test = df[df['Session'] == session]
-        test_data, test_labels, test_people, test_all_labels = load_and_prepare_data(df_test['img_path'].values,
-                                                                                     person=0, pain=4,
-                                                                                     model_type=model_type)
-        results = model.evaluate(test_data, test_labels)
-        for key, val in results.items():
-            history.setdefault(key, []).append(val)
-        history.setdefault('Session', []).append(session)
-        for person, df_person in df_test.groupby('Person'):
-            test_data, test_labels, test_people, test_all_labels = load_and_prepare_data(df_person['img_path'].values,
-                                                                                         person=0, pain=4,
-                                                                                         model_type=model_type)
-            results = model.evaluate(test_data, test_labels)
-            for key in results.keys():
-                history.setdefault('subject_{}_'.format(person) + key, []).append(results[key])
+    results = model.evaluate(test_data, test_labels)
+    for key, val in zip(model.metrics_names, results):
+        history.setdefault(key, []).append(val)
+    history.setdefault('Session', []).append(session)
+
+    _, test_data_split, test_labels_split, test_people_split = dL.split_data_into_labels(0, test_all_labels, False,
+                                                                                         test_data, test_labels,
+                                                                                         test_people)
+
+    for data, labels, people, in zip(test_data_split, test_labels_split, test_people_split):
+        results = model.evaluate(data, labels)
+        for key, val in zip(model.metrics_names, results):
+            history.setdefault('subject_{}_'.format(people[0]) + key, []).append(val)
 
     history = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in history.items()]))
-    save_results(dataset, experiment, history, model, results_folder)
+    # Save history
+    return history
 
 
 def evaluate_session(df, model, test_data, test_labels, test_people, test_all_labels, session):
@@ -374,8 +364,8 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
                 model_type=model_type)
 
             # Evaluate the model on the test data
-            df_history = evaluate_session(df_history, model, test_data, test_labels, test_people, test_all_labels,
-                                          session)
+            results = evaluate_baseline(model, test_data, test_labels, test_people, test_all_labels, session)
+            df_history = pd.concat((df_history, results), sort=False)
 
             # Train the model
             model = model_runner(algorithm, dataset, experiment_current, model=model, rounds=rounds,
@@ -393,7 +383,7 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
             df_train['img_path'].values,
             person=0, pain=4, model_type=model_type)
 
-    # Save history
+    # Save history to CSV
     f_name = time.strftime("%Y-%m-%d-%H%M%S") + "_{}_{}.csv".format(dataset, experiment + "_TEST")
     df_history.to_csv(os.path.join(RESULTS, f_name))
 
