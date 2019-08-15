@@ -726,7 +726,16 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                                 model_type=model_type
                                 )
 
-        twilio.send_message("Successfully evaluated models.")
+            baseline_evaluation(dataset="PAIN",
+                                experiment="0-sessions-Baseline-federated-pre-training",
+                                model_path=find_newest_model_path(FEDERATED_PAIN_MODELS, "shard-0.00.h5"),
+                                optimizer=optimizer,
+                                loss=loss,
+                                metrics=metrics,
+                                model_type=model_type
+                                )
+
+            twilio.send_message("Successfully evaluated models.")
 
     except Exception as e:
         twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
@@ -734,7 +743,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
         print(e)
 
     # Notify that training is complete and shut down Google server
-    g_monitor.shutdown()
+    # g_monitor.shutdown()
 
 
 if __name__ == '__main__':
