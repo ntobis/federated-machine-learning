@@ -498,7 +498,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
     g_monitor = GoogleCloudMonitor()
     twilio = Twilio()
 
-    optimizer = tf.keras.optimizers.RMSprop(earning_rate=0.001)
+    optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
     loss = tf.keras.losses.BinaryCrossentropy()
     metrics = ['accuracy', TruePositives(), TrueNegatives(),
                FalsePositives(), FalseNegatives(), Recall(), Precision(), AUC()]
