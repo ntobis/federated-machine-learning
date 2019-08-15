@@ -344,19 +344,20 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
                  personalization, pain_gap):
 
     # Prepare df for data loading and for history tracking
-    df = dL.create_pain_df(GROUP_2_PATH, pain_gap=pain_gap)
+    df_training_validating = dL.create_pain_df(GROUP_2_PATH, pain_gap=pain_gap)
+    df_testing = dL.create_pain_df(GROUP_2_PATH, pain_gap=())
     df_history = pd.DataFrame()
 
     # Run Sessions
     train_data, train_labels, train_people, train_all_labels, client_arr = [None] * 5
-    for session in df['Session'].unique():
+    for session in df_training_validating['Session'].unique():
         pF.print_session(session)
         experiment_current = experiment + "_shard-{}".format(session)
 
         if session > 0:
 
             # Get test data
-            df_test = df[df['Session'] == session]
+            df_test = df_testing[df_testing['Session'] == session]
             test_data, test_labels, test_people, test_all_labels = load_and_prepare_data(
                 df_test['img_path'].values,
                 person=0,
@@ -367,17 +368,25 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
             results = evaluate_baseline(model, test_data, test_labels, test_people, test_all_labels, session)
             df_history = pd.concat((df_history, results), sort=False)
 
+            # Get validation data
+            df_val = df_training_validating[df_training_validating['Session'] == session]
+            val_data, val_labels, val_people, val_all_labels = load_and_prepare_data(
+                df_val['img_path'].values,
+                person=0,
+                pain=4,
+                model_type=model_type)
+
             # Train the model
             model = model_runner(algorithm, dataset, experiment_current, model=model, rounds=rounds,
-                                 train_data=train_data, train_labels=train_labels, test_data=test_data,
-                                 test_labels=test_labels, test_people=test_people,
+                                 train_data=train_data, train_labels=train_labels, test_data=val_data,
+                                 test_labels=val_labels, test_people=val_people,
                                  loss=loss, clients=train_people,
                                  local_epochs=local_epochs,
                                  optimizer=optimizer, metrics=metrics, model_type=model_type,
-                                 personalization=personalization, all_labels=test_all_labels)
+                                 personalization=personalization, all_labels=val_all_labels)
 
         # Get Train Data for the next session
-        df_train = df[df['Session'] <= session]
+        df_train = df_training_validating[df_training_validating['Session'] <= session]
         df_train = dL.balance_data(df_train, threshold=200)
         train_data, train_labels, train_people, train_all_labels = load_and_prepare_data(
             df_train['img_path'].values,
