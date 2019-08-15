@@ -199,7 +199,7 @@ def load_and_prepare_data(path, person, pain, model_type):
     return data, labels_binary, train_labels_people, labels
 
 
-def evaluate_session(model, test_data, test_labels, test_people, test_all_labels, session):
+def session_evaluation(model, test_data, test_labels, test_people, test_all_labels, session):
 
     # Prepare data
     history = {metric: [] for metric in model.metrics_names}
@@ -221,6 +221,38 @@ def evaluate_session(model, test_data, test_labels, test_people, test_all_labels
     history = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in history.items()]))
     # Save history
     return history
+
+
+def test_set_evaluation(df_history, df_testing, model, model_type, session):
+
+    # Get test data
+    df_test = df_testing[df_testing['Session'] == session]
+    test_data, test_labels, test_people, test_all_labels = load_and_prepare_data(
+        df_test['img_path'].values,
+        person=0,
+        pain=4,
+        model_type=model_type)
+
+    # Evaluate the model on the test data
+    results = session_evaluation(model, test_data, test_labels, test_people, test_all_labels, session)
+    df_history = pd.concat((df_history, results), sort=False)
+    return df_history
+
+
+def baseline_model_evaluation(dataset, experiment, model_path, optimizer, loss, metrics, model_type):
+    df_history = pd.DataFrame()
+    df_testing = dL.create_pain_df(GROUP_2_PATH, pain_gap=())
+    model = tf.keras.models.load_model(model_path)
+    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+
+    for session in df_testing['Session'].unique():
+        if session > 0:
+            pF.print_session(session)
+            df_history = test_set_evaluation(df_history, df_testing, model, model_type, session)
+
+    # Save history to CSV
+    f_name = time.strftime("%Y-%m-%d-%H%M%S") + "_{}_{}.csv".format(dataset, experiment + "_TEST")
+    df_history.to_csv(os.path.join(RESULTS, f_name))
 
 
 # ---------------------------------------------- End Utility Functions --------------------------------------------- #
@@ -340,7 +372,7 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
         if session > 0:
 
             # Get test-set evaluation data
-            df_history = test_evaluation(df_history, df_testing, model, model_type, session)
+            df_history = test_set_evaluation(df_history, df_testing, model, model_type, session)
 
             # Get validation data
             df_val = df_training_validating[df_training_validating['Session'] == session]
@@ -369,37 +401,6 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
     # Save history to CSV
     f_name = time.strftime("%Y-%m-%d-%H%M%S") + "_{}_{}.csv".format(dataset, experiment + "_TEST")
     df_history.to_csv(os.path.join(RESULTS, f_name))
-
-
-def baseline_evaluation(dataset, experiment, model_path, optimizer, loss, metrics, model_type):
-    df_history = pd.DataFrame()
-    df_testing = dL.create_pain_df(GROUP_2_PATH, pain_gap=())
-    model = tf.keras.models.load_model(model_path)
-    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
-
-    for session in df_testing['Session'].unique():
-        if session > 0:
-            pF.print_session(session)
-            df_history = test_evaluation(df_history, df_testing, model, model_type, session)
-
-    # Save history to CSV
-    f_name = time.strftime("%Y-%m-%d-%H%M%S") + "_{}_{}.csv".format(dataset, experiment + "_TEST")
-    df_history.to_csv(os.path.join(RESULTS, f_name))
-
-
-def test_evaluation(df_history, df_testing, model, model_type, session):
-
-    # Get test data
-    df_test = df_testing[df_testing['Session'] == session]
-    test_data, test_labels, test_people, test_all_labels = load_and_prepare_data(
-        df_test['img_path'].values,
-        person=0,
-        pain=4,
-        model_type=model_type)
-    # Evaluate the model on the test data
-    results = evaluate_session(model, test_data, test_labels, test_people, test_all_labels, session)
-    df_history = pd.concat((df_history, results), sort=False)
-    return df_history
 
 
 def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_data=None, train_labels=None,
@@ -719,23 +720,23 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
         twilio.send_message()
 
         if evaluate:
-            baseline_evaluation(dataset="PAIN",
-                                experiment="0-sessions-Baseline-central-pre-training",
-                                model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
-                                optimizer=optimizer,
-                                loss=loss,
-                                metrics=metrics,
-                                model_type=model_type
-                                )
+            baseline_model_evaluation(dataset="PAIN",
+                                      experiment="0-sessions-Baseline-central-pre-training",
+                                      model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
+                                      optimizer=optimizer,
+                                      loss=loss,
+                                      metrics=metrics,
+                                      model_type=model_type
+                                      )
 
-            baseline_evaluation(dataset="PAIN",
-                                experiment="0-sessions-Baseline-federated-pre-training",
-                                model_path=find_newest_model_path(FEDERATED_PAIN_MODELS, "shard-0.00.h5"),
-                                optimizer=optimizer,
-                                loss=loss,
-                                metrics=metrics,
-                                model_type=model_type
-                                )
+            baseline_model_evaluation(dataset="PAIN",
+                                      experiment="0-sessions-Baseline-federated-pre-training",
+                                      model_path=find_newest_model_path(FEDERATED_PAIN_MODELS, "shard-0.00.h5"),
+                                      optimizer=optimizer,
+                                      loss=loss,
+                                      metrics=metrics,
+                                      model_type=model_type
+                                      )
 
             twilio.send_message("Successfully evaluated models.")
 
