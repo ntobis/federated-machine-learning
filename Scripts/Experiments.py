@@ -503,7 +503,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                FalsePositives(), FalseNegatives(), Recall(), Precision(), AUC()]
 
     model_type = 'CNN'
-    pain_gap = [1]
+    pain_gap = ()
 
     test_shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
 
@@ -745,7 +745,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
         print(e)
 
     # Notify that training is complete and shut down Google server
-    # g_monitor.shutdown()
+    g_monitor.shutdown()
 
 
 if __name__ == '__main__':
