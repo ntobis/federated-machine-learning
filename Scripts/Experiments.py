@@ -612,7 +612,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             loss=loss,
                             metrics=metrics,
                             model_type='CNN',
-                            pain_gap=[]
+                            pain_gap=[1]
                             )
             twilio.send_message("Experiment 11 Complete")
 
@@ -631,7 +631,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             loss=loss,
                             metrics=metrics,
                             model_type='CNN',
-                            pain_gap=[]
+                            pain_gap=[1]
                             )
             twilio.send_message("Experiment 12 Complete")
 
@@ -652,7 +652,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             subjects_per_client=1,
                             local_epochs=5,
                             model_type='CNN',
-                            pain_gap=[]
+                            pain_gap=[1]
                             )
             twilio.send_message("Experiment 13 Complete")
 
@@ -674,7 +674,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             subjects_per_client=1,
                             local_epochs=5,
                             model_type='CNN',
-                            pain_gap=[]
+                            pain_gap=[1]
                             )
             twilio.send_message("Experiment 14 Complete")
 
@@ -695,7 +695,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             subjects_per_client=1,
                             local_epochs=5,
                             model_type='CNN',
-                            pain_gap=[]
+                            pain_gap=[1]
                             )
             twilio.send_message("Experiment 15 Complete")
 
@@ -726,7 +726,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
         twilio.send_message("Successfully evaluated models.")
 
     except Exception as e:
-        # twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
+        twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
         traceback.print_tb(e.__traceback__)
         print(e)
 
