@@ -377,7 +377,7 @@ def baseline_evaluation(dataset, experiment, model_path, optimizer, loss, metric
     model = tf.keras.models.load_model(model_path)
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
-    for session in df_testing['Sessions'].unique():
+    for session in df_testing['Session'].unique():
         df_history = test_evaluation(df_history, df_testing, model, model_type, session)
 
     # Save history to CSV
