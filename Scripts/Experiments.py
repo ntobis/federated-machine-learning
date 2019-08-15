@@ -378,8 +378,9 @@ def baseline_evaluation(dataset, experiment, model_path, optimizer, loss, metric
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     for session in df_testing['Session'].unique():
-        pF.print_session(session)
-        df_history = test_evaluation(df_history, df_testing, model, model_type, session)
+        if session > 0:
+            pF.print_session(session)
+            df_history = test_evaluation(df_history, df_testing, model, model_type, session)
 
     # Save history to CSV
     f_name = time.strftime("%Y-%m-%d-%H%M%S") + "_{}_{}.csv".format(dataset, experiment + "_TEST")
