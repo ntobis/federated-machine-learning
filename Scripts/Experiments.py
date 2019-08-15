@@ -378,6 +378,7 @@ def baseline_evaluation(dataset, experiment, model_path, optimizer, loss, metric
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     for session in df_testing['Session'].unique():
+        pF.print_session(session)
         df_history = test_evaluation(df_history, df_testing, model, model_type, session)
 
     # Save history to CSV
@@ -747,4 +748,4 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
 
 
 if __name__ == '__main__':
-    main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribution=False, evaluate=True)
+    main(seed=123, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
