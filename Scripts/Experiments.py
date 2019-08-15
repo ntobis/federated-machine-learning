@@ -199,7 +199,7 @@ def load_and_prepare_data(path, person, pain, model_type):
     return data, labels_binary, train_labels_people, labels
 
 
-def evaluate_baseline(model, test_data, test_labels, test_people, test_all_labels, session):
+def evaluate_session(model, test_data, test_labels, test_people, test_all_labels, session):
 
     # Prepare data
     history = {metric: [] for metric in model.metrics_names}
@@ -221,23 +221,6 @@ def evaluate_baseline(model, test_data, test_labels, test_people, test_all_label
     history = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in history.items()]))
     # Save history
     return history
-
-
-def evaluate_session(df, model, test_data, test_labels, test_people, test_all_labels, session):
-    _, test_data_split, test_labels_split, test_people_split = dL.split_data_into_labels(0, test_all_labels, False,
-                                                                                         test_data, test_labels,
-                                                                                         test_people)
-    test_session_results = []
-    for data, labels, people, in zip(test_data_split, test_labels_split, test_people_split):
-        columns = model.metrics_names
-        columns.extend(['Person', 'Session', 'Epoch'])
-
-        results = model.evaluate(data, labels)
-        results.extend(["subject_{}".format(people[0]), session, 0])
-        test_session_results.append(results)
-        df_test_session_results = pd.DataFrame(columns=columns, data=test_session_results)
-        df = pd.concat((df, df_test_session_results))
-    return df
 
 
 # ---------------------------------------------- End Utility Functions --------------------------------------------- #
@@ -356,17 +339,8 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
 
         if session > 0:
 
-            # Get test data
-            df_test = df_testing[df_testing['Session'] == session]
-            test_data, test_labels, test_people, test_all_labels = load_and_prepare_data(
-                df_test['img_path'].values,
-                person=0,
-                pain=4,
-                model_type=model_type)
-
-            # Evaluate the model on the test data
-            results = evaluate_baseline(model, test_data, test_labels, test_people, test_all_labels, session)
-            df_history = pd.concat((df_history, results), sort=False)
+            # Get test-set evaluation data
+            df_history = test_evaluation(df_history, df_testing, model, model_type, session)
 
             # Get validation data
             df_val = df_training_validating[df_training_validating['Session'] == session]
@@ -395,6 +369,35 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
     # Save history to CSV
     f_name = time.strftime("%Y-%m-%d-%H%M%S") + "_{}_{}.csv".format(dataset, experiment + "_TEST")
     df_history.to_csv(os.path.join(RESULTS, f_name))
+
+
+def baseline_evaluation(dataset, experiment, model_path, optimizer, loss, metrics, model_type):
+    df_history = pd.DataFrame()
+    df_testing = dL.create_pain_df(GROUP_2_PATH, pain_gap=())
+    model = tf.keras.models.load_model(model_path)
+    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+
+    for session in df_testing['Sessions'].unique():
+        df_history = test_evaluation(df_history, df_testing, model, model_type, session)
+
+    # Save history to CSV
+    f_name = time.strftime("%Y-%m-%d-%H%M%S") + "_{}_{}.csv".format(dataset, experiment + "_TEST")
+    df_history.to_csv(os.path.join(RESULTS, f_name))
+
+
+def test_evaluation(df_history, df_testing, model, model_type, session):
+
+    # Get test data
+    df_test = df_testing[df_testing['Session'] == session]
+    test_data, test_labels, test_people, test_all_labels = load_and_prepare_data(
+        df_test['img_path'].values,
+        person=0,
+        pain=4,
+        model_type=model_type)
+    # Evaluate the model on the test data
+    results = evaluate_session(model, test_data, test_labels, test_people, test_all_labels, session)
+    df_history = pd.concat((df_history, results), sort=False)
+    return df_history
 
 
 def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_data=None, train_labels=None,
@@ -484,7 +487,8 @@ def experiment_pain(algorithm, dataset, experiment, rounds, shards=None, model_p
 # ------------------------------------------------------------------------------------------------------------------ #
 
 
-def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribution=False):
+def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribution=False, evaluate=False):
+
     # Setup
     data_loc = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
 
@@ -496,7 +500,9 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
     metrics = ['accuracy', TruePositives(), TrueNegatives(),
                FalsePositives(), FalseNegatives(), Recall(), Precision(), AUC()]
 
-    # Define shards
+    model_type = 'CNN'
+    pain_gap = [1]
+
     test_shards = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
 
     try:
@@ -620,8 +626,8 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             optimizer=optimizer,
                             loss=loss,
                             metrics=metrics,
-                            model_type='CNN',
-                            pain_gap=[1]
+                            model_type=model_type,
+                            pain_gap=pain_gap
                             )
             twilio.send_message("Experiment 11 Complete")
 
@@ -639,8 +645,8 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             optimizer=optimizer,
                             loss=loss,
                             metrics=metrics,
-                            model_type='CNN',
-                            pain_gap=[1]
+                            model_type=model_type,
+                            pain_gap=pain_gap
                             )
             twilio.send_message("Experiment 12 Complete")
 
@@ -660,8 +666,8 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             metrics=metrics,
                             subjects_per_client=1,
                             local_epochs=5,
-                            model_type='CNN',
-                            pain_gap=[1]
+                            model_type=model_type,
+                            pain_gap=pain_gap
                             )
             twilio.send_message("Experiment 13 Complete")
 
@@ -682,8 +688,8 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             metrics=metrics,
                             subjects_per_client=1,
                             local_epochs=5,
-                            model_type='CNN',
-                            pain_gap=[1]
+                            model_type=model_type,
+                            pain_gap=pain_gap
                             )
             twilio.send_message("Experiment 14 Complete")
 
@@ -703,34 +709,22 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             metrics=metrics,
                             subjects_per_client=1,
                             local_epochs=5,
-                            model_type='CNN',
-                            pain_gap=[1]
+                            model_type=model_type,
+                            pain_gap=pain_gap
                             )
             twilio.send_message("Experiment 15 Complete")
 
         twilio.send_message()
 
-        # evaluate_baseline(dataset='PAIN',
-        #                   experiment='0-Centralized-Baseline',
-        #                   results_folder=RESULTS,
-        #                   model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "2019-08-13-212448"),
-        #                   optimizer=optimizer,
-        #                   loss=loss,
-        #                   metrics=metrics,
-        #                   model_type='CNN',
-        #                   pain_gap=()
-        #                   )
-        #
-        # evaluate_baseline(dataset='PAIN',
-        #                   experiment='0-Federated-Baseline',
-        #                   results_folder=RESULTS,
-        #                   model_path=find_newest_model_path(FEDERATED_PAIN_MODELS, "2019-08-14-032031"),
-        #                   optimizer=optimizer,
-        #                   loss=loss,
-        #                   metrics=metrics,
-        #                   model_type='CNN',
-        #                   pain_gap=()
-        #                   )
+        if evaluate:
+            baseline_evaluation(dataset="PAIN",
+                                experiment="0-sessions-Baseline-central-pre-training",
+                                model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
+                                optimizer=optimizer,
+                                loss=loss,
+                                metrics=metrics,
+                                model_type=model_type
+                                )
 
         twilio.send_message("Successfully evaluated models.")
 
@@ -744,4 +738,4 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
 
 
 if __name__ == '__main__':
-    main(seed=123, unbalanced=False, balanced=False, sessions=True, redistribution=False)
+    main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribution=False, evaluate=True)
