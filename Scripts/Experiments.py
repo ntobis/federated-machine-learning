@@ -209,6 +209,10 @@ def session_evaluation(model, test_data, test_labels, test_people, test_all_labe
         history.setdefault(key, []).append(val)
     history.setdefault('Session', []).append(session)
 
+    print(test_all_labels)
+    print(test_data)
+    print(test_labels)
+    print(test_people)
     _, test_data_split, test_labels_split, test_people_split = dL.split_data_into_labels(0, test_all_labels, False,
                                                                                          test_data, test_labels,
                                                                                          test_people)
