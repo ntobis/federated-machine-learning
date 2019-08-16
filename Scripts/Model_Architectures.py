@@ -22,7 +22,7 @@ def build_CNN(input_shape):
     model.add(layers.Conv2D(filters=32, kernel_size=(5, 5), strides=(2, 2), input_shape=input_shape))
     model.add(layers.Conv2D(filters=64, kernel_size=(5, 5), strides=(2, 2)))
     model.add(layers.Conv2D(filters=128, kernel_size=(5, 5), strides=(2, 2)))
-    model.add(layers.MaxPooling2D()),
+    # model.add(layers.MaxPooling2D()),
     model.add(layers.Flatten())
     model.add(layers.Dense(units=128))
     model.add(layers.BatchNormalization())
@@ -68,6 +68,30 @@ def build_model(input_shape, model_type):
     return model_types[model_type](input_shape=input_shape)
 
 
+def build_test(input_shape):
+    """
+    Return a simple CNN model for image classification.
+
+    :param input_shape:     image input shape (tuple), e.g. (28, 28, 1)
+
+    :return:
+        model               compiled tensorflow model
+    """
+
+    print("Setting up CNN")
+    # Set up model type
+    model = models.Sequential(name='Test')
+
+    # Add layers
+    model.add(layers.Conv1D(filters=32, kernel_size=10, strides=2, input_shape=input_shape))
+    # model.add(layers.Dense(units=1, input_shape=input_shape))
+    # model.add(layers.Dense(units=1))
+    # model.add(layers.Dense(units=1, activation='sigmoid'))
+
+    return model
+
+
 if __name__ == '__main__':
-    model_1 = build_model((215, 215, 1), 'ResNet')
+    model_1 = build_model((215, 215, 1), 'CNN')
+    # model_1 = build_test((100, 1))
     model_1.summary()
