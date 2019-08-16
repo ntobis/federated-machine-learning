@@ -228,7 +228,7 @@ def test_set_evaluation(df_history, df_testing, model, model_type, session):
     # Get test data
     df_test = df_testing[df_testing['Session'] == session]
     test_data, test_labels, test_people, test_all_labels = load_and_prepare_data(
-        df_test['img_path'].values[:20],
+        df_test['img_path'].values,
         person=0,
         pain=4,
         model_type=model_type)
