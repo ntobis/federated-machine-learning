@@ -209,10 +209,6 @@ def session_evaluation(model, test_data, test_labels, test_people, test_all_labe
         history.setdefault(key, []).append(val)
     history.setdefault('Session', []).append(session)
 
-    print(test_all_labels)
-    print(test_data)
-    print(test_labels)
-    print(test_people)
     _, test_data_split, test_labels_split, test_people_split = dL.split_data_into_labels(0, test_all_labels, False,
                                                                                          test_data, test_labels,
                                                                                          test_people)
@@ -232,7 +228,7 @@ def test_set_evaluation(df_history, df_testing, model, model_type, session):
     # Get test data
     df_test = df_testing[df_testing['Session'] == session]
     test_data, test_labels, test_people, test_all_labels = load_and_prepare_data(
-        df_test['img_path'].values,
+        df_test['img_path'].values[:20],
         person=0,
         pain=4,
         model_type=model_type)
@@ -503,7 +499,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
     # Setup
     data_loc = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
 
-    g_monitor = GoogleCloudMonitor()
+    # g_monitor = GoogleCloudMonitor()
     twilio = Twilio()
 
     optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
