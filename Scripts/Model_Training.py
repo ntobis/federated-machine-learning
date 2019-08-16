@@ -323,10 +323,9 @@ def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
                                                       baseline=None, restore_best_weights=True)
     callbacks = [early_stopping]
-
     # Create validation sets
-    validation_data = (test_data, test_labels) if test_data is None else None
-    print(validation_data)
+    validation_data = (test_data, test_labels) if test_data is not None else None
+
     if individual_validation:
         history_cb, validation_data = add_additional_validations_callback(callbacks, test_data, test_labels,
                                                                           test_people, all_labels)
