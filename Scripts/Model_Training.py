@@ -326,7 +326,7 @@ def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test
 
     # Create validation sets
     validation_data = (test_data, test_labels) if test_data is None else None
-
+    print(validation_data)
     if individual_validation:
         history_cb, validation_data = add_additional_validations_callback(callbacks, test_data, test_labels,
                                                                           test_people, all_labels)
