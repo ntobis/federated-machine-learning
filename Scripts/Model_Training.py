@@ -325,19 +325,19 @@ def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test
     callbacks = [early_stopping]
 
     # Create validation sets
-    validation_split, validation_data = None, None
+    validation_data = (test_data, test_labels) if test_data is None else None
 
-    if test_data is not None and individual_validation:
+    if individual_validation:
         history_cb, validation_data = add_additional_validations_callback(callbacks, test_data, test_labels,
                                                                           test_people, all_labels)
 
     # Train and evaluate
-    if test_data is None and algorithm == 'centralized':  # This applies to pre-training a centralized model
-        validation_split = 0.2
-    model.fit(train_data, train_labels, epochs=epochs, batch_size=32, use_multiprocessing=True,
-              validation_split=validation_split, validation_data=validation_data, callbacks=callbacks)
+    validation_split = 0.2 if test_data is None and algorithm == 'centralized' else None
 
-    return model, history_cb.history if history_cb is not None else {}
+    history = model.fit(train_data, train_labels, epochs=epochs, batch_size=32, use_multiprocessing=True,
+                        validation_split=validation_split, validation_data=validation_data, callbacks=callbacks)
+
+    return model, history_cb.history if history_cb is not None else history.history
 
 
 def add_additional_validations_callback(callbacks, test_data, test_labels, test_people, all_labels):
@@ -349,5 +349,4 @@ def add_additional_validations_callback(callbacks, test_data, test_labels, test_
                        zip(test_data_split, test_labels_split, test_people_split)]
     history_cb = kC.AdditionalValidationSets(validation_sets)
     callbacks.insert(0, history_cb)
-    validation_data = (test_data, test_labels)
-    return history_cb, validation_data
+    return history_cb
