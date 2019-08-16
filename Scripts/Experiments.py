@@ -282,7 +282,7 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
                                                                                    model_type=model_type)
         # Train
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", model=model, rounds=rounds,
-                             train_data=train_data, train_labels=train_labels, loss=loss)
+                             train_data=train_data, train_labels=train_labels, loss=loss, individual_validation=False)
 
     elif pretraining == 'federated':
         print("Pre-training a federated model.")
@@ -304,7 +304,7 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
                              train_labels=train_labels, test_data=test_data, test_labels=test_labels,
                              test_people=test_people, loss=loss, clients=train_people,
                              local_epochs=local_epochs, optimizer=optimizer, metrics=metrics, model_type=model_type,
-                             personalization=personalization, all_labels=train_labels_all)
+                             personalization=personalization, all_labels=train_labels_all, individual_validation=False)
 
     elif pretraining is None:
         model = mA.build_model((215, 215, 1), model_type)
@@ -323,7 +323,7 @@ def train_test_split(test_ratio, *args):
 
 
 def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, loss, metrics, model, model_type, optimizer,
-               rounds, shards, subjects_per_client, personalization, pain_gap):
+               rounds, shards, subjects_per_client, personalization, pain_gap, individual_validation):
     # Load test data
     df_test = dL.create_pain_df(GROUP_2_TEST_PATH, pain_gap=pain_gap)
     test_data, test_labels, test_labels_people, raw_labels = load_and_prepare_data(df_test['img_path'].values, person=0,
@@ -352,11 +352,11 @@ def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, loss, m
                              train_labels=labels, test_data=test_data, test_labels=test_labels,
                              test_people=test_labels_people, loss=loss, clients=all_labels, local_epochs=local_epochs,
                              optimizer=optimizer, metrics=metrics, model_type=model_type,
-                             personalization=personalization)
+                             personalization=personalization, individual_validation=individual_validation)
 
 
 def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, model, model_type, optimizer, rounds,
-                 personalization, pain_gap):
+                 personalization, pain_gap, individual_validation):
 
     # Prepare df for data loading and for history tracking
     df_training_validating = dL.create_pain_df(GROUP_2_PATH, pain_gap=pain_gap)
@@ -389,7 +389,8 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
                                  loss=loss, clients=train_people,
                                  local_epochs=local_epochs,
                                  optimizer=optimizer, metrics=metrics, model_type=model_type,
-                                 personalization=personalization, all_labels=val_all_labels)
+                                 personalization=personalization, all_labels=val_all_labels,
+                                 individual_validation=individual_validation)
 
         # Get Train Data for the next session
         df_train = df_training_validating[df_training_validating['Session'] <= session]
@@ -407,10 +408,11 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
                  test_data=None,
                  test_labels=None, test_people=None, loss=None, clients=None,
                  local_epochs=1, participants=None, optimizer=None, metrics=None, model_type='CNN',
-                 personalization=False, all_labels=None):
+                 personalization=False, all_labels=None, individual_validation=True):
     """
     Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
 
+    :param individual_validation:
     :param all_labels:
     :param personalization:
     :param algorithm:
@@ -443,14 +445,15 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
                                                local_epochs=local_epochs,
                                                participating_clients=participants, optimizer=optimizer, metrics=metrics,
                                                model_type=model_type, personalization=personalization,
-                                               all_labels=all_labels)
+                                               all_labels=all_labels, individual_validation=individual_validation)
 
     elif algorithm is 'centralized':
         folder = CENTRAL_PAIN_MODELS
         model, history = mT.train_cnn(algorithm=algorithm, model=model, epochs=rounds,
                                       train_data=train_data, train_labels=train_labels,
                                       test_data=test_data,
-                                      test_labels=test_labels, test_people=test_people, all_labels=all_labels)
+                                      test_labels=test_labels, test_people=test_people, all_labels=all_labels,
+                                      individual_validation=individual_validation)
 
     else:
         raise ValueError("'runner_type' must be either 'centralized' or 'federated', was: {}".format(algorithm))
@@ -470,7 +473,8 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
 
 def experiment_pain(algorithm, dataset, experiment, rounds, shards=None, model_path=None,
                     pretraining=None, cumulative=True, optimizer=None, loss=None, metrics=None,
-                    subjects_per_client=None, local_epochs=1, model_type='CNN', personalization=False, pain_gap=()):
+                    subjects_per_client=None, local_epochs=1, model_type='CNN', personalization=False, pain_gap=(),
+                    individual_validation=True):
     # Perform pre-training on group 1
     model = run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path, model_type,
                             optimizer, pretraining, rounds, personalization, pain_gap)
@@ -478,12 +482,12 @@ def experiment_pain(algorithm, dataset, experiment, rounds, shards=None, model_p
     # If shards are specified, this experiment will be run
     if shards is not None:
         run_shards(algorithm, cumulative, dataset, experiment, local_epochs, loss, metrics, model, model_type,
-                   optimizer, rounds, shards, subjects_per_client, personalization, pain_gap)
+                   optimizer, rounds, shards, subjects_per_client, personalization, pain_gap, individual_validation)
 
     # Else, split group 2 into sessions and run this experiment
     else:
         run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, model, model_type, optimizer, rounds,
-                     personalization, pain_gap)
+                     personalization, pain_gap, individual_validation)
 
 
 # ------------------------------------------------ End Experiments - 3 --------------------------------------------- #
@@ -630,7 +634,8 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             loss=loss,
                             metrics=metrics,
                             model_type=model_type,
-                            pain_gap=pain_gap
+                            pain_gap=pain_gap,
+                            individual_validation=False
                             )
             twilio.send_message("Experiment 11 Complete")
 
@@ -649,7 +654,8 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             loss=loss,
                             metrics=metrics,
                             model_type=model_type,
-                            pain_gap=pain_gap
+                            pain_gap=pain_gap,
+                            individual_validation=False
                             )
             twilio.send_message("Experiment 12 Complete")
 
@@ -670,7 +676,8 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             subjects_per_client=1,
                             local_epochs=5,
                             model_type=model_type,
-                            pain_gap=pain_gap
+                            pain_gap=pain_gap,
+                            individual_validation=False
                             )
             twilio.send_message("Experiment 13 Complete")
 
@@ -692,7 +699,8 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             subjects_per_client=1,
                             local_epochs=5,
                             model_type=model_type,
-                            pain_gap=pain_gap
+                            pain_gap=pain_gap,
+                            individual_validation=False
                             )
             twilio.send_message("Experiment 14 Complete")
 
@@ -713,7 +721,8 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             subjects_per_client=1,
                             local_epochs=5,
                             model_type=model_type,
-                            pain_gap=pain_gap
+                            pain_gap=pain_gap,
+                            individual_validation=False
                             )
             twilio.send_message("Experiment 15 Complete")
 

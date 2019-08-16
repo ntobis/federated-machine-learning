@@ -80,12 +80,13 @@ def get_localized_layers(exclude_name, model):
 
 
 def train_client_model(client, local_epochs, model, train_data, train_labels, test_data, test_labels, test_people,
-                       all_labels, weights_accountant, personalization):
+                       all_labels, weights_accountant, personalization, individual_validation):
     """
     Utility function training a simple CNN for 1 client in a federated setting and adding those weights to the
     weights_accountant. Call this function in a federated loop that then makes the weights_accountant average the
     weights to send to a global model.
 
+    :param individual_validation:
     :param all_labels:
     :param test_people:
     :param test_labels:
@@ -102,7 +103,7 @@ def train_client_model(client, local_epochs, model, train_data, train_labels, te
 
     old_weights = model.get_weights()
     model, history = train_cnn('federated', model, local_epochs, train_data, train_labels, test_data, test_labels,
-                               test_people, all_labels)
+                               test_people, all_labels, individual_validation)
 
     # Check if only the convolutional layers should be averaged
     if personalization:
@@ -124,10 +125,11 @@ def train_client_model(client, local_epochs, model, train_data, train_labels, te
 
 
 def client_learning(model, client, local_epochs, train_data, train_labels, test_data, test_labels, test_people,
-                    all_labels, weights_accountant, personalization):
+                    all_labels, weights_accountant, personalization, individual_validation):
     """
     Initializes a client model and kicks off the training of that client by calling "train_client_model".
 
+    :param individual_validation:
     :param all_labels:
     :param test_people:
     :param test_labels:
@@ -150,16 +152,18 @@ def client_learning(model, client, local_epochs, train_data, train_labels, test_
 
     # Train local model and store weights to folder
     return train_client_model(client, local_epochs, model, train_data, train_labels, test_data, test_labels,
-                              test_people, all_labels, weights_accountant, personalization)
+                              test_people, all_labels, weights_accountant, personalization, individual_validation)
 
 
 def communication_round(model, clients, train_data, train_labels, test_data, test_labels, test_people, all_labels,
-                        local_epochs, weights_accountant, num_participating_clients, personalization):
+                        local_epochs, weights_accountant, num_participating_clients, personalization,
+                        individual_validation):
     """
     One round of communication between a 'server' and the 'clients'. Each client 'downloads' a global model and trains
     a local model, updating its weights locally. When all clients have updated their weights, they are 'uploaded' to
     the server and averaged.
 
+    :param individual_validation:
     :param all_labels:
     :param test_people:
     :param test_labels:
@@ -203,7 +207,7 @@ def communication_round(model, clients, train_data, train_labels, test_data, tes
         Output.print_client_id(client_id)
         results = client_learning(model, client_id, local_epochs, client_data, client_labels, client_test_data,
                                   client_test_labels, client_test_people, client_all_labels, weights_accountant,
-                                  personalization)
+                                  personalization, individual_validation)
 
         for key, val in results.items():
             history.setdefault(key, []).extend(val)
@@ -223,10 +227,11 @@ def communication_round(model, clients, train_data, train_labels, test_data, tes
 def federated_learning(model, global_epochs, train_data, train_labels, test_data, test_labels, loss, test_people,
                        clients,
                        local_epochs, participating_clients, optimizer, metrics, model_type, personalization,
-                       all_labels):
+                       all_labels, individual_validation):
     """
     Train a federated model for a specified number of rounds until convergence.
 
+    :param individual_validation:
     :param all_labels:
     :param personalization:
     :param model_type:
@@ -272,7 +277,8 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
         Output.print_communication_round(comm_round + 1)
         results = communication_round(model, clients, train_data, train_labels, test_data, test_labels, test_people,
                                       all_labels,
-                                      local_epochs, weights_accountant, participating_clients, personalization)
+                                      local_epochs, weights_accountant, participating_clients, personalization,
+                                      individual_validation)
 
         # Only get the first of the local epochs
         for key in results.keys():
@@ -311,7 +317,7 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
 
 
 def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test_data=None, test_labels=None,
-              test_people=None, all_labels=None):
+              test_people=None, all_labels=None, individual_validation=True):
     # Create callbacks
     history_cb = None
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
@@ -321,16 +327,9 @@ def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test
     # Create validation sets
     validation_split, validation_data = None, None
 
-    if test_data is not None:
-        _, test_data_split, test_labels_split, test_people_split = dL.split_data_into_labels(0, all_labels, False,
-                                                                                             test_data, test_labels,
-                                                                                             test_people)
-        validation_sets = [(val_data, val_labels, 'subject_{}'.format(person[0]))
-                           for val_data, val_labels, person in
-                           zip(test_data_split, test_labels_split, test_people_split)]
-        history_cb = kC.AdditionalValidationSets(validation_sets)
-        callbacks.insert(0, history_cb)
-        validation_data = (test_data, test_labels)
+    if test_data is not None and individual_validation:
+        history_cb, validation_data = add_additional_validations_callback(callbacks, test_data, test_labels,
+                                                                          test_people, all_labels)
 
     # Train and evaluate
     if test_data is None and algorithm == 'centralized':  # This applies to pre-training a centralized model
@@ -339,3 +338,16 @@ def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test
               validation_split=validation_split, validation_data=validation_data, callbacks=callbacks)
 
     return model, history_cb.history if history_cb is not None else {}
+
+
+def add_additional_validations_callback(callbacks, test_data, test_labels, test_people, all_labels):
+    _, test_data_split, test_labels_split, test_people_split = dL.split_data_into_labels(0, all_labels, False,
+                                                                                         test_data, test_labels,
+                                                                                         test_people)
+    validation_sets = [(val_data, val_labels, 'subject_{}'.format(person[0]))
+                       for val_data, val_labels, person in
+                       zip(test_data_split, test_labels_split, test_people_split)]
+    history_cb = kC.AdditionalValidationSets(validation_sets)
+    callbacks.insert(0, history_cb)
+    validation_data = (test_data, test_labels)
+    return history_cb, validation_data
