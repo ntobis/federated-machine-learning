@@ -381,7 +381,7 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
                 person=0,
                 pain=4,
                 model_type=model_type)
-
+            print(val_data)
             # Train the model
             model = model_runner(algorithm, dataset, experiment_current, model=model, rounds=rounds,
                                  train_data=train_data, train_labels=train_labels, test_data=val_data,
