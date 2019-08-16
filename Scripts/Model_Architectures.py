@@ -3,7 +3,7 @@ import tensorflow as tf
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 layers = tf.keras.layers  # like 'from tensorflow.keras import layers' (PyCharm import issue workaround)
 
-ACTIVATION = True
+ACTIVATION = False
 BATCH_NORM = False
 GLOBAL_MAX_POOLING = True
 LOCAL_MAX_POOLING = False

@@ -615,7 +615,8 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
         # --------------------------------------- SESSIONS ---------------------------------------#
 
         if sessions:
-
+            mA.BATCH_NORM = False
+            mA.ACTIVATION = True
             # Experiment 11 - Sessions: Centralized without pre-training
             training_setup(seed)
             pF.print_experiment("11 - Sessions: Centralized without pre-training")
