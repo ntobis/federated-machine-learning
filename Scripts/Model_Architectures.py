@@ -3,11 +3,6 @@ import tensorflow as tf
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 layers = tf.keras.layers  # like 'from tensorflow.keras import layers' (PyCharm import issue workaround)
 
-ACTIVATION = False
-BATCH_NORM = False
-GLOBAL_MAX_POOLING = True
-LOCAL_MAX_POOLING = False
-STRIDE = 2
 
 def build_CNN(input_shape):
     """
@@ -24,29 +19,21 @@ def build_CNN(input_shape):
     model = models.Sequential(name='CNN')
 
     # Add layers
-    model.add(layers.Conv2D(filters=32, kernel_size=(5, 5), strides=(STRIDE, STRIDE), input_shape=input_shape))
-    if BATCH_NORM:
-        model.add(layers.BatchNormalization())
-    if ACTIVATION:
-        model.add(layers.ReLU())
-    if LOCAL_MAX_POOLING:
-        model.add(layers.MaxPooling2D())
-    model.add(layers.Conv2D(filters=64, kernel_size=(5, 5), strides=(STRIDE, STRIDE)))
-    if BATCH_NORM:
-        model.add(layers.BatchNormalization())
-    if ACTIVATION:
-        model.add(layers.ReLU())
-    if LOCAL_MAX_POOLING:
-        model.add(layers.MaxPooling2D())
-    model.add(layers.Conv2D(filters=128, kernel_size=(5, 5), strides=(STRIDE, STRIDE)))
-    if BATCH_NORM:
-        model.add(layers.BatchNormalization())
-    if ACTIVATION:
-        model.add(layers.ReLU())
-    if GLOBAL_MAX_POOLING:
-        model.add(layers.MaxPooling2D())
-    if LOCAL_MAX_POOLING:
-        model.add(layers.MaxPooling2D())
+    model.add(layers.Conv2D(filters=32, kernel_size=(5, 5), input_shape=input_shape, padding='same'))
+    model.add(layers.BatchNormalization())
+    model.add(layers.ReLU())
+    model.add(layers.MaxPooling2D())
+
+    model.add(layers.Conv2D(filters=64, kernel_size=(5, 5), padding='same'))
+    model.add(layers.BatchNormalization())
+    model.add(layers.ReLU())
+    model.add(layers.MaxPooling2D())
+
+    model.add(layers.Conv2D(filters=128, kernel_size=(5, 5), padding='same'))
+    model.add(layers.BatchNormalization())
+    model.add(layers.ReLU())
+    model.add(layers.MaxPooling2D())
+
     model.add(layers.Flatten())
     model.add(layers.Dense(units=128))
     model.add(layers.BatchNormalization())
@@ -107,22 +94,21 @@ def build_test(input_shape):
     model = models.Sequential(name='Test')
 
     # Add layers
-    model.add(layers.Conv2D(filters=32, kernel_size=(5, 5), strides=(1, 1), padding='same', input_shape=input_shape))
-    model.add(layers.MaxPooling2D())
-    model.add(layers.Conv2D(filters=16, kernel_size=(5, 5), strides=(1, 1), padding='same'))
-    model.add(layers.MaxPooling2D())
-    model.add(layers.Conv2D(filters=128, kernel_size=(5, 5), strides=(1, 1), padding='same'))
-    model.add(layers.MaxPooling2D())
-    model.add(layers.Flatten())
-    model.add(layers.Dense(units=128))
-    model.add(layers.BatchNormalization())
-    model.add(layers.ReLU())
-    model.add(layers.Dense(units=1, activation='sigmoid'))
+    # model.add(layers.Conv2D(filters=32, kernel_size=(5, 5), strides=(1, 1), padding='same', input_shape=input_shape))
+    # model.add(layers.MaxPooling2D())
+    # model.add(layers.Conv2D(filters=16, kernel_size=(5, 5), strides=(1, 1), padding='same'))
+    # model.add(layers.MaxPooling2D())
+    # model.add(layers.Conv2D(filters=128, kernel_size=(5, 5), strides=(1, 1), padding='same'))
+    # model.add(layers.MaxPooling2D())
+    # model.add(layers.Flatten())
+    # model.add(layers.Dense(units=128))
+    # model.add(layers.BatchNormalization())
+    # model.add(layers.ReLU())
+    model.add(layers.Dense(input_shape=input_shape, units=1, activation='sigmoid'))
 
     return model
 
 
 if __name__ == '__main__':
-    # model_1 = build_model((215, 215, 1), 'CNN')
-    model_1 = build_test((215, 215, 1))
+    model_1 = build_model((215, 215, 1), 'CNN')
     model_1.summary()
