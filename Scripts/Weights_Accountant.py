@@ -91,6 +91,7 @@ class WeightsAccountant:
         equal = [[np.array_equal(layers[layer_name], self.default_weights[layer_name]) for layer_name in layers.keys()]
                  for client, layers in self.client_weights.items()]
         print("All equal: {}".format(all(equal)))
+        print(equal)
 
     def federated_averaging(self, layer_type=''):
         self.determine_shared_weights(layer_type)
