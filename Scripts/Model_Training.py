@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 from tensorflow.python.keras import backend as K
 
@@ -46,7 +47,7 @@ def create_client_index_array(num_of_clients, num_participating_clients=None):
 
 
 def change_layer_status(model, criterion, operation):
-    print("(Un)freezing the following layers:")
+    print("{} the following layers:".format(operation.capitalize()))
     for layer in model.layers:
         if criterion in layer.name:
             if operation.lower() == 'freeze':
@@ -140,14 +141,14 @@ def client_learning(model, client, local_epochs, train_data, train_labels, test_
                               individual_validation)
 
 
-def communication_round(model, clients, train_data, train_labels, test_data, test_labels, test_people, all_labels,
-                        local_epochs, weights_accountant, num_participating_clients, individual_validation,
-                        local_personalization):
+def communication_round(model, clients, train_data, train_labels, train_people, test_data, test_labels, test_people,
+                        all_labels, local_epochs, weights_accountant, individual_validation, local_personalization):
     """
     One round of communication between a 'server' and the 'clients'. Each client 'downloads' a global model and trains
     a local model, updating its weights locally. When all clients have updated their weights, they are 'uploaded' to
     the server and averaged.
 
+    :param train_people:
     :param local_personalization:
     :param individual_validation:
     :param all_labels:
@@ -160,24 +161,18 @@ def communication_round(model, clients, train_data, train_labels, test_data, tes
     :param train_labels:                    numpy array
     :param local_epochs:                    int, number of epochs each client will train in a given communication round
     :param weights_accountant:              WeightsAccountant object
-    :param num_participating_clients:       int, number of participating clients in a given communication round
     :return:
     """
 
-    # Select clients to participate in communication round
-    client_arr = np.unique(clients)
-    if type(num_participating_clients) is int:
-        clients = create_client_index_array(client_arr, num_participating_clients)
-
     # Split train and test data into clients
-    train_data, train_labels = dL.split_data_into_clients_dict(clients, train_data, train_labels)
+    train_data, train_labels = dL.split_data_into_clients_dict(train_people, train_data, train_labels)
     if test_data is not None:
         test_data, test_labels, test_all_labels, test_people, all_labels = \
             dL.split_data_into_clients_dict(test_people, test_data, test_labels, all_labels, test_people, all_labels)
 
     # Train each client
     history = {}
-    for client in client_arr:
+    for client in clients:
         Output.print_client_id(client)
         results = client_learning(model, client, local_epochs, train_data, train_labels, test_data, test_labels,
                                   test_people, all_labels, weights_accountant, individual_validation)
@@ -203,37 +198,31 @@ def communication_round(model, clients, train_data, train_labels, test_data, tes
         # Freeze the convolutional layers
         change_layer_status(model, 'global', 'freeze')
 
-        history = {}
-        for client in client_arr:
+        # Reconnect the Convolutional layers
+        for client in clients:
             Output.print_client_id(client)
-            results = client_learning(model, client, local_epochs, train_data, train_labels, test_data, test_labels,
-                                      test_people, all_labels, weights_accountant, individual_validation=True)
-
-            for key, val in results.items():
-                history.setdefault(key, []).extend(val)
-
-        # Pop general metrics from history as these are duplicated with client level metrics, and thus not meaningful
-        for metric in model.metrics_names:
-            history.pop(metric, None)
-            history.pop("val_" + metric, None)
+            client_learning(model, client, local_epochs, train_data, train_labels, test_data, test_labels,
+                            test_people, all_labels, weights_accountant, individual_validation=True)
 
         # Unfreeze the convolutional layers
         change_layer_status(model, 'global', 'unfreeze')
 
         # Increase the learning rate again
         K.set_value(model.optimizer.lr, K.get_value(model.optimizer.lr) * 10)
+
     else:
         weights_accountant.federated_averaging()
 
     return history
 
 
-def federated_learning(model, global_epochs, train_data, train_labels, test_data, test_labels, test_people,
-                       clients, local_epochs, participating_clients, all_labels, individual_validation,
+def federated_learning(model, global_epochs, train_data, train_labels, train_people, test_data, test_labels,
+                       test_people, clients, local_epochs, all_labels, individual_validation,
                        local_personalization, weights_accountant):
     """
     Train a federated model for a specified number of rounds until convergence.
 
+    :param train_people:
     :param weights_accountant:
     :param local_personalization:
     :param individual_validation:
@@ -246,7 +235,6 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
     :param test_data:                       numpy array
     :param test_labels:                     numpy array
     :param local_epochs:                    int, number of epochs each client will train in a given communication round
-    :param participating_clients:       int, number of participating clients in a given communication round
     :param test_people:              numpy array, of length test_labels, used to enable individual metric logging
 
     :return:
@@ -267,9 +255,8 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
     # Start communication rounds and save the results of each round to the data frame
     for comm_round in range(global_epochs):
         Output.print_communication_round(comm_round + 1)
-        results = communication_round(model, clients, train_data, train_labels, test_data, test_labels, test_people,
-                                      all_labels,
-                                      local_epochs, weights_accountant, participating_clients, individual_validation,
+        results = communication_round(model, clients, train_data, train_labels, train_people, test_data, test_labels,
+                                      test_people, all_labels, local_epochs, weights_accountant, individual_validation,
                                       local_personalization)
 
         # Only get the first of the local epochs
@@ -283,16 +270,39 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
                 history[key].append(None)
 
         # Evaluate the global model
-        weights_accountant.set_default_weights(model)
-        train_metrics = model.metrics_names
-        train_history = dict(zip(train_metrics, model.evaluate(train_data, train_labels)))
-        for key_1, val_1 in train_history.items():
-            history.setdefault(key_1, []).append(val_1)
+        if local_personalization:
+            train_data, train_labels = dL.split_data_into_clients_dict(train_people, train_data, train_labels)
+            test_data, test_labels = dL.split_data_into_clients_dict(test_people, test_data, test_labels)
+            train_metrics = model.metrics_names
+            validation_metrics = ["val_" + metric for metric in model.metrics_names]
 
-        validation_metrics = ["val_" + metric for metric in model.metrics_names]
-        test_history = dict(zip(validation_metrics, model.evaluate(test_data, test_labels)))
-        for key_2, val_2 in test_history.items():
-            history.setdefault(key_2, []).append(val_2)
+            for client in clients:
+                client_train_data, client_train_labels = train_data.get(client), train_labels.get(client)
+                client_test_data, client_test_labels = test_data.get(client), test_labels.get(client)
+                weights_accountant.set_client_weights(model, client)
+
+                train_history = dict(zip(train_metrics, model.evaluate(client_train_data, client_train_labels)))
+                for key_1, val_1 in train_history.items():
+                    history.setdefault(key_1, []).append(val_1)
+
+                test_history = dict(zip(validation_metrics, model.evaluate(client_test_data, client_test_labels)))
+                for key_2, val_2 in test_history.items():
+                    history.setdefault(key_2, []).append(val_2)
+
+            df = pd.DataFrame(history)
+            df.to_csv("TEST.csv")
+
+        else:
+            weights_accountant.set_default_weights(model)
+            train_metrics = model.metrics_names
+            train_history = dict(zip(train_metrics, model.evaluate(train_data, train_labels)))
+            for key_1, val_1 in train_history.items():
+                history.setdefault(key_1, []).append(val_1)
+
+            validation_metrics = ["val_" + metric for metric in model.metrics_names]
+            test_history = dict(zip(validation_metrics, model.evaluate(test_data, test_labels)))
+            for key_2, val_2 in test_history.items():
+                history.setdefault(key_2, []).append(val_2)
 
         # Early stopping
         if early_stopping(model.get_weights(), test_history['val_loss']):
