@@ -130,10 +130,7 @@ def client_learning(model, client, local_epochs, train_data, train_labels, test_
         client_test_data, client_test_labels, client_test_people, client_all_labels = [None] * 4
 
     # Initialize model structure and load weights
-    if weights_accountant.is_localized(client):
-        weights_accountant.set_client_weights(model, client)
-    else:
-        weights_accountant.set_default_weights(model)
+    weights_accountant.set_client_weights(model, client)
 
     # Train local model and store weights to folder
     return train_client_model(client, local_epochs, model, client_data, client_labels, client_test_data,
@@ -274,7 +271,6 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
         validation_metrics = ["val_" + metric for metric in model.metrics_names]
 
         if local_personalization:
-            print("PERSONALIZATION")
             split_train_data, split_train_labels = dL.split_data_into_clients_dict(train_people, train_data, train_labels)
             split_test_data, split_test_labels = dL.split_data_into_clients_dict(test_people, test_data, test_labels)
 
@@ -282,13 +278,15 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
             test_history = {}
             for client in clients:
                 client_train_data, client_train_labels = split_train_data.get(client), split_train_labels.get(client)
-                client_test_data, client_test_labels = split_test_data.get(client), split_test_labels.get(client)
                 weights_accountant.set_client_weights(model, client)
 
                 train_results = dict(zip(train_metrics, model.evaluate(client_train_data, client_train_labels)))
                 for key_1, val_1 in train_results.items():
                     train_history.setdefault(key_1, []).append(val_1)
 
+            for test_person in np.unique(test_people):
+                client_test_data, client_test_labels = split_test_data.get(test_person), split_test_labels.get(test_person)
+                weights_accountant.set_client_weights(model, test_person)
                 test_results = dict(zip(validation_metrics, model.evaluate(client_test_data, client_test_labels)))
                 for key_2, val_2 in test_results.items():
                     test_history.setdefault(key_2, []).append(val_2)

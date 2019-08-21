@@ -13,10 +13,13 @@ class WeightsAccountant:
     # Setter functions
     def set_client_weights(self, model, client):
         print("Setting client {} weights:".format(client), end=" ")
-        for layer in model.layers:
-            if layer.name in self.client_weights[client]:
-                layer.set_weights(self.client_weights[client][layer.name])
-                print(layer.name, end=" ")
+        if client in self.client_weights:
+            for layer in model.layers:
+                if layer.name in self.client_weights[client]:
+                    layer.set_weights(self.client_weights[client][layer.name])
+                    print(layer.name, end=" ")
+        else:
+            self.set_default_weights(model)
         print()
 
     def set_default_weights(self, model):
@@ -26,10 +29,6 @@ class WeightsAccountant:
                 layer.set_weights(self.default_weights[layer.name])
                 print(layer.name, end=" ")
         print()
-
-    # Utility functions
-    def is_localized(self, client):
-        return client in self.client_weights
 
     def update_client_weights(self, model, client):
         print("Updating client {}:".format(client), end=" ")
