@@ -88,8 +88,9 @@ class WeightsAccountant:
     def print_client_update(self):
         print("Clients with localized weights:", end=" ")
         print(sorted(self.client_weights.keys()))
-        equal = [[np.array_equal(layers[layer_name], self.default_weights[layer_name]) for layer_name in layers.keys()]
-                 for client, layers in self.client_weights.items()]
+        equal = [all([np.array_equal(client_layers[layer_name], self.default_weights[layer_name])
+                      for layer_name in client_layers.keys()])
+                 for client_layers in self.client_weights.values()]
         print("All equal: {}".format(all(equal)))
 
     def federated_averaging(self, layer_type=None):
