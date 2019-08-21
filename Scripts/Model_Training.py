@@ -202,7 +202,7 @@ def communication_round(model, clients, train_data, train_labels, train_people, 
         for client in clients:
             Output.print_client_id(client)
             client_learning(model, client, local_epochs, train_data, train_labels, test_data, test_labels,
-                            test_people, all_labels, weights_accountant, individual_validation=True)
+                            test_people, all_labels, weights_accountant, individual_validation)
 
         # Unfreeze the convolutional layers
         change_layer_status(model, 'global', 'unfreeze')
@@ -273,18 +273,16 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
         train_metrics = model.metrics_names
         validation_metrics = ["val_" + metric for metric in model.metrics_names]
 
-        print(history)
-
         if local_personalization:
             print("PERSONALIZATION")
-            train_data, train_labels = dL.split_data_into_clients_dict(train_people, train_data, train_labels)
-            test_data, test_labels = dL.split_data_into_clients_dict(test_people, test_data, test_labels)
+            split_train_data, split_train_labels = dL.split_data_into_clients_dict(train_people, train_data, train_labels)
+            split_test_data, split_test_labels = dL.split_data_into_clients_dict(test_people, test_data, test_labels)
 
             train_history = {}
             test_history = {}
             for client in clients:
-                client_train_data, client_train_labels = train_data.get(client), train_labels.get(client)
-                client_test_data, client_test_labels = test_data.get(client), test_labels.get(client)
+                client_train_data, client_train_labels = split_train_data.get(client), split_train_labels.get(client)
+                client_test_data, client_test_labels = split_test_data.get(client), split_test_labels.get(client)
                 weights_accountant.set_client_weights(model, client)
 
                 train_results = dict(zip(train_metrics, model.evaluate(client_train_data, client_train_labels)))
@@ -312,10 +310,6 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
                 history.setdefault(key_2, []).append(val_2)
 
         # Early stopping
-        print(history)
-        print(test_history.get('val_loss'))
-        print(history.get('val_loss'))
-        print(history.get('val_loss')[-1])
         if early_stopping(model.get_weights(), history.get('val_loss')[-1]):
             print("Early Stopping, Communication round {}".format(comm_round))
             weights = early_stopping.return_best_weights()
