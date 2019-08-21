@@ -59,6 +59,7 @@ class WeightsAccountant:
 
     # Federated averaging functions
     def determine_shared_weights(self, layer_type):
+        layer_type = '' if layer_type is None else layer_type
         print("Determining shared weights:")
         for client, client_layers in self.client_weights.items():
             print("Client {}: ".format(client), end=" ")
@@ -91,13 +92,14 @@ class WeightsAccountant:
         equal = [[np.array_equal(layers[layer_name], self.default_weights[layer_name]) for layer_name in layers.keys()]
                  for client, layers in self.client_weights.items()]
         print("All equal: {}".format(all(equal)))
-        print(equal)
 
-    def federated_averaging(self, layer_type=''):
+    def federated_averaging(self, layer_type=None):
         self.determine_shared_weights(layer_type)
         self.average_shared_weights()
         self.distribute_shared_weights_to_clients()
-        self.update_default_weights()
+
+        if layer_type is None:
+            self.update_default_weights()
 
         del self.shared_weights
         self.shared_weights = defaultdict(list)

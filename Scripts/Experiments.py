@@ -301,11 +301,13 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
         train_people, test_people = people
         train_labels_all, test_labels_all = all_labels
 
+        clients = np.unique(train_people)
+
         # Train
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", rounds=rounds, train_data=train_data,
                              train_labels=train_labels, test_data=test_data, test_labels=test_labels,
-                             test_people=test_people, clients=train_people,
-                             local_epochs=local_epochs, all_labels=train_labels_all, individual_validation=False)
+                             test_people=test_people, clients=clients, local_epochs=local_epochs,
+                             all_labels=train_labels_all, individual_validation=False)
 
     elif pretraining is None:
         model = mA.build_model((215, 215, 1), model_type)
@@ -372,6 +374,7 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, model, model_type
         experiment_current = experiment + "_shard-{}".format(session)
 
         if session > 0:
+            clients = np.unique(train_people)
 
             # Get test-set evaluation data
             df_history = test_set_evaluation(df_history, df_testing, model, model_type, session)
@@ -386,14 +389,11 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, model, model_type
 
             # Train the model
             model = model_runner(algorithm, dataset, experiment_current, model=model, rounds=rounds,
-                                 train_data=train_data, train_labels=train_labels, test_data=val_data,
-                                 test_labels=val_labels, test_people=val_people,
-                                 clients=train_people,
-                                 local_epochs=local_epochs,
-                                 all_labels=val_all_labels,
+                                 train_data=train_data, train_labels=train_labels, train_people=train_people,
+                                 test_data=val_data, test_labels=val_labels, test_people=val_people, clients=clients,
+                                 local_epochs=local_epochs, all_labels=val_all_labels,
                                  individual_validation=individual_validation,
-                                 local_personalization=local_personalization,
-                                 weights_accountant=weights_accountant)
+                                 local_personalization=local_personalization, weights_accountant=weights_accountant)
 
         # Get Train Data for the next session
         df_train = df_training_validating[df_training_validating['Session'] <= session]
@@ -408,11 +408,13 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, model, model_type
 
 
 def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_data=None, train_labels=None,
-                 test_data=None, test_labels=None, test_people=None, clients=None, local_epochs=1, participants=None,
-                 all_labels=None, individual_validation=True, local_personalization=False, weights_accountant=None):
+                 train_people=None, test_data=None, test_labels=None, test_people=None, clients=None, local_epochs=1,
+                 participants=None, all_labels=None, individual_validation=True, local_personalization=False,
+                 weights_accountant=None):
     """
     Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
 
+    :param train_people:
     :param weights_accountant:
     :param local_personalization:
     :param individual_validation:
@@ -438,9 +440,10 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
 
         # Train Model
         history, model = mT.federated_learning(model=model, global_epochs=rounds, train_data=train_data,
-                                               train_labels=train_labels, test_data=test_data, test_labels=test_labels,
-                                               test_people=test_people, clients=clients, local_epochs=local_epochs,
-                                               participating_clients=participants, all_labels=all_labels,
+                                               train_labels=train_labels, train_people=train_people,
+                                               test_data=test_data, test_labels=test_labels, test_people=test_people,
+                                               clients=clients, local_epochs=local_epochs,
+                                               all_labels=all_labels,
                                                individual_validation=individual_validation,
                                                local_personalization=local_personalization,
                                                weights_accountant=weights_accountant)
@@ -661,7 +664,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
                             experiment='3-sessions-Federated-no-pre-training',
-                            rounds=2,
+                            rounds=3,
                             shards=None,
                             model_path=None,
                             pretraining=None,
@@ -674,7 +677,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             model_type=model_type,
                             pain_gap=pain_gap,
                             individual_validation=False,
-                            local_personalization=False
+                            local_personalization=True
                             )
             twilio.send_message("Experiment 13 Complete")
 
