@@ -165,7 +165,7 @@ def communication_round(model, num_of_clients, train_data, train_labels, epochs,
         client_learning(model, client, epochs, train_data, train_labels, weights_accountant)
 
     # Average all local updates and store them as new 'global weights'
-    weights_accountant.average_local_weights()
+    weights_accountant.federated_averaging()
 
 
 def federated_learning(communication_rounds, num_of_clients, train_data, train_labels, test_data, test_labels,

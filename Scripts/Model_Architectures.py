@@ -19,26 +19,27 @@ def build_CNN(input_shape):
     model = models.Sequential(name='CNN')
 
     # Add layers
-    model.add(layers.Conv2D(filters=32, kernel_size=(5, 5), input_shape=input_shape, padding='same'))
-    model.add(layers.BatchNormalization())
-    model.add(layers.ReLU())
-    model.add(layers.MaxPooling2D())
+    model.add(layers.Conv2D(filters=32, kernel_size=(5, 5), input_shape=input_shape, padding='same',
+                            name='conv2d_0_global'))
+    model.add(layers.BatchNormalization(name='batch_norm_0_global'))
+    model.add(layers.ReLU(name='relu_0_global'))
+    model.add(layers.MaxPooling2D(name='max_pool_0_global'))
 
-    model.add(layers.Conv2D(filters=64, kernel_size=(5, 5), padding='same'))
-    model.add(layers.BatchNormalization())
-    model.add(layers.ReLU())
-    model.add(layers.MaxPooling2D())
+    model.add(layers.Conv2D(filters=64, kernel_size=(5, 5), padding='same', name='conv2d_1_global'))
+    model.add(layers.BatchNormalization(name='batch_norm_1_global'))
+    model.add(layers.ReLU(name='relu_1_global'))
+    model.add(layers.MaxPooling2D(name='max_pool_1_global'))
 
-    model.add(layers.Conv2D(filters=128, kernel_size=(5, 5), padding='same'))
-    model.add(layers.BatchNormalization())
-    model.add(layers.ReLU())
-    model.add(layers.MaxPooling2D())
+    model.add(layers.Conv2D(filters=128, kernel_size=(5, 5), padding='same', name='conv2d_2_global'))
+    model.add(layers.BatchNormalization(name='batch_norm_2_global'))
+    model.add(layers.ReLU(name='relu_2_global'))
+    model.add(layers.MaxPooling2D(name='max_pool_2_global'))
 
-    model.add(layers.Flatten())
-    model.add(layers.Dense(units=128))
-    model.add(layers.BatchNormalization())
-    model.add(layers.ReLU())
-    model.add(layers.Dense(units=1, activation='sigmoid'))
+    model.add(layers.Flatten(name='flatten_0_local'))
+    model.add(layers.Dense(units=128, name='dense_0_local'))
+    model.add(layers.BatchNormalization(name='batch_norm_3_local'))
+    model.add(layers.ReLU(name='relu_3_local'))
+    model.add(layers.Dense(units=1, activation='sigmoid', name='dense_1_local'))
 
     return model
 
