@@ -664,7 +664,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
                             experiment='3-sessions-Federated-no-pre-training',
-                            rounds=2,
+                            rounds=3,
                             shards=None,
                             model_path=None,
                             pretraining=None,
