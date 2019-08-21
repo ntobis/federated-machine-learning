@@ -270,6 +270,7 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
                 history[key].append(None)
 
         # Evaluate the global model
+        hist = {}
         if local_personalization:
             train_data, train_labels = dL.split_data_into_clients_dict(train_people, train_data, train_labels)
             test_data, test_labels = dL.split_data_into_clients_dict(test_people, test_data, test_labels)
@@ -283,13 +284,14 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
 
                 train_history = dict(zip(train_metrics, model.evaluate(client_train_data, client_train_labels)))
                 for key_1, val_1 in train_history.items():
-                    history.setdefault(key_1, []).append(val_1)
+                    hist.setdefault(key_1, []).append(val_1)
 
                 test_history = dict(zip(validation_metrics, model.evaluate(client_test_data, client_test_labels)))
                 for key_2, val_2 in test_history.items():
-                    history.setdefault(key_2, []).append(val_2)
+                    hist.setdefault(key_2, []).append(val_2)
 
-            df = pd.DataFrame(history)
+            print(hist)
+            df = pd.DataFrame(hist)
             df.to_csv("TEST.csv")
 
         else:
