@@ -10,8 +10,13 @@ class WeightsAccountant:
         self.define_default_weights(model)
         self.shared_weights = defaultdict(list)
 
-    # Setter functions
-    def set_client_weights(self, model, client):
+    def get_client_weights(self):
+        return self.client_weights
+
+    def set_client_weights(self, client_weights):
+        self.client_weights = client_weights
+
+    def apply_client_weights(self, model, client):
         print("Setting client {} weights:".format(client), end=" ")
         if client in self.client_weights:
             for layer in model.layers:
@@ -19,10 +24,10 @@ class WeightsAccountant:
                     layer.set_weights(self.client_weights[client][layer.name])
                     print(layer.name, end=" ")
         else:
-            self.set_default_weights(model)
+            self.apply_default_weights(model)
         print()
 
-    def set_default_weights(self, model):
+    def apply_default_weights(self, model):
         print("Setting default weights:", end=" ")
         for layer in model.layers:
             if layer.name in self.default_weights:
