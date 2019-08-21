@@ -7,6 +7,7 @@ import pandas as pd
 from tensorflow.python.keras.metrics import TruePositives, TrueNegatives, FalsePositives, FalseNegatives, Recall, \
     Precision, AUC
 
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import time
@@ -22,6 +23,7 @@ from Scripts import Print_Functions as pF
 from Scripts import Data_Loader_Functions as dL
 from Scripts import Model_Training as mT
 from Scripts import Model_Architectures as mA
+from Scripts.Weights_Accountant import WeightsAccountant
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
@@ -263,7 +265,7 @@ def baseline_model_evaluation(dataset, experiment, model_path, optimizer, loss, 
 # ------------------------------------------------ Experiment Runners ---------------------------------------------- #
 
 def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path, model_type, optimizer,
-                    pretraining, rounds, personalization, pain_gap):
+                    pretraining, rounds, pain_gap):
     if model_path is not None:
         print("Loading pre-trained model: {}".format(os.path.basename(model_path)))
         model = tf.keras.models.load_model(model_path)
@@ -282,7 +284,7 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
                                                                                    model_type=model_type)
         # Train
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", model=model, rounds=rounds,
-                             train_data=train_data, train_labels=train_labels, loss=loss, individual_validation=False)
+                             train_data=train_data, train_labels=train_labels, individual_validation=False)
 
     elif pretraining == 'federated':
         print("Pre-training a federated model.")
@@ -302,9 +304,8 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
         # Train
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", rounds=rounds, train_data=train_data,
                              train_labels=train_labels, test_data=test_data, test_labels=test_labels,
-                             test_people=test_people, loss=loss, clients=train_people,
-                             local_epochs=local_epochs, optimizer=optimizer, metrics=metrics, model_type=model_type,
-                             personalization=personalization, all_labels=train_labels_all, individual_validation=False)
+                             test_people=test_people, clients=train_people,
+                             local_epochs=local_epochs, all_labels=train_labels_all, individual_validation=False)
 
     elif pretraining is None:
         model = mA.build_model((215, 215, 1), model_type)
@@ -322,8 +323,8 @@ def train_test_split(test_ratio, *args):
     return tuple(array)
 
 
-def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, loss, metrics, model, model_type, optimizer,
-               rounds, shards, subjects_per_client, personalization, pain_gap, individual_validation):
+def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, model, model_type, rounds, shards,
+               subjects_per_client, pain_gap, individual_validation):
     # Load test data
     df_test = dL.create_pain_df(GROUP_2_TEST_PATH, pain_gap=pain_gap)
     test_data, test_labels, test_labels_people, raw_labels = load_and_prepare_data(df_test['img_path'].values, person=0,
@@ -350,13 +351,14 @@ def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, loss, m
 
         model = model_runner(algorithm, dataset, experiment_current, model=model, rounds=rounds, train_data=data,
                              train_labels=labels, test_data=test_data, test_labels=test_labels,
-                             test_people=test_labels_people, loss=loss, clients=all_labels, local_epochs=local_epochs,
-                             optimizer=optimizer, metrics=metrics, model_type=model_type,
-                             personalization=personalization, individual_validation=individual_validation)
+                             test_people=test_labels_people, clients=all_labels, local_epochs=local_epochs,
+                             individual_validation=individual_validation)
 
 
-def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, model, model_type, optimizer, rounds,
-                 personalization, pain_gap, individual_validation, local_personalization):
+def run_sessions(algorithm, dataset, experiment, local_epochs, model, model_type, rounds, pain_gap,
+                 individual_validation, local_personalization):
+
+    weights_accountant = WeightsAccountant(model)
 
     # Prepare df for data loading and for history tracking
     df_training_validating = dL.create_pain_df(GROUP_2_PATH, pain_gap=pain_gap)
@@ -386,12 +388,12 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
             model = model_runner(algorithm, dataset, experiment_current, model=model, rounds=rounds,
                                  train_data=train_data, train_labels=train_labels, test_data=val_data,
                                  test_labels=val_labels, test_people=val_people,
-                                 loss=loss, clients=train_people,
+                                 clients=train_people,
                                  local_epochs=local_epochs,
-                                 optimizer=optimizer, metrics=metrics, model_type=model_type,
-                                 personalization=personalization, all_labels=val_all_labels,
+                                 all_labels=val_all_labels,
                                  individual_validation=individual_validation,
-                                 local_personalization=local_personalization)
+                                 local_personalization=local_personalization,
+                                 weights_accountant=weights_accountant)
 
         # Get Train Data for the next session
         df_train = df_training_validating[df_training_validating['Session'] <= session]
@@ -406,22 +408,16 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, mo
 
 
 def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_data=None, train_labels=None,
-                 test_data=None,
-                 test_labels=None, test_people=None, loss=None, clients=None,
-                 local_epochs=1, participants=None, optimizer=None, metrics=None, model_type='CNN',
-                 personalization=False, all_labels=None, individual_validation=True, local_personalization=False):
+                 test_data=None, test_labels=None, test_people=None, clients=None, local_epochs=1, participants=None,
+                 all_labels=None, individual_validation=True, local_personalization=False, weights_accountant=None):
     """
     Sets up a federated CNN that trains on a specified dataset. Saves the results to CSV.
 
+    :param weights_accountant:
     :param local_personalization:
     :param individual_validation:
     :param all_labels:
-    :param personalization:
     :param algorithm:
-    :param model_type:
-    :param metrics:
-    :param loss:
-    :param optimizer:
     :param clients:                 int, the maximum number of clients participating in a communication round
     :param dataset:                 string, name of the dataset to be used, e.g. "MNIST"
     :param experiment:              string, the type of experimental setting to be used, e.g. "CLIENTS"
@@ -443,12 +439,11 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
         # Train Model
         history, model = mT.federated_learning(model=model, global_epochs=rounds, train_data=train_data,
                                                train_labels=train_labels, test_data=test_data, test_labels=test_labels,
-                                               loss=loss, test_people=test_people, clients=clients,
-                                               local_epochs=local_epochs,
-                                               participating_clients=participants, optimizer=optimizer, metrics=metrics,
-                                               model_type=model_type, personalization=personalization,
-                                               all_labels=all_labels, individual_validation=individual_validation,
-                                               local_personalization=local_personalization)
+                                               test_people=test_people, clients=clients, local_epochs=local_epochs,
+                                               participating_clients=participants, all_labels=all_labels,
+                                               individual_validation=individual_validation,
+                                               local_personalization=local_personalization,
+                                               weights_accountant=weights_accountant)
 
     elif algorithm is 'centralized':
         folder = CENTRAL_PAIN_MODELS
@@ -476,21 +471,22 @@ def model_runner(algorithm, dataset, experiment, model=None, rounds=5, train_dat
 
 def experiment_pain(algorithm, dataset, experiment, rounds, shards=None, model_path=None,
                     pretraining=None, cumulative=True, optimizer=None, loss=None, metrics=None,
-                    subjects_per_client=None, local_epochs=1, model_type='CNN', personalization=False, pain_gap=(),
+                    subjects_per_client=None, local_epochs=1, model_type='CNN', pain_gap=(),
                     individual_validation=True, local_personalization=False):
+
     # Perform pre-training on group 1
     model = run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path, model_type,
-                            optimizer, pretraining, rounds, personalization, pain_gap)
+                            optimizer, pretraining, rounds, pain_gap)
 
     # If shards are specified, this experiment will be run
     if shards is not None:
-        run_shards(algorithm, cumulative, dataset, experiment, local_epochs, loss, metrics, model, model_type,
-                   optimizer, rounds, shards, subjects_per_client, personalization, pain_gap, individual_validation)
+        run_shards(algorithm, cumulative, dataset, experiment, local_epochs, model, model_type,
+                   rounds, shards, subjects_per_client, pain_gap, individual_validation)
 
     # Else, split group 2 into sessions and run this experiment
     else:
-        run_sessions(algorithm, dataset, experiment, local_epochs, loss, metrics, model, model_type, optimizer, rounds,
-                     personalization, pain_gap, individual_validation, local_personalization)
+        run_sessions(algorithm, dataset, experiment, local_epochs, model, model_type, rounds,
+                     pain_gap, individual_validation, local_personalization)
 
 
 # ------------------------------------------------ End Experiments - 3 --------------------------------------------- #
@@ -665,7 +661,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
                             experiment='3-sessions-Federated-no-pre-training',
-                            rounds=30,
+                            rounds=2,
                             shards=None,
                             model_path=None,
                             pretraining=None,
@@ -674,7 +670,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             loss=loss,
                             metrics=metrics,
                             subjects_per_client=1,
-                            local_epochs=5,
+                            local_epochs=1,
                             model_type=model_type,
                             pain_gap=pain_gap,
                             individual_validation=False,

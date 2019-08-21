@@ -252,21 +252,16 @@ def communication_round(model, clients, train_data, train_labels, test_data, tes
     return history
 
 
-def federated_learning(model, global_epochs, train_data, train_labels, test_data, test_labels, loss, test_people,
-                       clients,
-                       local_epochs, participating_clients, optimizer, metrics, model_type, personalization,
-                       all_labels, individual_validation, local_personalization):
+def federated_learning(model, global_epochs, train_data, train_labels, test_data, test_labels, test_people,
+                       clients, local_epochs, participating_clients, all_labels, individual_validation,
+                       local_personalization, weights_accountant):
     """
     Train a federated model for a specified number of rounds until convergence.
 
+    :param weights_accountant:
     :param local_personalization:
     :param individual_validation:
     :param all_labels:
-    :param personalization:
-    :param model_type:
-    :param metrics:
-    :param loss:
-    :param optimizer:
     :param model:
     :param global_epochs:            int, number of times the global weights will be updated
     :param clients:                  int, number of clients globally available
@@ -283,10 +278,6 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
                                             communication rounds
     """
 
-    # Initialize a random global model and store the weights
-    if model is None:
-        model = init_global_model(optimizer, loss, metrics, model_type=model_type)
-
     # Create history object and callbacks
     history = {}
     keys = [metric for metric in model.metrics_names]
@@ -296,9 +287,6 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
             history["subject_" + str(client) + "_" + key] = []
 
     early_stopping = EarlyStopping(patience=5)
-
-    # Initialize weights accountant
-    weights_accountant = WeightsAccountant(model)
 
     # Start communication rounds and save the results of each round to the data frame
     for comm_round in range(global_epochs):
@@ -337,6 +325,7 @@ def federated_learning(model, global_epochs, train_data, train_labels, test_data
             model.set_weights(weights)
             break
         # print(pd.DataFrame(history))
+        weights_accountant.print_client_update()
     return history, model
 
 
