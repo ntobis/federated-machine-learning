@@ -59,13 +59,14 @@ class WeightsAccountant:
 
     # Federated averaging functions
     def determine_shared_weights(self, layer_type):
-        print("Determining shared weights:", end=" ")
-        for client_layers in self.client_weights.values():
+        print("Determining shared weights:")
+        for client, client_layers in self.client_weights.items():
+            print("Client {}: ".format(client), end=" ")
             for layer_name, weights in client_layers.items():
                 if layer_type in layer_name:
                     self.shared_weights[layer_name].append(weights)
                     print(layer_name, end=" ")
-        print()
+            print()
 
     def average_shared_weights(self):
         print("Averaging shared weights:", end=" ")
@@ -85,8 +86,8 @@ class WeightsAccountant:
             print()
 
     def print_client_update(self):
-        print("Clients with localized weights:")
-        print(self.client_weights.keys())
+        print("Clients with localized weights:", end=" ")
+        print(sorted(self.client_weights.keys()))
 
     def federated_averaging(self, layer_type=''):
         self.determine_shared_weights(layer_type)

@@ -1,16 +1,13 @@
 import os
 
 import numpy as np
-import pandas as pd
 import tensorflow as tf
 from tensorflow.python.keras import backend as K
 
 from Scripts import Data_Loader_Functions as dL
 from Scripts import Keras_Custom as kC
-from Scripts import Model_Architectures as mA
 from Scripts import Print_Functions as Output
 from Scripts.Keras_Custom import EarlyStopping
-from Scripts.Weights_Accountant import WeightsAccountant
 
 models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
 # optimizer = tf.keras.optimizers
@@ -46,27 +43,6 @@ def create_client_index_array(num_of_clients, num_participating_clients=None):
         clients = np.arange(num_of_clients)
 
     return clients
-
-
-def init_global_model(optimizer, loss, metrics, input_shape=(215, 215, 1), model_type='CNN'):
-    """
-    Initializes a global "server-side" model.
-    :param model_type:
-    :param metrics:
-    :param loss:
-    :param optimizer:
-    :param input_shape:             tuple, input shape of one training example (default, MNIST shape)
-
-    :return:
-        model                       tensorflow-graph
-    """
-
-    # Build the model
-    model = mA.build_model(input_shape, model_type)
-    # Compile the model
-    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
-
-    return model
 
 
 def change_layer_status(model, criterion, operation):
