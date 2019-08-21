@@ -284,6 +284,7 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
                 weights_accountant.set_client_weights(model, client)
 
                 train_history = dict(zip(train_metrics, model.evaluate(client_train_data, client_train_labels)))
+                print(train_history)
                 train_history = calculate_weighted_average(train_history)
                 for key_1, val_1 in train_history.items():
                     history.setdefault(key_1, []).append(val_1)
