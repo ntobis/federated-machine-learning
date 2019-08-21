@@ -360,6 +360,7 @@ def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, model, 
 def run_sessions(algorithm, dataset, experiment, local_epochs, model, model_type, rounds, pain_gap,
                  individual_validation, local_personalization):
 
+    # Initialize WeightsAccountant
     weights_accountant = WeightsAccountant(model)
 
     # Prepare df for data loading and for history tracking

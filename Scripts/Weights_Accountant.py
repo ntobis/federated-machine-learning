@@ -7,7 +7,7 @@ class WeightsAccountant:
     def __init__(self, model):
         self.client_weights = {}
         self.default_weights = {}
-        self.define_default_weights(model)
+        self.initialize_default_weights(model)
         self.shared_weights = defaultdict(list)
 
     def get_client_weights(self):
@@ -45,7 +45,7 @@ class WeightsAccountant:
         self.client_weights[client] = weights
         print()
 
-    def define_default_weights(self, model):
+    def initialize_default_weights(self, model):
         print("Define default weights:", end=" ")
         for layer in model.layers:
             if len(layer.get_weights()) > 0:
@@ -90,14 +90,6 @@ class WeightsAccountant:
                 print(shared_layer_name, end=" ")
             print()
 
-    def print_client_update(self):
-        print("Clients with localized weights:", end=" ")
-        print(sorted(self.client_weights.keys()))
-        equal = [all([np.array_equal(client_layers[layer_name], self.default_weights[layer_name])
-                      for layer_name in client_layers.keys()])
-                 for client_layers in self.client_weights.values()]
-        print("All equal: {}".format(all(equal)))
-
     def federated_averaging(self, layer_type=None):
         self.determine_shared_weights(layer_type)
         self.average_shared_weights()
@@ -108,3 +100,11 @@ class WeightsAccountant:
 
         del self.shared_weights
         self.shared_weights = defaultdict(list)
+
+    def print_client_update(self):
+        print("Clients with localized weights:", end=" ")
+        print(sorted(self.client_weights.keys()))
+        equal = [all([np.array_equal(client_layers[layer_name], self.default_weights[layer_name])
+                      for layer_name in client_layers.keys()])
+                 for client_layers in self.client_weights.values()]
+        print("All equal: {}".format(all(equal)))
