@@ -270,12 +270,13 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
                 history[key].append(None)
 
         # Evaluate the global model
-        hist = {}
+        train_metrics = model.metrics_names
+        validation_metrics = ["val_" + metric for metric in model.metrics_names]
+        test_history = {}
+
         if local_personalization:
             train_data, train_labels = dL.split_data_into_clients_dict(train_people, train_data, train_labels)
             test_data, test_labels = dL.split_data_into_clients_dict(test_people, test_data, test_labels)
-            train_metrics = model.metrics_names
-            validation_metrics = ["val_" + metric for metric in model.metrics_names]
 
             for client in clients:
                 client_train_data, client_train_labels = train_data.get(client), train_labels.get(client)
@@ -283,38 +284,48 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
                 weights_accountant.set_client_weights(model, client)
 
                 train_history = dict(zip(train_metrics, model.evaluate(client_train_data, client_train_labels)))
+                train_history = calculate_weighted_average(train_history)
                 for key_1, val_1 in train_history.items():
-                    hist.setdefault(key_1, []).append(val_1)
+                    history.setdefault(key_1, []).append(val_1)
 
                 test_history = dict(zip(validation_metrics, model.evaluate(client_test_data, client_test_labels)))
+                test_history = calculate_weighted_average(test_history, 'val_')
                 for key_2, val_2 in test_history.items():
-                    hist.setdefault(key_2, []).append(val_2)
-
-            print(hist)
-            df = pd.DataFrame(hist)
-            df.to_csv("TEST.csv")
+                    history.setdefault(key_2, []).append(val_2)
 
         else:
             weights_accountant.set_default_weights(model)
-            train_metrics = model.metrics_names
+
             train_history = dict(zip(train_metrics, model.evaluate(train_data, train_labels)))
             for key_1, val_1 in train_history.items():
                 history.setdefault(key_1, []).append(val_1)
 
-            validation_metrics = ["val_" + metric for metric in model.metrics_names]
             test_history = dict(zip(validation_metrics, model.evaluate(test_data, test_labels)))
             for key_2, val_2 in test_history.items():
                 history.setdefault(key_2, []).append(val_2)
 
         # Early stopping
-        if early_stopping(model.get_weights(), test_history['val_loss']):
+        print(test_history.get('val_loss'))
+        print(history.get('val_loss'))
+        print(history.get('val_loss')[-1])
+        if early_stopping(model.get_weights(), test_history.get('val_loss')):
             print("Early Stopping, Communication round {}".format(comm_round))
             weights = early_stopping.return_best_weights()
             model.set_weights(weights)
             break
-        # print(pd.DataFrame(history))
+
         weights_accountant.print_client_update()
+
     return history, model
+
+
+def calculate_weighted_average(history, prefix=''):
+    columns = ['false_positives', 'false_negatives', 'true_positives', 'true_negatives']
+    columns = [prefix + col for col in columns]
+    df = pd.DataFrame(history)
+    df['all'] = df[columns].sum(axis=1)
+    df_avg = pd.DataFrame(df.mul(df['all'], axis=0).divide(df['all'].sum()).sum()).T.drop('all', axis=1)
+    return df_avg.to_dict('list')
 
 
 def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test_data=None, test_labels=None,
