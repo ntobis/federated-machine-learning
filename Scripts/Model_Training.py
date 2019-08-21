@@ -298,7 +298,7 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
             temp_history = calculate_weighted_average(train_history, model.metrics_names)
             temp_history.update(calculate_weighted_average(test_history, model.metrics_names, 'val_'))
             for key, val in temp_history.items():
-                history.setdefault(key, []).append(val)
+                history.setdefault(key, []).extend(val)
 
         else:
             weights_accountant.set_default_weights(model)
@@ -313,10 +313,10 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
 
         # Early stopping
         print(history)
-        print(test_results.get('val_loss'))
+        print(test_history.get('val_loss'))
         print(history.get('val_loss'))
         print(history.get('val_loss')[-1])
-        if early_stopping(model.get_weights(), test_results.get('val_loss')):
+        if early_stopping(model.get_weights(), history.get('val_loss')[-1]):
             print("Early Stopping, Communication round {}".format(comm_round))
             weights = early_stopping.return_best_weights()
             model.set_weights(weights)
