@@ -272,9 +272,11 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
         # Evaluate the global model
         train_metrics = model.metrics_names
         validation_metrics = ["val_" + metric for metric in model.metrics_names]
-        test_history = {}
+
+        print(history)
 
         if local_personalization:
+            print("PERSONALIZATION")
             train_data, train_labels = dL.split_data_into_clients_dict(train_people, train_data, train_labels)
             test_data, test_labels = dL.split_data_into_clients_dict(test_people, test_data, test_labels)
 
@@ -284,15 +286,16 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
                 weights_accountant.set_client_weights(model, client)
 
                 train_history = dict(zip(train_metrics, model.evaluate(client_train_data, client_train_labels)))
-                print(train_history)
-                train_history = calculate_weighted_average(train_history)
                 for key_1, val_1 in train_history.items():
                     history.setdefault(key_1, []).append(val_1)
 
                 test_history = dict(zip(validation_metrics, model.evaluate(client_test_data, client_test_labels)))
-                test_history = calculate_weighted_average(test_history, 'val_')
+                # test_history = calculate_weighted_average(test_history, 'val_')
                 for key_2, val_2 in test_history.items():
                     history.setdefault(key_2, []).append(val_2)
+
+            # train_history = calculate_weighted_average(train_history)
+            print(history)
 
         else:
             weights_accountant.set_default_weights(model)
