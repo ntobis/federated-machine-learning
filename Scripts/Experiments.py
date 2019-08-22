@@ -201,7 +201,8 @@ def load_and_prepare_data(path, person, pain, model_type):
     return data, labels_binary, train_labels_people, labels
 
 
-def session_evaluation(model, test_data, test_labels, test_people, test_all_labels, session):
+def session_evaluation(model, test_data, test_labels, test_people, test_all_labels, session,
+                       weights_accountant):
 
     # Prepare data
     history = {metric: [] for metric in model.metrics_names}
@@ -216,16 +217,18 @@ def session_evaluation(model, test_data, test_labels, test_people, test_all_labe
                                                                                          test_people)
 
     for data, labels, people, in zip(test_data_split, test_labels_split, test_people_split):
+        weights_accountant.apply_client_weights(model, people[0])
         results = model.evaluate(data, labels)
         for key, val in zip(model.metrics_names, results):
             history.setdefault('subject_{}_'.format(people[0]) + key, []).append(val)
 
     history = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in history.items()]))
+
     # Save history
     return history
 
 
-def test_set_evaluation(df_history, df_testing, model, model_type, session):
+def test_set_evaluation(df_history, df_testing, model, model_type, session, weights_accountant=None):
 
     # Get test data
     df_test = df_testing[df_testing['Session'] == session]
@@ -236,7 +239,8 @@ def test_set_evaluation(df_history, df_testing, model, model_type, session):
         model_type=model_type)
 
     # Evaluate the model on the test data
-    results = session_evaluation(model, test_data, test_labels, test_people, test_all_labels, session)
+    results = session_evaluation(model, test_data, test_labels, test_people, test_all_labels, session,
+                                 weights_accountant)
     df_history = pd.concat((df_history, results), sort=False)
     return df_history
 
@@ -383,7 +387,7 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, model, model_type
             clients = np.unique(train_people)
 
             # Get test-set evaluation data
-            df_history = test_set_evaluation(df_history, df_testing, model, model_type, session)
+            df_history = test_set_evaluation(df_history, df_testing, model, model_type, session, weights_accountant)
 
             # Get validation data
             df_val = df_training_validating[df_training_validating['Session'] == session]

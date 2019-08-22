@@ -325,10 +325,14 @@ def calculate_weighted_average(history, metrics, prefix=''):
     weight_columns = ['false_positives', 'false_negatives', 'true_positives', 'true_negatives']
     weight_columns = [prefix + col for col in weight_columns]
     avg_columns = [prefix + col for col in metrics if prefix + col not in weight_columns]
+    print(weight_columns)
+    print(avg_columns)
     df = pd.DataFrame(history)
+    df.to_csv(prefix + 'HELLO.csv')
     df['X'] = df[weight_columns].sum(axis=1)
     df_avg = pd.DataFrame(df[avg_columns].mul(df['X'], axis=0).divide(df['X'].sum()).sum()).T
     df_avg = pd.concat((df_avg, pd.DataFrame(df[weight_columns].sum()).T), axis=1)
+    df_avg.to_csv(prefix + 'HELLO_2.csv')
     return df_avg.to_dict('list')
 
 
@@ -363,3 +367,30 @@ def add_additional_validation_callback(callbacks, test_data, test_labels, test_p
     history_cb = kC.AdditionalValidationSets(validation_sets)
     callbacks.insert(0, history_cb)
     return history_cb
+
+
+if __name__ == '__main__':
+    from Scripts import Model_Architectures as mA
+    from Scripts import Experiments as eX
+    from Scripts.Weights_Accountant import WeightsAccountant
+    model = mA.build_model((215, 215, 1), 'CNN')
+    model.compile(tf.keras.optimizers.SGD(learning_rate=1.), 'binary_crossentropy', ['accuracy'])
+    wa = WeightsAccountant(model)
+    for layer in model.layers:
+        if len(layer.get_weights()) > 0:
+            if not np.array_equal(wa.default_weights[layer.name], layer.get_weights()):
+                print(wa.default_weights[layer.name])
+                print(layer.get_weights())
+                break
+
+    data, labels_binary, train_labels_people, labels = eX.load_and_prepare_data(os.path.join(eX.DATA, "group_2", 'session_9'), 0, 4, 'CNN')
+
+    print(K.get_value(model.optimizer.lr))
+
+    model.fit(data[:100], labels_binary[:100])
+    K.set_value(model.optimizer.lr, K.get_value(model.optimizer.lr) / 100)
+    print(K.get_value(model.optimizer.lr))
+    model.fit(data[:100], labels_binary[:100])
+    K.set_value(model.optimizer.lr, K.get_value(model.optimizer.lr) / 100)
+    print(K.get_value(model.optimizer.lr))
+    model.fit(data[:100], labels_binary[:100])
