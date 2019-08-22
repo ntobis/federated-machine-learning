@@ -1,0 +1,2 @@
+,val_loss,val_accuracy,val_recall,val_precision,val_auc,val_false_positives,val_false_negatives,val_true_positives,val_true_negatives
+0,0.560966346127102,0.7894088661561627,0.20265469204616077,0.27535804149804194,0.3858871332865882,1010.0,1384.0,1192.0,7782.0
