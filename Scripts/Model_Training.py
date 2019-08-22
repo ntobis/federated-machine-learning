@@ -19,7 +19,7 @@ models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm 
 ROOT = os.path.dirname(os.path.dirname(__file__))
 MODELS = os.path.join(ROOT, 'Models')
 FEDERATED_LOCAL_WEIGHTS_PATH = os.path.join(MODELS, 'Pain', 'Federated', 'Federated Weights')
-
+LR_FACTOR = 10
 
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------------------ #
@@ -190,7 +190,7 @@ def communication_round(model, clients, train_data, train_labels, train_people, 
         weights_accountant.federated_averaging(layer_type='global')
 
         # Decrease the learning rate for local adaptation only
-        K.set_value(model.optimizer.lr, K.get_value(model.optimizer.lr) / 10)
+        K.set_value(model.optimizer.lr, K.get_value(model.optimizer.lr) / LR_FACTOR)
 
         # Freeze the convolutional layers
         change_layer_status(model, 'global', 'freeze')
@@ -205,7 +205,7 @@ def communication_round(model, clients, train_data, train_labels, train_people, 
         change_layer_status(model, 'global', 'unfreeze')
 
         # Increase the learning rate again
-        K.set_value(model.optimizer.lr, K.get_value(model.optimizer.lr) * 10)
+        K.set_value(model.optimizer.lr, K.get_value(model.optimizer.lr) * LR_FACTOR)
 
     else:
         weights_accountant.federated_averaging()
@@ -325,8 +325,6 @@ def calculate_weighted_average(history, metrics, prefix=''):
     weight_columns = ['false_positives', 'false_negatives', 'true_positives', 'true_negatives']
     weight_columns = [prefix + col for col in weight_columns]
     avg_columns = [prefix + col for col in metrics if prefix + col not in weight_columns]
-    print(weight_columns)
-    print(avg_columns)
     df = pd.DataFrame(history)
     df.to_csv(prefix + 'HELLO.csv')
     df['X'] = df[weight_columns].sum(axis=1)

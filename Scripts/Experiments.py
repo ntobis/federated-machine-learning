@@ -764,7 +764,31 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             pF.print_experiment("17 - Sessions: Federated with centralized pretraining")
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
-                            experiment='7-sessions-Federated-central-pre-training-personalization',
+                            experiment='7-sessions-Federated-central-pre-training-personalization_10',
+                            rounds=30,
+                            shards=None,
+                            model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
+                            pretraining='centralized',
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            subjects_per_client=1,
+                            local_epochs=5,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False,
+                            local_personalization=True
+                            )
+            twilio.send_message("Experiment 17 Complete")
+
+            mT.LR_FACTOR = 2
+
+            training_setup(seed)
+            pF.print_experiment("17 - Sessions: Federated with centralized pretraining")
+            experiment_pain(algorithm="federated",
+                            dataset='PAIN',
+                            experiment='7-sessions-Federated-central-pre-training-personalization_2',
                             rounds=30,
                             shards=None,
                             model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
