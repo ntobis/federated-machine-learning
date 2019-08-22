@@ -344,7 +344,8 @@ def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test
                                                       baseline=None, restore_best_weights=True)
     callbacks = [early_stopping]
     # Create validation sets
-    validation_data = (test_data, test_labels) if test_data is not None else None
+    validation_data = (test_data, test_labels) if test_data is not None and algorithm is not 'federated' else None
+
     if individual_validation:
         history_cb = add_additional_validation_callback(callbacks, test_data, test_labels, test_people, all_labels)
 
