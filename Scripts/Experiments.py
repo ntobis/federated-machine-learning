@@ -308,8 +308,8 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
 
         # Train
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", model=model, rounds=rounds,
-                             train_data=train_data, train_labels=train_labels, test_data=test_data,
-                             test_labels=test_labels, test_people=test_people, clients=clients,
+                             train_data=train_data, train_labels=train_labels, train_people=train_people,
+                             test_data=test_data, test_labels=test_labels, test_people=test_people, clients=clients,
                              local_epochs=local_epochs, all_labels=train_labels_all, individual_validation=False)
 
     elif pretraining is None:
@@ -504,7 +504,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
     # Setup
     data_loc = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
 
-    # g_monitor = GoogleCloudMonitor()
+    g_monitor = GoogleCloudMonitor()
     twilio = Twilio()
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
