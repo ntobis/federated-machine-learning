@@ -290,6 +290,7 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
         print("Pre-training a federated model.")
         model = mA.build_model((215, 215, 1), model_type)
         model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+        weights_accountant = WeightsAccountant(model)
 
         # Load data
         df = dL.create_pain_df(GROUP_1_TRAIN_PATH, pain_gap=pain_gap)
@@ -310,7 +311,8 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", model=model, rounds=rounds,
                              train_data=train_data, train_labels=train_labels, train_people=train_people,
                              test_data=test_data, test_labels=test_labels, test_people=test_people, clients=clients,
-                             local_epochs=local_epochs, all_labels=train_labels_all, individual_validation=False)
+                             local_epochs=local_epochs, all_labels=train_labels_all, individual_validation=False,
+                             weights_accountant=weights_accountant)
 
     elif pretraining is None:
         model = mA.build_model((215, 215, 1), model_type)
