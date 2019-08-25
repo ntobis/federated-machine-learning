@@ -208,7 +208,7 @@ def communication_round(model, clients, train_data, train_labels, train_people, 
         K.set_value(model.optimizer.lr, K.get_value(model.optimizer.lr) * LR_FACTOR)
 
     else:
-        weights_accountant.federated_averaging()
+        weights_accountant.federated_averaging(layer_type='global')
 
     return history
 
