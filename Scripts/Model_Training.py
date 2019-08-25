@@ -47,6 +47,7 @@ def create_client_index_array(num_of_clients, num_participating_clients=None):
 
 
 def change_layer_status(model, criterion, operation):
+    layers_modified = 0
     print("{} the following layers:".format(operation.capitalize()))
     for layer in model.layers:
         if criterion in layer.name:
@@ -58,6 +59,8 @@ def change_layer_status(model, criterion, operation):
                 raise ValueError("'Operation' accepts only parameters 'freeze' and 'unfreeze'. "
                                  "{} was given".format(operation))
             print(layer.name)
+            layers_modified += 1
+    return layers_modified
 
 
 # ------------------------------------------------------------------------------------------------------------------ #
@@ -192,16 +195,17 @@ def communication_round(model, clients, train_data, train_labels, train_people, 
         # Decrease the learning rate for local adaptation only
         K.set_value(model.optimizer.lr, K.get_value(model.optimizer.lr) / LR_FACTOR)
 
-        # Freeze the convolutional layers
-        change_layer_status(model, 'global', 'freeze')
+        # Freeze the global layers
+        layers_frozen = change_layer_status(model, 'global', 'freeze')
 
         # Reconnect the Convolutional layers
-        for client in clients:
-            Output.print_client_id(client)
-            client_learning(model, client, local_epochs, train_data, train_labels, test_data, test_labels,
-                            test_people, all_labels, weights_accountant, individual_validation)
+        if layers_frozen > 0:
+            for client in clients:
+                Output.print_client_id(client)
+                client_learning(model, client, local_epochs, train_data, train_labels, test_data, test_labels,
+                                test_people, all_labels, weights_accountant, individual_validation)
 
-        # Unfreeze the convolutional layers
+        # Unfreeze the global layers
         change_layer_status(model, 'global', 'unfreeze')
 
         # Increase the learning rate again
