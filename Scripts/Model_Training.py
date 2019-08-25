@@ -142,14 +142,14 @@ def client_learning(model, client, local_epochs, train_data, train_labels, test_
 
 
 def communication_round(model, clients, train_data, train_labels, train_people, test_data, test_labels, test_people,
-                        all_labels, local_epochs, weights_accountant, individual_validation, local_personalization):
+                        all_labels, local_epochs, weights_accountant, individual_validation, local_operation):
     """
     One round of communication between a 'server' and the 'clients'. Each client 'downloads' a global model and trains
     a local model, updating its weights locally. When all clients have updated their weights, they are 'uploaded' to
     the server and averaged.
 
     :param train_people:
-    :param local_personalization:
+    :param local_operation:
     :param individual_validation:
     :param all_labels:
     :param test_people:
@@ -187,7 +187,7 @@ def communication_round(model, clients, train_data, train_labels, train_people, 
 
     # If there is localization (e.g. the last layer of the model is not being averaged, indicated by less "shared
     # weights" compared to total "default weights"), then we adapt local models to the new shared layers
-    if local_personalization:
+    if local_operation == 'localized_learning':
 
         # Average all updates marked as "global"
         weights_accountant.federated_averaging(layer_type='global')
@@ -196,14 +196,13 @@ def communication_round(model, clients, train_data, train_labels, train_people, 
         K.set_value(model.optimizer.lr, K.get_value(model.optimizer.lr) / LR_FACTOR)
 
         # Freeze the global layers
-        layers_frozen = change_layer_status(model, 'global', 'freeze')
+        change_layer_status(model, 'global', 'freeze')
 
         # Reconnect the Convolutional layers
-        if layers_frozen > 0:
-            for client in clients:
-                Output.print_client_id(client)
-                client_learning(model, client, local_epochs, train_data, train_labels, test_data, test_labels,
-                                test_people, all_labels, weights_accountant, individual_validation)
+        for client in clients:
+            Output.print_client_id(client)
+            client_learning(model, client, local_epochs, train_data, train_labels, test_data, test_labels,
+                            test_people, all_labels, weights_accountant, individual_validation)
 
         # Unfreeze the global layers
         change_layer_status(model, 'global', 'unfreeze')
@@ -211,21 +210,29 @@ def communication_round(model, clients, train_data, train_labels, train_people, 
         # Increase the learning rate again
         K.set_value(model.optimizer.lr, K.get_value(model.optimizer.lr) * LR_FACTOR)
 
+    elif local_operation == 'local_models':
+        print("No federated averaging.")
+        pass
+
+    elif local_operation == 'global_averaging':
+        weights_accountant.federated_averaging()
+
     else:
-        weights_accountant.federated_averaging(layer_type='global')
+        raise ValueError('local_operation only accepts "global_averaging", "localized_learning", and "local_models"'
+                         ' as arguments. "{}" was given.'.format(local_operation))
 
     return history
 
 
 def federated_learning(model, global_epochs, train_data, train_labels, train_people, test_data, test_labels,
                        test_people, clients, local_epochs, all_labels, individual_validation,
-                       local_personalization, weights_accountant):
+                       local_operation, weights_accountant):
     """
     Train a federated model for a specified number of rounds until convergence.
 
     :param train_people:
     :param weights_accountant:
-    :param local_personalization:
+    :param local_operation:
     :param individual_validation:
     :param all_labels:
     :param model:
@@ -258,7 +265,7 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
         Output.print_communication_round(comm_round + 1)
         results = communication_round(model, clients, train_data, train_labels, train_people, test_data, test_labels,
                                       test_people, all_labels, local_epochs, weights_accountant, individual_validation,
-                                      local_personalization)
+                                      local_operation)
 
         # Only get the first of the local epochs
         for key in results.keys():
@@ -274,7 +281,7 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
         train_metrics = model.metrics_names
         validation_metrics = ["val_" + metric for metric in model.metrics_names]
 
-        if local_personalization:
+        if local_operation == 'localized_learning' or local_operation == 'local_models':
             split_train_data, split_train_labels = dL.split_data_into_clients_dict(train_people, train_data,
                                                                                    train_labels)
             split_test_data, split_test_labels = dL.split_data_into_clients_dict(test_people, test_data, test_labels)
@@ -302,7 +309,7 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
             for key, val in temp_history.items():
                 history.setdefault(key, []).extend(val)
 
-        else:
+        elif local_operation == 'global_averaging':
             weights_accountant.apply_default_weights(model)
 
             train_results = dict(zip(train_metrics, model.evaluate(train_data, train_labels)))
@@ -312,6 +319,10 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
             test_results = dict(zip(validation_metrics, model.evaluate(test_data, test_labels)))
             for key_2, val_2 in test_results.items():
                 history.setdefault(key_2, []).append(val_2)
+
+        else:
+            raise ValueError('local_operation only accepts "global_averaging", "localized_learning", and "local_models"'
+                             ' as arguments. "{}" was given.'.format(local_operation))
 
         # Early stopping
         if early_stopping(weights_accountant.get_client_weights(), history.get('val_loss')[-1]):
