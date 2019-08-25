@@ -905,7 +905,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
 if __name__ == '__main__':
     # main(seed=123, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
 
-    path = find_newest_model_path(FEDERATED_PAIN_MODELS, "shard-0.00.h5")
+    path = find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5")
     model = tf.keras.models.load_model(path)
     # model.compile(optimizer='sgd', loss='binary_crossentropy', metrics=['accuracy'])
     for layer in model.layers:
