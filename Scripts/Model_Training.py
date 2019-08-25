@@ -370,30 +370,3 @@ def add_additional_validation_callback(callbacks, test_data, test_labels, test_p
     history_cb = kC.AdditionalValidationSets(validation_sets)
     callbacks.insert(0, history_cb)
     return history_cb
-
-
-if __name__ == '__main__':
-    from Scripts import Model_Architectures as mA
-    from Scripts import Experiments as eX
-    from Scripts.Weights_Accountant import WeightsAccountant
-    model = mA.build_model((215, 215, 1), 'CNN')
-    model.compile(tf.keras.optimizers.SGD(learning_rate=1.), 'binary_crossentropy', ['accuracy'])
-    wa = WeightsAccountant(model)
-    for layer in model.layers:
-        if len(layer.get_weights()) > 0:
-            if not np.array_equal(wa.default_weights[layer.name], layer.get_weights()):
-                print(wa.default_weights[layer.name])
-                print(layer.get_weights())
-                break
-
-    data, labels_binary, train_labels_people, labels = eX.load_and_prepare_data(os.path.join(eX.DATA, "group_2", 'session_9'), 0, 4, 'CNN')
-
-    print(K.get_value(model.optimizer.lr))
-
-    model.fit(data[:100], labels_binary[:100])
-    K.set_value(model.optimizer.lr, K.get_value(model.optimizer.lr) / 100)
-    print(K.get_value(model.optimizer.lr))
-    model.fit(data[:100], labels_binary[:100])
-    K.set_value(model.optimizer.lr, K.get_value(model.optimizer.lr) / 100)
-    print(K.get_value(model.optimizer.lr))
-    model.fit(data[:100], labels_binary[:100])
