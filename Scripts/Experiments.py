@@ -807,28 +807,28 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             #                 )
             # twilio.send_message("Experiment 18 Complete")
 
-            # Experiment 19 - Sessions: Federated without pre-training
-            training_setup(seed)
-            pF.print_experiment("19 - Sessions: Federated without pre-training")
-            experiment_pain(algorithm="federated",
-                            dataset='PAIN',
-                            experiment='9-sessions-Federated-no-pre-training-local-model',
-                            rounds=30,
-                            shards=None,
-                            model_path=None,
-                            pretraining=None,
-                            cumulative=True,
-                            optimizer=optimizer,
-                            loss=loss,
-                            metrics=metrics,
-                            subjects_per_client=1,
-                            local_epochs=5,
-                            model_type=model_type,
-                            pain_gap=pain_gap,
-                            individual_validation=False,
-                            local_operation='local_models'
-                            )
-            twilio.send_message("Experiment 19 Complete")
+            # # Experiment 19 - Sessions: Federated without pre-training
+            # training_setup(seed)
+            # pF.print_experiment("19 - Sessions: Federated without pre-training")
+            # experiment_pain(algorithm="federated",
+            #                 dataset='PAIN',
+            #                 experiment='9-sessions-Federated-no-pre-training-local-model',
+            #                 rounds=30,
+            #                 shards=None,
+            #                 model_path=None,
+            #                 pretraining=None,
+            #                 cumulative=True,
+            #                 optimizer=optimizer,
+            #                 loss=loss,
+            #                 metrics=metrics,
+            #                 subjects_per_client=1,
+            #                 local_epochs=5,
+            #                 model_type=model_type,
+            #                 pain_gap=pain_gap,
+            #                 individual_validation=False,
+            #                 local_operation='local_models'
+            #                 )
+            # twilio.send_message("Experiment 19 Complete")
 
             # Experiment 20 - Sessions: Federated with centralized pretraining
             training_setup(seed)
