@@ -19,21 +19,21 @@ def build_CNN(input_shape):
     model = models.Sequential(name='CNN')
 
     # Add layers
-    model.add(layers.Conv2D(filters=32, kernel_size=(5, 5), input_shape=input_shape, padding='same', strides=(1, 1),
-                            name='conv2d_0_local'))
-    model.add(layers.BatchNormalization(name='batch_norm_0_local'))
-    model.add(layers.ReLU(name='relu_0_local'))
-    model.add(layers.MaxPooling2D(name='max_pool_0_local'))
+    model.add(layers.Conv2D(filters=32, kernel_size=(5, 5), input_shape=input_shape, padding='same', strides=(2, 2),
+                            name='conv2d_0_global'))
+    model.add(layers.BatchNormalization(name='batch_norm_0_global'))
+    model.add(layers.ReLU(name='relu_0_global'))
+    # model.add(layers.MaxPooling2D(name='max_pool_0_global'))
 
-    model.add(layers.Conv2D(filters=64, kernel_size=(5, 5), padding='same', strides=(1, 1), name='conv2d_1_local'))
-    model.add(layers.BatchNormalization(name='batch_norm_1_local'))
-    model.add(layers.ReLU(name='relu_1_local'))
-    model.add(layers.MaxPooling2D(name='max_pool_1_local'))
+    model.add(layers.Conv2D(filters=64, kernel_size=(5, 5), padding='same', strides=(2, 2), name='conv2d_1_global'))
+    model.add(layers.BatchNormalization(name='batch_norm_1_global'))
+    model.add(layers.ReLU(name='relu_1_global'))
+    # model.add(layers.MaxPooling2D(name='max_pool_1_global'))
 
-    model.add(layers.Conv2D(filters=128, kernel_size=(5, 5), padding='same', strides=(1, 1), name='conv2d_2_local'))
-    model.add(layers.BatchNormalization(name='batch_norm_2_local'))
-    model.add(layers.ReLU(name='relu_2_local'))
-    model.add(layers.MaxPooling2D(name='max_pool_2_local'))
+    model.add(layers.Conv2D(filters=128, kernel_size=(5, 5), padding='same', strides=(2, 2), name='conv2d_2_global'))
+    model.add(layers.BatchNormalization(name='batch_norm_2_global'))
+    model.add(layers.ReLU(name='relu_2_global'))
+    model.add(layers.MaxPooling2D(name='max_pool_2_global'))
 
     model.add(layers.Flatten(name='flatten_0_local'))
     model.add(layers.Dense(units=128, name='dense_0_local'))
@@ -80,36 +80,6 @@ def build_model(input_shape, model_type):
     return model_types[model_type](input_shape=input_shape)
 
 
-def build_test(input_shape):
-    """
-    Return a simple CNN model for image classification.
-
-    :param input_shape:     image input shape (tuple), e.g. (28, 28, 1)
-
-    :return:
-        model               compiled tensorflow model
-    """
-
-    print("Setting up CNN")
-    # Set up model type
-    model = models.Sequential(name='Test')
-
-    # Add layers
-    # model.add(layers.Conv2D(filters=32, kernel_size=(5, 5), strides=(1, 1), padding='same', input_shape=input_shape))
-    # model.add(layers.MaxPooling2D())
-    # model.add(layers.Conv2D(filters=16, kernel_size=(5, 5), strides=(1, 1), padding='same'))
-    # model.add(layers.MaxPooling2D())
-    # model.add(layers.Conv2D(filters=128, kernel_size=(5, 5), strides=(1, 1), padding='same'))
-    # model.add(layers.MaxPooling2D())
-    # model.add(layers.Flatten())
-    # model.add(layers.Dense(units=128))
-    # model.add(layers.BatchNormalization())
-    # model.add(layers.ReLU())
-    model.add(layers.Dense(input_shape=input_shape, units=1, activation='sigmoid'))
-
-    return model
-
-
 if __name__ == '__main__':
-    model_1 = build_model((215, 215, 1), 'CNN')
-    model_1.summary(line_length=100)
+    model_test = build_model((215, 215, 1), 'CNN')
+    model_test.summary(line_length=100)
