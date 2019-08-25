@@ -755,7 +755,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             model_type=model_type,
                             pain_gap=pain_gap,
                             individual_validation=False,
-                            local_personalization=True
+                            local_personalization=False
                             )
             twilio.send_message("Experiment 16 Complete")
 
@@ -778,7 +778,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             model_type=model_type,
                             pain_gap=pain_gap,
                             individual_validation=False,
-                            local_personalization=True
+                            local_personalization=False
                             )
             twilio.send_message("Experiment 17 Complete")
 
@@ -801,7 +801,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                             model_type=model_type,
                             pain_gap=pain_gap,
                             individual_validation=False,
-                            local_personalization=True
+                            local_personalization=False
                             )
             twilio.send_message("Experiment 18 Complete")
 
