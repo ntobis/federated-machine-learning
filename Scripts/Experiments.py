@@ -766,7 +766,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             pF.print_experiment("17 - Sessions: Federated with centralized pretraining")
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
-                            experiment='7-sessions-Federated-central-pre-training-personalization_10',
+                            experiment='7-sessions-Federated-central-pre-training-personalization',
                             rounds=30,
                             shards=None,
                             model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
@@ -905,4 +905,4 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
 
 
 if __name__ == '__main__':
-    main(seed=123, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
+    main(seed=124, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
