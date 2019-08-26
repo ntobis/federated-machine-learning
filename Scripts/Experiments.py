@@ -217,14 +217,14 @@ def session_evaluation(model, test_data, test_labels, test_people, test_all_labe
                                                                                          test_people)
 
     for data, labels, people, in zip(test_data_split, test_labels_split, test_people_split):
-        weights_accountant.apply_client_weights(model, people[0])
+        if weights_accountant is not None:
+            weights_accountant.apply_client_weights(model, people[0])
         results = model.evaluate(data, labels)
         for key, val in zip(model.metrics_names, results):
             history.setdefault('subject_{}_'.format(people[0]) + key, []).append(val)
 
     history = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in history.items()]))
 
-    # Save history
     return history
 
 
