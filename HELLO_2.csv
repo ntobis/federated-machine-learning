@@ -1,2 +1,2 @@
 ,loss,accuracy,recall,precision,auc,false_positives,false_negatives,true_positives,true_negatives
-0,0.007045748323434964,1.0,1.0,1.0,0.9999999850988389,0.0,0.0,2400.0,2400.0
+0,0.0033116479120993366,1.0,1.0,1.0,0.9999999950329465,0.0,0.0,2400.0,2400.0
