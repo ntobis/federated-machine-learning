@@ -101,7 +101,7 @@ def rotate_image(image, angle):
     """
 
     # Get the image size
-    # No that's not an error - NumPy stores image matricies backwards
+    # No that's not an error - NumPy stores image matrices backwards
     image_size = (image.shape[1], image.shape[0])
     image_center = tuple(np.array(image_size) / 2)
 

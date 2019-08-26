@@ -627,255 +627,254 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
 
         if sessions:
 
-            # # Experiment 11 - Sessions: Centralized without pre-training
-            # training_setup(seed)
-            # pF.print_experiment("11 - Sessions: Centralized without pre-training")
-            # experiment_pain(algorithm='centralized',
-            #                 dataset='PAIN',
-            #                 experiment='1-sessions-Centralized-no-pre-training',
-            #                 rounds=30,
-            #                 shards=None,
-            #                 model_path=None,
-            #                 pretraining=None,
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 model_type=model_type,
-            #                 pain_gap=pain_gap,
-            #                 individual_validation=False,
-            #                 local_operation='global_averaging'
-            #                 )
-            # twilio.send_message("Experiment 11 Complete")
-            #
-            # # Experiment 12 - Sessions: Centralized with pre-training
-            # training_setup(seed)
-            # pF.print_experiment("12 - Sessions: Centralized with pre-training")
-            # experiment_pain(algorithm='centralized',
-            #                 dataset='PAIN',
-            #                 experiment='2-sessions-Centralized-pre-training',
-            #                 rounds=30,
-            #                 shards=None,
-            #                 model_path=None,
-            #                 pretraining='centralized',
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 model_type=model_type,
-            #                 pain_gap=pain_gap,
-            #                 individual_validation=False,
-            #                 local_operation='global_averaging'
-            #                 )
-            # twilio.send_message("Experiment 12 Complete")
-            #
-            # # Experiment 13 - Sessions: Federated without pre-training
-            # training_setup(seed)
-            # pF.print_experiment("13 - Sessions: Federated without pre-training")
-            # experiment_pain(algorithm="federated",
-            #                 dataset='PAIN',
-            #                 experiment='3-sessions-Federated-no-pre-training',
-            #                 rounds=30,
-            #                 shards=None,
-            #                 model_path=None,
-            #                 pretraining=None,
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 subjects_per_client=1,
-            #                 local_epochs=5,
-            #                 model_type=model_type,
-            #                 pain_gap=pain_gap,
-            #                 individual_validation=False,
-            #                 local_operation='global_averaging'
-            #                 )
-            # twilio.send_message("Experiment 13 Complete")
-            #
-            # # Experiment 14 - Sessions: Federated with centralized pretraining
-            # training_setup(seed)
-            # pF.print_experiment("14 - Sessions: Federated with centralized pretraining")
-            # experiment_pain(algorithm="federated",
-            #                 dataset='PAIN',
-            #                 experiment='4-sessions-Federated-central-pre-training',
-            #                 rounds=30,
-            #                 shards=None,
-            #                 model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
-            #                 pretraining='centralized',
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 subjects_per_client=1,
-            #                 local_epochs=5,
-            #                 model_type=model_type,
-            #                 pain_gap=pain_gap,
-            #                 individual_validation=False,
-            #                 local_operation='global_averaging'
-            #                 )
-            # twilio.send_message("Experiment 14 Complete")
-            #
-            # # Experiment 15 - Sessions: Federated with federated pretraining
-            # training_setup(seed)
-            # pF.print_experiment("15 - Sessions: Federated with federated pretraining")
-            # experiment_pain(algorithm="federated",
-            #                 dataset='PAIN',
-            #                 experiment='5-sessions-Federated-federated-pre-training',
-            #                 rounds=30,
-            #                 shards=None,
-            #                 pretraining='federated',
-            #                 model_path=None,
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 subjects_per_client=1,
-            #                 local_epochs=5,
-            #                 model_type=model_type,
-            #                 pain_gap=pain_gap,
-            #                 individual_validation=False,
-            #                 local_operation='global_averaging'
-            #                 )
-            # twilio.send_message("Experiment 15 Complete")
-            #
-            # # Experiment 16 - Sessions: Federated without pre-training
-            # training_setup(seed)
-            # pF.print_experiment("16 - Sessions: Federated without pre-training")
-            # experiment_pain(algorithm="federated",
-            #                 dataset='PAIN',
-            #                 experiment='6-sessions-Federated-no-pre-training-personalization',
-            #                 rounds=30,
-            #                 shards=None,
-            #                 model_path=None,
-            #                 pretraining=None,
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 subjects_per_client=1,
-            #                 local_epochs=5,
-            #                 model_type=model_type,
-            #                 pain_gap=pain_gap,
-            #                 individual_validation=False,
-            #                 local_operation='localized_learning'
-            #                 )
-            # twilio.send_message("Experiment 16 Complete")
-            #
-            # # Experiment 17 - Sessions: Federated with centralized pretraining
-            # training_setup(seed)
-            # pF.print_experiment("17 - Sessions: Federated with centralized pretraining")
-            # experiment_pain(algorithm="federated",
-            #                 dataset='PAIN',
-            #                 experiment='7-sessions-Federated-central-pre-training-personalization_10',
-            #                 rounds=30,
-            #                 shards=None,
-            #                 model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
-            #                 pretraining='centralized',
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 subjects_per_client=1,
-            #                 local_epochs=5,
-            #                 model_type=model_type,
-            #                 pain_gap=pain_gap,
-            #                 individual_validation=False,
-            #                 local_operation='localized_learning'
-            #                 )
-            # twilio.send_message("Experiment 17 Complete")
-            #
-            # # Experiment 18 - Sessions: Federated with federated pretraining
-            # training_setup(seed)
-            # pF.print_experiment("18 - Sessions: Federated with federated pretraining")
-            # experiment_pain(algorithm="federated",
-            #                 dataset='PAIN',
-            #                 experiment='8-sessions-Federated-federated-pre-training-personalization',
-            #                 rounds=30,
-            #                 shards=None,
-            #                 pretraining='federated',
-            #                 model_path=find_newest_model_path(FEDERATED_PAIN_MODELS, "shard-0.00.h5"),
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 subjects_per_client=1,
-            #                 local_epochs=5,
-            #                 model_type=model_type,
-            #                 pain_gap=pain_gap,
-            #                 individual_validation=False,
-            #                 local_operation='localized_learning'
-            #                 )
-            # twilio.send_message("Experiment 18 Complete")
+            # Experiment 11 - Sessions: Centralized without pre-training
+            training_setup(seed)
+            pF.print_experiment("11 - Sessions: Centralized without pre-training")
+            experiment_pain(algorithm='centralized',
+                            dataset='PAIN',
+                            experiment='1-sessions-Centralized-no-pre-training',
+                            rounds=30,
+                            shards=None,
+                            model_path=None,
+                            pretraining=None,
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False,
+                            local_operation='global_averaging'
+                            )
+            twilio.send_message("Experiment 11 Complete")
 
-            # # Experiment 19 - Sessions: Federated without pre-training
-            # training_setup(seed)
-            # pF.print_experiment("19 - Sessions: Federated without pre-training")
-            # experiment_pain(algorithm="federated",
-            #                 dataset='PAIN',
-            #                 experiment='9-sessions-Federated-no-pre-training-local-model',
-            #                 rounds=30,
-            #                 shards=None,
-            #                 model_path=None,
-            #                 pretraining=None,
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 subjects_per_client=1,
-            #                 local_epochs=5,
-            #                 model_type=model_type,
-            #                 pain_gap=pain_gap,
-            #                 individual_validation=False,
-            #                 local_operation='local_models'
-            #                 )
-            # twilio.send_message("Experiment 19 Complete")
+            # Experiment 12 - Sessions: Centralized with pre-training
+            training_setup(seed)
+            pF.print_experiment("12 - Sessions: Centralized with pre-training")
+            experiment_pain(algorithm='centralized',
+                            dataset='PAIN',
+                            experiment='2-sessions-Centralized-pre-training',
+                            rounds=30,
+                            shards=None,
+                            model_path=None,
+                            pretraining='centralized',
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False,
+                            local_operation='global_averaging'
+                            )
+            twilio.send_message("Experiment 12 Complete")
 
-            # # Experiment 20 - Sessions: Federated with centralized pretraining
-            # training_setup(seed)
-            # pF.print_experiment("20 - Sessions: Federated with centralized pretraining")
-            # experiment_pain(algorithm="federated",
-            #                 dataset='PAIN',
-            #                 experiment='10-sessions-Federated-central-pre-training-local-model',
-            #                 rounds=30,
-            #                 shards=None,
-            #                 model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
-            #                 pretraining='centralized',
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 subjects_per_client=1,
-            #                 local_epochs=5,
-            #                 model_type=model_type,
-            #                 pain_gap=pain_gap,
-            #                 individual_validation=False,
-            #                 local_operation='local_models'
-            #                 )
-            # twilio.send_message("Experiment 20 Complete")
-            #
-            # # Experiment 21 - Sessions: Federated with federated pretraining
-            # training_setup(seed)
-            # pF.print_experiment("21 - Sessions: Federated with federated pretraining")
-            # experiment_pain(algorithm="federated",
-            #                 dataset='PAIN',
-            #                 experiment='11-sessions-Federated-federated-pre-training-local-model',
-            #                 rounds=30,
-            #                 shards=None,
-            #                 pretraining='federated',
-            #                 model_path=find_newest_model_path(FEDERATED_PAIN_MODELS, "shard-0.00.h5"),
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 subjects_per_client=1,
-            #                 local_epochs=5,
-            #                 model_type=model_type,
-            #                 pain_gap=pain_gap,
-            #                 individual_validation=False,
-            #                 local_operation='local_models'
-            #                 )
-            # twilio.send_message("Experiment 21 Complete")
-            pass
+            # Experiment 13 - Sessions: Federated without pre-training
+            training_setup(seed)
+            pF.print_experiment("13 - Sessions: Federated without pre-training")
+            experiment_pain(algorithm="federated",
+                            dataset='PAIN',
+                            experiment='3-sessions-Federated-no-pre-training',
+                            rounds=30,
+                            shards=None,
+                            model_path=None,
+                            pretraining=None,
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            subjects_per_client=1,
+                            local_epochs=5,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False,
+                            local_operation='global_averaging'
+                            )
+            twilio.send_message("Experiment 13 Complete")
+
+            # Experiment 14 - Sessions: Federated with centralized pretraining
+            training_setup(seed)
+            pF.print_experiment("14 - Sessions: Federated with centralized pretraining")
+            experiment_pain(algorithm="federated",
+                            dataset='PAIN',
+                            experiment='4-sessions-Federated-central-pre-training',
+                            rounds=30,
+                            shards=None,
+                            model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
+                            pretraining='centralized',
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            subjects_per_client=1,
+                            local_epochs=5,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False,
+                            local_operation='global_averaging'
+                            )
+            twilio.send_message("Experiment 14 Complete")
+
+            # Experiment 15 - Sessions: Federated with federated pretraining
+            training_setup(seed)
+            pF.print_experiment("15 - Sessions: Federated with federated pretraining")
+            experiment_pain(algorithm="federated",
+                            dataset='PAIN',
+                            experiment='5-sessions-Federated-federated-pre-training',
+                            rounds=30,
+                            shards=None,
+                            pretraining='federated',
+                            model_path=None,
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            subjects_per_client=1,
+                            local_epochs=5,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False,
+                            local_operation='global_averaging'
+                            )
+            twilio.send_message("Experiment 15 Complete")
+
+            # Experiment 16 - Sessions: Federated without pre-training
+            training_setup(seed)
+            pF.print_experiment("16 - Sessions: Federated without pre-training")
+            experiment_pain(algorithm="federated",
+                            dataset='PAIN',
+                            experiment='6-sessions-Federated-no-pre-training-personalization',
+                            rounds=30,
+                            shards=None,
+                            model_path=None,
+                            pretraining=None,
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            subjects_per_client=1,
+                            local_epochs=5,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False,
+                            local_operation='localized_learning'
+                            )
+            twilio.send_message("Experiment 16 Complete")
+
+            # Experiment 17 - Sessions: Federated with centralized pretraining
+            training_setup(seed)
+            pF.print_experiment("17 - Sessions: Federated with centralized pretraining")
+            experiment_pain(algorithm="federated",
+                            dataset='PAIN',
+                            experiment='7-sessions-Federated-central-pre-training-personalization_10',
+                            rounds=30,
+                            shards=None,
+                            model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
+                            pretraining='centralized',
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            subjects_per_client=1,
+                            local_epochs=5,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False,
+                            local_operation='localized_learning'
+                            )
+            twilio.send_message("Experiment 17 Complete")
+
+            # Experiment 18 - Sessions: Federated with federated pretraining
+            training_setup(seed)
+            pF.print_experiment("18 - Sessions: Federated with federated pretraining")
+            experiment_pain(algorithm="federated",
+                            dataset='PAIN',
+                            experiment='8-sessions-Federated-federated-pre-training-personalization',
+                            rounds=30,
+                            shards=None,
+                            pretraining='federated',
+                            model_path=find_newest_model_path(FEDERATED_PAIN_MODELS, "shard-0.00.h5"),
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            subjects_per_client=1,
+                            local_epochs=5,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False,
+                            local_operation='localized_learning'
+                            )
+            twilio.send_message("Experiment 18 Complete")
+
+            # Experiment 19 - Sessions: Federated without pre-training
+            training_setup(seed)
+            pF.print_experiment("19 - Sessions: Federated without pre-training")
+            experiment_pain(algorithm="federated",
+                            dataset='PAIN',
+                            experiment='9-sessions-Federated-no-pre-training-local-models',
+                            rounds=30,
+                            shards=None,
+                            model_path=None,
+                            pretraining=None,
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            subjects_per_client=1,
+                            local_epochs=5,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False,
+                            local_operation='local_models'
+                            )
+            twilio.send_message("Experiment 19 Complete")
+
+            # Experiment 20 - Sessions: Federated with centralized pretraining
+            training_setup(seed)
+            pF.print_experiment("20 - Sessions: Federated with centralized pretraining")
+            experiment_pain(algorithm="federated",
+                            dataset='PAIN',
+                            experiment='10-sessions-Federated-central-pre-training-local-models',
+                            rounds=30,
+                            shards=None,
+                            model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
+                            pretraining='centralized',
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            subjects_per_client=1,
+                            local_epochs=5,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False,
+                            local_operation='local_models'
+                            )
+            twilio.send_message("Experiment 20 Complete")
+
+            # Experiment 21 - Sessions: Federated with federated pretraining
+            training_setup(seed)
+            pF.print_experiment("21 - Sessions: Federated with federated pretraining")
+            experiment_pain(algorithm="federated",
+                            dataset='PAIN',
+                            experiment='11-sessions-Federated-federated-pre-training-local-models',
+                            rounds=30,
+                            shards=None,
+                            pretraining='federated',
+                            model_path=find_newest_model_path(FEDERATED_PAIN_MODELS, "shard-0.00.h5"),
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            subjects_per_client=1,
+                            local_epochs=5,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False,
+                            local_operation='local_models'
+                            )
+            twilio.send_message("Experiment 21 Complete")
 
         if evaluate:
             baseline_model_evaluation(dataset="PAIN",
