@@ -925,17 +925,17 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             #                           model_type=model_type
             #                           )
 
-            training_setup(124)
+            training_setup(123)
             model_paths = ['',
                            '',
-                           '2019-08-26-192852_PAIN_1-sessions-Centralized-no-pre-training_shard-1.h5',
-                           '2019-08-26-193023_PAIN_1-sessions-Centralized-no-pre-training_shard-2.h5',
-                           '2019-08-26-193143_PAIN_1-sessions-Centralized-no-pre-training_shard-3.h5',
-                           '2019-08-26-193319_PAIN_1-sessions-Centralized-no-pre-training_shard-4.h5',
-                           '2019-08-26-193521_PAIN_1-sessions-Centralized-no-pre-training_shard-5.h5',
-                           '2019-08-26-193730_PAIN_1-sessions-Centralized-no-pre-training_shard-6.h5',
-                           '2019-08-26-193957_PAIN_1-sessions-Centralized-no-pre-training_shard-7.h5',
-                           '2019-08-26-194114_PAIN_1-sessions-Centralized-no-pre-training_shard-8.h5']
+                           '2019-08-26-105424_PAIN_1-sessions-Centralized-no-pre-training_shard-1.h5'
+                           '2019-08-26-105547_PAIN_1-sessions-Centralized-no-pre-training_shard-2.h5',
+                           '2019-08-26-105712_PAIN_1-sessions-Centralized-no-pre-training_shard-3.h5',
+                           '2019-08-26-105853_PAIN_1-sessions-Centralized-no-pre-training_shard-4.h5',
+                           '2019-08-26-110027_PAIN_1-sessions-Centralized-no-pre-training_shard-5.h5',
+                           '2019-08-26-110205_PAIN_1-sessions-Centralized-no-pre-training_shard-6.h5',
+                           '2019-08-26-110449_PAIN_1-sessions-Centralized-no-pre-training_shard-7.h5',
+                           '2019-08-26-110552_PAIN_1-sessions-Centralized-no-pre-training_shard-8.h5']
 
             quick_model_evaluation_1(dataset="PAIN",
                                      experiment="1-sessions-Centralized-no-pre-training",
@@ -947,15 +947,15 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
                                      )
 
             model_paths = ['',
-                           '2019-08-26-195759_PAIN_2-sessions-Centralized-pre-training_shard-0.00.h5',
-                           '2019-08-26-195928_PAIN_2-sessions-Centralized-pre-training_shard-1.h5',
-                           '2019-08-26-200049_PAIN_2-sessions-Centralized-pre-training_shard-2.h5',
-                           '2019-08-26-200209_PAIN_2-sessions-Centralized-pre-training_shard-3.h5',
-                           '2019-08-26-200351_PAIN_2-sessions-Centralized-pre-training_shard-4.h5',
-                           '2019-08-26-200507_PAIN_2-sessions-Centralized-pre-training_shard-5.h5',
-                           '2019-08-26-200633_PAIN_2-sessions-Centralized-pre-training_shard-6.h5',
-                           '2019-08-26-200812_PAIN_2-sessions-Centralized-pre-training_shard-7.h5',
-                           '2019-08-26-200902_PAIN_2-sessions-Centralized-pre-training_shard-8.h5']
+                           '2019-08-26-112153_PAIN_2-sessions-Centralized-pre-training_shard-0.00.h5',
+                           '2019-08-26-112300_PAIN_2-sessions-Centralized-pre-training_shard-1.h5',
+                           '2019-08-26-112415_PAIN_2-sessions-Centralized-pre-training_shard-2.h5'
+                           '2019-08-26-112546_PAIN_2-sessions-Centralized-pre-training_shard-3.h5',
+                           '2019-08-26-112815_PAIN_2-sessions-Centralized-pre-training_shard-4.h5',
+                           '2019-08-26-113008_PAIN_2-sessions-Centralized-pre-training_shard-5.h5',
+                           '2019-08-26-113119_PAIN_2-sessions-Centralized-pre-training_shard-6.h5',
+                           '2019-08-26-113200_PAIN_2-sessions-Centralized-pre-training_shard-7.h5',
+                           '2019-08-26-113303_PAIN_2-sessions-Centralized-pre-training_shard-8.h5']
 
             quick_model_evaluation_2(dataset="PAIN",
                                      experiment="2-sessions-Centralized-pre-training",
