@@ -927,51 +927,10 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             #                           model_type=model_type
             #                           )
 
-            training_setup(125)
-            model_paths = ['',
-                           '',
-                           '2019-08-27-081244_PAIN_1-sessions-Centralized-no-pre-training_shard-1.h5',
-                           '2019-08-27-081414_PAIN_1-sessions-Centralized-no-pre-training_shard-2.h5',
-                           '2019-08-27-081532_PAIN_1-sessions-Centralized-no-pre-training_shard-3.h5',
-                           '2019-08-27-081726_PAIN_1-sessions-Centralized-no-pre-training_shard-4.h5',
-                           '2019-08-27-081847_PAIN_1-sessions-Centralized-no-pre-training_shard-5.h5',
-                           '2019-08-27-082117_PAIN_1-sessions-Centralized-no-pre-training_shard-6.h5',
-                           '2019-08-27-082400_PAIN_1-sessions-Centralized-no-pre-training_shard-7.h5',
-                           '2019-08-27-082516_PAIN_1-sessions-Centralized-no-pre-training_shard-8.h5']
-
-            quick_model_evaluation_1(dataset="PAIN",
-                                     experiment="1-sessions-Centralized-no-pre-training",
-                                     model_path=model_paths,
-                                     optimizer=optimizer,
-                                     loss=loss,
-                                     metrics=metrics,
-                                     model_type=model_type
-                                     )
-
-            model_paths = ['',
-                           '2019-08-27-084132_PAIN_2-sessions-Centralized-pre-training_shard-0.00.h5',
-                           '2019-08-27-084312_PAIN_2-sessions-Centralized-pre-training_shard-1.h5',
-                           '2019-08-27-084451_PAIN_2-sessions-Centralized-pre-training_shard-2.h5',
-                           '2019-08-27-084639_PAIN_2-sessions-Centralized-pre-training_shard-3.h5',
-                           '2019-08-27-084755_PAIN_2-sessions-Centralized-pre-training_shard-4.h5',
-                           '2019-08-27-084909_PAIN_2-sessions-Centralized-pre-training_shard-5.h5',
-                           '2019-08-27-085009_PAIN_2-sessions-Centralized-pre-training_shard-6.h5',
-                           '2019-08-27-085050_PAIN_2-sessions-Centralized-pre-training_shard-7.h5',
-                           '2019-08-27-085135_PAIN_2-sessions-Centralized-pre-training_shard-8.h5']
-
-            quick_model_evaluation_2(dataset="PAIN",
-                                     experiment="2-sessions-Centralized-pre-training",
-                                     model_path=model_paths,
-                                     optimizer=optimizer,
-                                     loss=loss,
-                                     metrics=metrics,
-                                     model_type=model_type
-                                     )
-
             training_setup(123)
             model_paths = ['',
                            '',
-                           '2019-08-26-105424_PAIN_1-sessions-Centralized-no-pre-training_shard-1.h5'
+                           '2019-08-26-105424_PAIN_1-sessions-Centralized-no-pre-training_shard-1.h5',
                            '2019-08-26-105547_PAIN_1-sessions-Centralized-no-pre-training_shard-2.h5',
                            '2019-08-26-105712_PAIN_1-sessions-Centralized-no-pre-training_shard-3.h5',
                            '2019-08-26-105853_PAIN_1-sessions-Centralized-no-pre-training_shard-4.h5',
