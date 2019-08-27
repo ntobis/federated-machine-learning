@@ -674,7 +674,7 @@ def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistr
             pF.print_experiment("11 - Sessions: Centralized without pre-training")
             experiment_pain(algorithm='centralized',
                             dataset='PAIN',
-                            experiment='1-sessions-Centralized-no-pre-training_127',
+                            experiment='1-sessions-Centralized-no-pre-training_126',
                             rounds=30,
                             shards=None,
                             model_path=None,
@@ -695,7 +695,7 @@ def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistr
             pF.print_experiment("12 - Sessions: Centralized with pre-training")
             experiment_pain(algorithm='centralized',
                             dataset='PAIN',
-                            experiment='2-sessions-Centralized-pre-training_127',
+                            experiment='2-sessions-Centralized-pre-training_126',
                             rounds=30,
                             shards=None,
                             model_path=None,
@@ -716,7 +716,7 @@ def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistr
             pF.print_experiment("13 - Sessions: Federated without pre-training")
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
-                            experiment='3-sessions-Federated-no-pre-training_127',
+                            experiment='3-sessions-Federated-no-pre-training_126',
                             rounds=30,
                             shards=None,
                             model_path=None,
@@ -739,7 +739,7 @@ def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistr
             pF.print_experiment("14 - Sessions: Federated with centralized pretraining")
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
-                            experiment='4-sessions-Federated-central-pre-training_127',
+                            experiment='4-sessions-Federated-central-pre-training_126',
                             rounds=30,
                             shards=None,
                             model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
@@ -762,7 +762,7 @@ def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistr
             pF.print_experiment("15 - Sessions: Federated with federated pretraining")
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
-                            experiment='5-sessions-Federated-federated-pre-training_127',
+                            experiment='5-sessions-Federated-federated-pre-training_126',
                             rounds=30,
                             shards=None,
                             pretraining='federated',
@@ -785,7 +785,7 @@ def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistr
             pF.print_experiment("16 - Sessions: Federated without pre-training")
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
-                            experiment='6-sessions-Federated-no-pre-training-personalization_127',
+                            experiment='6-sessions-Federated-no-pre-training-personalization_126',
                             rounds=30,
                             shards=None,
                             model_path=None,
@@ -808,7 +808,7 @@ def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistr
             pF.print_experiment("17 - Sessions: Federated with centralized pretraining")
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
-                            experiment='7-sessions-Federated-central-pre-training-personalization_127',
+                            experiment='7-sessions-Federated-central-pre-training-personalization_126',
                             rounds=30,
                             shards=None,
                             model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
@@ -831,7 +831,7 @@ def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistr
             pF.print_experiment("18 - Sessions: Federated with federated pretraining")
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
-                            experiment='8-sessions-Federated-federated-pre-training-personalization_127',
+                            experiment='8-sessions-Federated-federated-pre-training-personalization_126',
                             rounds=30,
                             shards=None,
                             pretraining='federated',
@@ -854,7 +854,7 @@ def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistr
             pF.print_experiment("19 - Sessions: Federated without pre-training")
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
-                            experiment='9-sessions-Federated-no-pre-training-local-models_127',
+                            experiment='9-sessions-Federated-no-pre-training-local-models_126',
                             rounds=30,
                             shards=None,
                             model_path=None,
@@ -877,7 +877,7 @@ def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistr
             pF.print_experiment("20 - Sessions: Federated with centralized pretraining")
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
-                            experiment='10-sessions-Federated-central-pre-training-local-models_127',
+                            experiment='10-sessions-Federated-central-pre-training-local-models_126',
                             rounds=30,
                             shards=None,
                             model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
@@ -900,7 +900,7 @@ def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistr
             pF.print_experiment("21 - Sessions: Federated with federated pretraining")
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
-                            experiment='11-sessions-Federated-federated-pre-training-local-models_127',
+                            experiment='11-sessions-Federated-federated-pre-training-local-models_126',
                             rounds=30,
                             shards=None,
                             pretraining='federated',
@@ -920,7 +920,7 @@ def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistr
 
         if evaluate:
             baseline_model_evaluation(dataset="PAIN",
-                                      experiment="0-sessions-Baseline-central-pre-training_127",
+                                      experiment="0-sessions-Baseline-central-pre-training_126",
                                       model_path=None,
                                       optimizer=optimizer,
                                       loss=loss,
@@ -929,7 +929,7 @@ def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistr
                                       )
 
             baseline_model_evaluation(dataset="PAIN",
-                                      experiment="0-sessions-Baseline-federated-pre-training_127",
+                                      experiment="0-sessions-Baseline-federated-pre-training_126",
                                       model_path=find_newest_model_path(FEDERATED_PAIN_MODELS, "shard-0.00.h5"),
                                       optimizer=optimizer,
                                       loss=loss,
