@@ -540,11 +540,20 @@ def experiment_pain(algorithm, dataset, experiment, rounds, shards=None, model_p
 # ------------------------------------------------------------------------------------------------------------------ #
 
 
-def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribution=False, evaluate=False):
+def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistribution=False, evaluate=False):
     # Setup
     data_loc = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
 
-    g_monitor = GoogleCloudMonitor()
+    if vm == 1:
+        project = 'inbound-column-251110'
+        zone = 'us-west1-b'
+        instance = 'federated-1-vm'
+    else:
+        project = 'inbound-column-251110'
+        zone = 'us-west1-b'
+        instance = 'federated-2-vm'
+
+    g_monitor = GoogleCloudMonitor(project=project, zone=zone, instance=instance)
     twilio = Twilio()
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
@@ -938,4 +947,4 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
 
 
 if __name__ == '__main__':
-    main(seed=127, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
+    main(vm=1, seed=126, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
