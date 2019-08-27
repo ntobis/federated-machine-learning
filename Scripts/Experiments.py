@@ -278,7 +278,7 @@ def quick_model_evaluation(dataset, experiment, model_path, optimizer, loss, met
     for session, path in zip(df_testing['Session'].unique(), model_paths):
         if session > 0:
             pF.print_session(session)
-            model = tf.keras.models.load_model(path)
+            model = tf.keras.models.load_model(find_newest_model_path(CENTRAL_PAIN_MODELS, path))
             model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
             df_history = test_set_evaluation(df_history, df_testing, model, model_type, session)
 
