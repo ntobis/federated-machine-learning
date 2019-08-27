@@ -928,30 +928,11 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribut
             #                           )
 
             training_setup(123)
-            model_paths = ['',
-                           '',
-                           '2019-08-26-105424_PAIN_1-sessions-Centralized-no-pre-training_shard-1.h5',
-                           '2019-08-26-105547_PAIN_1-sessions-Centralized-no-pre-training_shard-2.h5',
-                           '2019-08-26-105712_PAIN_1-sessions-Centralized-no-pre-training_shard-3.h5',
-                           '2019-08-26-105853_PAIN_1-sessions-Centralized-no-pre-training_shard-4.h5',
-                           '2019-08-26-110027_PAIN_1-sessions-Centralized-no-pre-training_shard-5.h5',
-                           '2019-08-26-110205_PAIN_1-sessions-Centralized-no-pre-training_shard-6.h5',
-                           '2019-08-26-110449_PAIN_1-sessions-Centralized-no-pre-training_shard-7.h5',
-                           '2019-08-26-110552_PAIN_1-sessions-Centralized-no-pre-training_shard-8.h5']
-
-            quick_model_evaluation_1(dataset="PAIN",
-                                     experiment="1-sessions-Centralized-no-pre-training",
-                                     model_path=model_paths,
-                                     optimizer=optimizer,
-                                     loss=loss,
-                                     metrics=metrics,
-                                     model_type=model_type
-                                     )
 
             model_paths = ['',
                            '2019-08-26-112153_PAIN_2-sessions-Centralized-pre-training_shard-0.00.h5',
                            '2019-08-26-112300_PAIN_2-sessions-Centralized-pre-training_shard-1.h5',
-                           '2019-08-26-112415_PAIN_2-sessions-Centralized-pre-training_shard-2.h5'
+                           '2019-08-26-112415_PAIN_2-sessions-Centralized-pre-training_shard-2.h5',
                            '2019-08-26-112546_PAIN_2-sessions-Centralized-pre-training_shard-3.h5',
                            '2019-08-26-112815_PAIN_2-sessions-Centralized-pre-training_shard-4.h5',
                            '2019-08-26-113008_PAIN_2-sessions-Centralized-pre-training_shard-5.h5',
