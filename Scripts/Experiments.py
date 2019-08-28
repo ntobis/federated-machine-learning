@@ -553,20 +553,10 @@ def experiment_pain(algorithm, dataset, experiment, rounds, shards=None, model_p
 # ------------------------------------------------------------------------------------------------------------------ #
 
 
-def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistribution=False, evaluate=False):
+def main(seed=123, unbalanced=False, balanced=False, sessions=False, redistribution=False, evaluate=False):
     # Setup
     data_loc = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
 
-    if vm == 1:
-        project = 'inbound-column-251110'
-        zone = 'us-west1-b'
-        instance = 'federated-1-vm'
-    else:
-        project = 'inbound-column-251110'
-        zone = 'us-west1-b'
-        instance = 'federated-2-vm'
-
-    g_monitor = GoogleCloudMonitor(project=project, zone=zone, instance=instance)
     twilio = Twilio()
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
@@ -957,9 +947,6 @@ def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistr
         traceback.print_tb(e.__traceback__)
         print(e)
 
-    # Notify that training is complete and shut down Google server
-    # g_monitor.shutdown()
-
 
 def move_files(target_folder, seed):
 
@@ -986,7 +973,14 @@ def move_files(target_folder, seed):
 
 
 if __name__ == '__main__':
-    main(vm=1, seed=130, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
+    vm = 1
+    g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance='federated-' + str(vm)
+                                                                                                + '-vm')
+
+    main(seed=130, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
     move_files('20 - Seed 130', 130)
-    main(vm=1, seed=132, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
+    main(seed=132, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
     move_files('22 - Seed 132', 132)
+
+    g_monitor.shutdown()
+
