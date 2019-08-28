@@ -947,4 +947,4 @@ def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistr
 
 
 if __name__ == '__main__':
-    main(vm=2, seed=128, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
+    main(vm=1, seed=128, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
