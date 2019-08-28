@@ -976,11 +976,13 @@ if __name__ == '__main__':
     vm = 1
     g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance='federated-' + str(vm)
                                                                                                 + '-vm')
+    try:
+        main(seed=130, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
+        move_files('20 - Seed 130', 130)
+        main(seed=132, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
+        move_files('22 - Seed 132', 132)
 
-    main(seed=130, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
-    move_files('20 - Seed 130', 130)
-    main(seed=132, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
-    move_files('22 - Seed 132', 132)
-
+    except Exception as e:
+        pass
     g_monitor.shutdown()
 
