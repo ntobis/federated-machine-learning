@@ -349,8 +349,9 @@ def calculate_weighted_average(history, metrics, prefix=''):
     return df_avg.to_dict('list')
 
 
-def train_cnn(algorithm, model, epochs, train_data=None, train_labels=None, test_data=None, test_labels=None,
-              test_people=None, all_labels=None, individual_validation=True):
+def train_cnn(algorithm, model, epochs, train_data, train_labels, test_data, test_labels, test_people, all_labels,
+              individual_validation):
+
     # Create callbacks
     history_cb = None
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
