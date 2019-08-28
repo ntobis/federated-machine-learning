@@ -948,5 +948,29 @@ def main(vm, seed=123, unbalanced=False, balanced=False, sessions=False, redistr
     g_monitor.shutdown()
 
 
+def delete_substring(substring):
+    elements = [elem for elem in os.listdir(RESULTS) if substring in elem]
+    for elem in elements:
+        f_path = os.path.join(RESULTS, elem)
+        new = elem.replace(substring, '')
+        os.rename(f_path, os.path.join(RESULTS, new))
+
+
+def move_files(target_folder):
+    target_f_path = os.path.join(RESULTS, 'Thesis', target_folder)
+    if not os.path.isdir(target_f_path):
+        os.mkdir(target_f_path)
+
+    if not os.path.isdir(os.path.join(target_f_path, 'Plotting')):
+        os.mkdir(os.path.join(target_f_path, 'Plotting'))
+
+    elements = [elem for elem in os.listdir(RESULTS) if '2019' in elem]
+    for elem in elements:
+        f_path = os.path.join(RESULTS, elem)
+        os.rename(f_path, os.path.join(target_f_path, elem))
+
+
 if __name__ == '__main__':
-    main(vm=2, seed=129, unbalanced=False, balanced=False, sessions=False, redistribution=False, evaluate=True)
+    main(vm=2, seed=129, unbalanced=False, balanced=False, sessions=True, redistribution=False, evaluate=True)
+    # delete_substring('_127')
+    # move_files('17 - Seed 127')
