@@ -1152,16 +1152,17 @@ def main_2(f_path):
     df['Shard'] = df['Shard'].apply(lambda x: x.split('-')[1].split('.')[0]).astype(int)
 
     for seed, df_seed in df.groupby('Seed'):
-        for experiment, df_experiment in df_seed.groupby('Experiment'):
-            print('Seed:', seed, 'Experiment:', experiment)
-            quick_model_evaluation(dataset="PAIN",
-                                   experiment=experiment + '_' + str(seed),
-                                   df=df_experiment,
-                                   optimizer=optimizer,
-                                   loss=loss,
-                                   metrics=metrics,
-                                   f_path=f_path
-                                   )
+        if int(seed) > 130:
+            for experiment, df_experiment in df_seed.groupby('Experiment'):
+                print('Seed:', seed, 'Experiment:', experiment)
+                quick_model_evaluation(dataset="PAIN",
+                                       experiment=experiment + '_' + str(seed),
+                                       df=df_experiment,
+                                       optimizer=optimizer,
+                                       loss=loss,
+                                       metrics=metrics,
+                                       f_path=f_path
+                                       )
 
 
 def quick_baselines(f_path, learn_type):
@@ -1194,6 +1195,6 @@ if __name__ == '__main__':
     # g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance=instance)
     # main(seed=132, unbalanced=False, balanced=False, sessions=True, evaluate=True)
     # g_monitor.shutdown()
-    # main_2(CENTRAL_PAIN_MODELS)
+    main_2(CENTRAL_PAIN_MODELS)
 
-    quick_baselines(CENTRAL_PAIN_MODELS, 'central')
+    # quick_baselines(CENTRAL_PAIN_MODELS, 'central')
