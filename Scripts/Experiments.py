@@ -1122,7 +1122,7 @@ def quick_model_evaluation_runner(dataset, experiment, df, optimizer, loss, metr
 
     for session in df_testing['Session'].unique():
         if session > 0:
-            df_test = df[df['Shard'] == session-1]
+            df_test = df[df['Shard'] == session - 1]
             if len(df_test) > 0:
                 print('Loading:', df_test['paths'].iloc[0])
                 model = tf.keras.models.load_model(find_newest_model_path(f_path, df_test['paths'].iloc[0]))
@@ -1152,12 +1152,11 @@ def quick_model_evaluation(f_path):
     df['paths'] = paths
     df['Shard'] = df['Shard'].apply(lambda x: x.split('-')[1].split('.')[0]).astype(int)
 
-    df = pd.DataFrame([file.split('_') for file in sorted(os.listdir(RESULTS))],
-                      columns=['Date', 'Pain', 'Experiment', 'Seed', 'TEST'])
-    print(df)
+    df_res = pd.DataFrame([file.split('_') for file in sorted(os.listdir(RESULTS))],
+                          columns=['Date', 'Pain', 'Experiment', 'Seed', 'TEST'])
     for seed, df_seed in df.groupby('Seed'):
         for experiment, df_experiment in df_seed.groupby('Experiment'):
-            if experiment in df['Experiment'] and seed in df['Seed']:
+            if experiment in df_res['Experiment'] and seed in df_res['Seed']:
                 pass
             else:
                 print('Seed:', seed, 'Experiment:', experiment)
@@ -1170,8 +1169,8 @@ def quick_model_evaluation(f_path):
                                               metrics=metrics,
                                               f_path=f_path
                                               )
-            df = pd.DataFrame([file.split('_') for file in sorted(os.listdir(RESULTS))],
-                              columns=['Date', 'Pain', 'Experiment', 'Seed', 'TEST'])
+            df_res = pd.DataFrame([file.split('_') for file in sorted(os.listdir(RESULTS))],
+                                  columns=['Date', 'Pain', 'Experiment', 'Seed', 'TEST'])
 
 
 def quick_baselines(f_path, learn_type):
@@ -1189,7 +1188,8 @@ def quick_baselines(f_path, learn_type):
     for baseline, df_baseline in df.groupby('baseline'):
         print('Load model', baseline, 'Seed:', str(df_baseline['Seed'].iloc[0]))
         baseline_model_evaluation(dataset="PAIN",
-                                  experiment="0-sessions-Baseline-" + learn_type + "-pre-training" + "_" + str(df_baseline['Seed'].iloc[0]),
+                                  experiment="0-sessions-Baseline-" + learn_type + "-pre-training" + "_" + str(
+                                      df_baseline['Seed'].iloc[0]),
                                   model_path=find_newest_model_path(f_path, baseline),
                                   optimizer=optimizer,
                                   loss=loss,
