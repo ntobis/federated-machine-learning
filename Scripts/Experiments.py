@@ -356,7 +356,6 @@ def split_and_balance_df(df, ratio, balance_test=False):
 
 def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, model, model_type, rounds, shards,
                pain_gap, individual_validation, local_operation, balance_test):
-
     # Initialize WeightsAccountant
     weights_accountant = WeightsAccountant(model) if algorithm == 'federated' else None
 
@@ -379,7 +378,6 @@ def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, model, 
     # Train on group 2 shards and evaluate performance
     for percentage, train_data, train_labels, train_people, train_all_labels in \
             zip(shards, split_train_data, split_train_labels, split_train_people, split_train_all_labels):
-
         pF.print_shard(percentage)
         experiment_current = experiment + "_shard-{}".format(percentage)
 
@@ -1118,10 +1116,57 @@ def move_files(target_folder, seed):
         os.rename(f_path, os.path.join(target_f_path, new))
 
 
-if __name__ == '__main__':
-    vm = 1
-    g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance='federated-' + str(vm)
-                                                                                                + '-vm')
-    main(seed=132, unbalanced=False, balanced=False, sessions=True, evaluate=True)
+def quick_model_evaluation(dataset, experiment, df, optimizer, loss, metrics, f_path):
+    df_history = pd.DataFrame()
+    df_testing = dL.create_pain_df(GROUP_2_PATH, pain_gap=())
 
-    g_monitor.shutdown()
+    for session in df_testing['Session'].unique():
+        if session > 0:
+            df_test = df[df['Shard'] == session-1]
+            if len(df_test) > 0:
+                print('Loading')
+                model = tf.keras.models.load_model(find_newest_model_path(f_path, df_test['paths'].iloc[0]))
+            else:
+                print('Building')
+                model = mA.build_model((215, 215, 1), 'CNN')
+            model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+            pF.print_session(session)
+            df_history = evaluate_session(df_history, df_testing, model, 'CNN', session)
+
+    # Save history to CSV
+    f_name = time.strftime("%Y-%m-%d-%H%M%S") + "_{}_{}.csv".format(dataset, experiment + "_TEST")
+    df_history.to_csv(os.path.join(RESULTS, f_name))
+
+
+def main_2(f_path):
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
+    loss = tf.keras.losses.BinaryCrossentropy()
+    metrics = ['accuracy', TruePositives(), TrueNegatives(),
+               FalsePositives(), FalseNegatives(), Recall(), Precision(), AUC(curve='ROC', name='auc'),
+               AUC(curve='PR', name='pr')]
+
+    models = [file.split('_') for file in sorted(os.listdir(f_path))]
+    paths = sorted(os.listdir(f_path))
+    df = pd.DataFrame(models, columns=['Date', 'Pain', 'Experiment', 'Seed', 'Shard'])
+    df['paths'] = paths
+    df['Shard'] = df['Shard'].apply(lambda x: x.split('-')[1].split('.')[0]).astype(int)
+
+    for seed, df_seed in df.groupby('Seed'):
+        for experiment, df_experiment in df_seed.groupby('Experiment'):
+            quick_model_evaluation(dataset="PAIN",
+                                   experiment=experiment + '_' + str(seed),
+                                   df=df_experiment,
+                                   optimizer=optimizer,
+                                   loss=loss,
+                                   metrics=metrics,
+                                   f_path=f_path
+                                   )
+
+
+if __name__ == '__main__':
+    # vm = 1
+    # instance = 'federated-' + str(vm) + '-vm'
+    # g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance=instance)
+    # main(seed=132, unbalanced=False, balanced=False, sessions=True, evaluate=True)
+    # g_monitor.shutdown()
+    main_2(CENTRAL_PAIN_MODELS)
