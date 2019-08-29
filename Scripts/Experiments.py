@@ -1132,6 +1132,7 @@ def quick_model_evaluation(dataset, experiment, df, optimizer, loss, metrics, f_
             model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
             pF.print_session(session)
             df_history = evaluate_session(df_history, df_testing, model, 'CNN', session)
+            del model
 
     # Save history to CSV
     f_name = time.strftime("%Y-%m-%d-%H%M%S") + "_{}_{}.csv".format(dataset, experiment + "_TEST")
@@ -1195,6 +1196,12 @@ if __name__ == '__main__':
     # g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance=instance)
     # main(seed=132, unbalanced=False, balanced=False, sessions=True, evaluate=True)
     # g_monitor.shutdown()
-    main_2(CENTRAL_PAIN_MODELS)
 
-    # quick_baselines(CENTRAL_PAIN_MODELS, 'central')
+    twil = Twilio()
+    try:
+        # main_2(CENTRAL_PAIN_MODELS)
+        quick_baselines(CENTRAL_PAIN_MODELS, 'central')
+    except:
+        twil.send_message('ERROR')
+    finally:
+        twil.send_message('Done Evaluating')
