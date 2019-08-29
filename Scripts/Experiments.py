@@ -1156,7 +1156,7 @@ def quick_model_evaluation(f_path):
     df_res['Exp_Seed'] = df_res['Experiment'] + df_res['Seed']
     for seed, df_seed in df.groupby('Seed'):
         for experiment, df_experiment in df_seed.groupby('Experiment'):
-            if experiment + seed in df_res['Exp_Seed']:
+            if experiment + seed in df_res['Exp_Seed'].values:
                 pass
             else:
                 print('Seed:', seed, 'Experiment:', experiment)
