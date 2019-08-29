@@ -1156,7 +1156,8 @@ def quick_model_evaluation(f_path):
     for seed, df_seed in df.groupby('Seed'):
         for experiment, df_experiment in df_seed.groupby('Experiment'):
             print('Seed:', seed, 'Experiment:', experiment)
-            p = multiprocessing.Process(quick_model_evaluation_runner, args=("PAIN", experiment + '_' + str(seed),
+            p = multiprocessing.Process(target=quick_model_evaluation_runner,
+                                        args=("PAIN", experiment + '_' + str(seed),
                                                                              df_experiment, optimizer, loss,
                                                                              metrics, f_path))
             p.start()
