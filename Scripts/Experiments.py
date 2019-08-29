@@ -1153,17 +1153,16 @@ def main_2(f_path):
     df['Shard'] = df['Shard'].apply(lambda x: x.split('-')[1].split('.')[0]).astype(int)
 
     for seed, df_seed in df.groupby('Seed'):
-        if int(seed) > 130:
-            for experiment, df_experiment in df_seed.groupby('Experiment'):
-                print('Seed:', seed, 'Experiment:', experiment)
-                quick_model_evaluation(dataset="PAIN",
-                                       experiment=experiment + '_' + str(seed),
-                                       df=df_experiment,
-                                       optimizer=optimizer,
-                                       loss=loss,
-                                       metrics=metrics,
-                                       f_path=f_path
-                                       )
+        for experiment, df_experiment in df_seed.groupby('Experiment'):
+            print('Seed:', seed, 'Experiment:', experiment)
+            quick_model_evaluation(dataset="PAIN",
+                                   experiment=experiment + '_' + str(seed),
+                                   df=df_experiment,
+                                   optimizer=optimizer,
+                                   loss=loss,
+                                   metrics=metrics,
+                                   f_path=f_path
+                                   )
 
 
 def quick_baselines(f_path, learn_type):
