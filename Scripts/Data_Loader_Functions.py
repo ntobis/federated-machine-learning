@@ -1,12 +1,9 @@
 import os
-import pickle
 
 import cv2
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-
-from Scripts import Print_Functions as Output
 
 
 def unison_shuffled_copies(a, b):
@@ -22,77 +19,6 @@ def unison_shuffled_copies(a, b):
     assert len(a) == len(b)
     p = np.random.permutation(len(a))
     return a[p], b[p]
-
-
-def get_pickle_files(directory):
-    """
-    Utility function returning all pickle file paths in a directory.
-    :param directory:       string, directory path
-    :return:
-        files               sorted list of file paths to pickle files
-    """
-
-    files = []
-    for file in os.listdir(directory):
-        if file.endswith(".pkl"):
-            files.append(os.path.join(directory, file))
-    files = sorted(files)
-    return files
-
-
-def load_pickle(file_name):
-    """
-    Utility function loading a pickle file.
-    :param file_name:       string, file path
-    :return:
-        file                pickle file in read mode
-    """
-    with open(file_name, 'rb') as f:
-        file = pickle.load(f)
-    return file
-
-
-def train_test_split(features, labels, test_split=0.25, shuffle=False):
-    """
-    Utility function splitting features and labels into train and test sets, with the option to shuffle.
-
-    :param features:        numpy array
-    :param labels:          numpy array
-    :param test_split:      float, indicating the test portion of the data
-    :param shuffle:         bool
-    :return:
-        train_data, train_labels, test_data, test_labels    tuple of numpy arrays
-    """
-    if shuffle:
-        features, labels = unison_shuffled_copies(features, labels)
-    split_point = int(len(features) * test_split)
-    train_data = features[split_point:]
-    test_data = features[:split_point]
-    train_labels = features[split_point:]
-    test_labels = features[:split_point]
-    return train_data, train_labels, test_data, test_labels
-
-
-def load_mnist_data():
-    """
-    Loads the MNIST Data Set and reshapes it for further model training
-
-    :return:
-        train_images        numpy array of shape (60000, 28, 28, 1)
-        train_labels        numpy array of shape (60000, )
-        test_images         numpy array of shape (10000, 28, 28, 1)
-        test_labels         numpy array of shape (10000, )
-    """
-
-    (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data()
-
-    train_images = train_images.reshape((60000, 28, 28, 1))
-    test_images = test_images.reshape((10000, 28, 28, 1))
-
-    # Normalize pixel values to be between 0 and 1
-    train_images, test_images = train_images / 255.0, test_images / 255.0
-
-    return train_images, train_labels, test_images, test_labels
 
 
 def split_by_label(data, labels):
@@ -141,34 +67,6 @@ def allocate_data(num_clients, split_data, split_labels, categories_per_client, 
         clients.append(client)
         labels.append(label)
     return clients, labels
-
-
-def load_data(dataset):
-    """
-    Generic data load function.
-
-    :param dataset:                         string, name of dataset
-    :return:
-        train_data:                         numpy array
-        train_labels:                       numpy array
-        test_data:                          numpy array
-        test_labels:                        numpy array
-        dataset:                            string, name of dataset
-    """
-
-    # Load data
-    if dataset == "MNIST":
-        train_data, train_labels, test_data, test_labels = load_mnist_data()
-    else:
-        Output.eprint("No data-set named {}. Loading MNIST instead.".format(dataset))
-        train_data, train_labels, test_data, test_labels = load_mnist_data()
-        dataset = "MNIST"
-
-    train_data = train_data.astype('float32')
-    train_labels = train_labels.astype('float32')
-    test_data = test_data.astype('float32')
-    test_labels = test_labels.astype('float32')
-    return train_data, train_labels, test_data, test_labels, dataset
 
 
 def sort_data(data, labels):
@@ -354,27 +252,6 @@ def get_labels(image_paths, label_type=None, ext='.jpg'):
     return labels
 
 
-def load_all_images_into_tf_dataset(path):
-    """
-    Utility function loading images in a directory into a Tensorflow Dataset.
-
-    :param path:                    string, root directory path
-    :return:
-        image_label_ds, len(labels) tuple of Tensorflow dataset and number of data points
-    """
-
-    img_paths = get_image_paths(path)
-
-    path_ds = tf.data.Dataset.from_tensor_slices(img_paths)
-    image_ds = path_ds.map(tf_load_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-
-    labels = get_labels(img_paths)
-    label_ds = tf.data.Dataset.from_tensor_slices(tf.cast(labels, tf.int64))
-
-    image_label_ds = tf.data.Dataset.zip((image_ds, label_ds))
-    return image_label_ds, len(labels)
-
-
 def prepare_dataset_for_training(ds, batch_size, ds_size):
     """
     Utility function preparing a Tensorflow Dataset for training.
@@ -469,24 +346,6 @@ def mirror_folder_structure(input_path, output_path):
         structure = os.path.join(output_path, dir_path[len(input_path) + 1:])
         if not os.path.isdir(structure):
             os.mkdir(structure)
-
-
-def downsample_data(path):
-    """
-    Utility function downsampling the number of "no pain" images to the number of "pain images". "No Pain" images are
-    randomly deleted.
-
-    :param path:                    string, root filepath
-    :return:
-    """
-
-    img_paths = np.array(get_image_paths(path))
-    img_labels = np.array(get_labels(img_paths))
-    pain = img_paths[img_labels[:, 4] != str(0)]
-    zero_pain = img_paths[img_labels[:, 4] == str(0)]
-    np.random.shuffle(zero_pain)
-    delete = zero_pain[:len(zero_pain) - len(pain)]
-    [os.remove(file) for file in delete]
 
 
 def print_pain_label_dist(path):

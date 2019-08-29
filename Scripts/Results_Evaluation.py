@@ -148,3 +148,18 @@ def generate_overview_table(return_metrics, exp_names):
         [np.array(['', 'Weighted AVG + STD', 'Weighted AVG + STD', 'Weighted AVG + STD']), overview_table.columns])
     tuples = list(zip(*cols))
     return pd.DataFrame(overview_table.values, columns=pd.MultiIndex.from_tuples(tuples))
+
+
+def concat_validation_metrics(experiment_folder):
+    for folder in sorted(os.listdir(experiment_folder)):
+        if folder != 'Plotting' and os.path.isdir(os.path.join(experiment_folder, folder)):
+            folder_path = os.path.join(experiment_folder, folder)
+            df_concat = pd.DataFrame()
+            for file in sorted(os.listdir(folder_path)):
+                if file != '.DS_Store':
+                    file_path = os.path.join(experiment_folder, folder_path, file)
+                    df = pd.read_csv(file_path)
+                    df['Session'] = os.path.splitext(file.split('shard-')[1])[0]
+                    df_concat = pd.concat((df_concat, df), ignore_index=True, sort=False)
+            df_concat = df_concat.rename(columns={'Unnamed: 0': 'Epoch'})
+            df_concat.to_excel(os.path.join(experiment_folder, 'Plotting', folder + '.xlsx'))
