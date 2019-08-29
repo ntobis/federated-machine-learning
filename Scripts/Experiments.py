@@ -1124,7 +1124,7 @@ def quick_model_evaluation(dataset, experiment, df, optimizer, loss, metrics, f_
         if session > 0:
             df_test = df[df['Shard'] == session-1]
             if len(df_test) > 0:
-                print('Loading')
+                print('Loading:', df_test['paths'].iloc[0])
                 model = tf.keras.models.load_model(find_newest_model_path(f_path, df_test['paths'].iloc[0]))
             else:
                 print('Building')
