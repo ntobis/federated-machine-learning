@@ -1179,6 +1179,7 @@ def quick_baselines(f_path, learn_type):
                AUC(curve='PR', name='pr')]
 
     for baseline, df_baseline in df.groupby('baseline'):
+        print('Load model', baseline, 'Seed:', str(df_baseline['Seed'].iloc[0]))
         baseline_model_evaluation(dataset="PAIN",
                                   experiment="0-sessions-Baseline-" + learn_type + "-pre-training" + "_" + str(df_baseline['Seed'].iloc[0]),
                                   model_path=find_newest_model_path(f_path, baseline),
@@ -1199,8 +1200,8 @@ if __name__ == '__main__':
 
     twil = Twilio()
     try:
-        # main_2(CENTRAL_PAIN_MODELS)
-        quick_baselines(CENTRAL_PAIN_MODELS, 'central')
+        main_2(FEDERATED_PAIN_MODELS)
+        quick_baselines(FEDERATED_PAIN_MODELS, 'federated')
     except:
         twil.send_message('ERROR')
     finally:
