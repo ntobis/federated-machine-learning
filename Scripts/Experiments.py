@@ -1116,13 +1116,11 @@ def move_files(target_folder, seed):
 
 
 if __name__ == '__main__':
-    vm = 2
+    vm = 1
     g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance='federated-' + str(vm)
                                                                                                 + '-vm')
-    try:
-        # noinspection PyBroadException
-        main(seed=131, unbalanced=False, balanced=False, sessions=True, evaluate=True)
-        move_files('21 - Seed 131', 131)
+    # noinspection PyBroadException
+    main(seed=132, unbalanced=False, balanced=False, sessions=True, evaluate=True)
+    move_files('22 - Seed 132', 132)
 
-    finally:
-        g_monitor.shutdown()
+    g_monitor.shutdown()
