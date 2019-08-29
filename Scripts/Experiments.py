@@ -1,5 +1,4 @@
 import argparse
-import multiprocessing
 import os
 import sys
 import traceback
@@ -1156,12 +1155,14 @@ def quick_model_evaluation(f_path):
     for seed, df_seed in df.groupby('Seed'):
         for experiment, df_experiment in df_seed.groupby('Experiment'):
             print('Seed:', seed, 'Experiment:', experiment)
-            p = multiprocessing.Process(target=quick_model_evaluation_runner,
-                                        args=("PAIN", experiment + '_' + str(seed),
-                                                                             df_experiment, optimizer, loss,
-                                                                             metrics, f_path))
-            p.start()
-            p.join()
+            quick_model_evaluation_runner(dataset="PAIN",
+                                          experiment=experiment + '_' + str(seed),
+                                          df=df_experiment,
+                                          optimizer=optimizer,
+                                          loss=loss,
+                                          metrics=metrics,
+                                          f_path=f_path
+                                          )
 
 
 def quick_baselines(f_path, learn_type):
@@ -1200,9 +1201,7 @@ if __name__ == '__main__':
     try:
         quick_model_evaluation(FEDERATED_PAIN_MODELS)
         quick_baselines(FEDERATED_PAIN_MODELS, 'federated')
-    except Exception as e:
-        twil.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
-        traceback.print_tb(e.__traceback__)
-        print(e)
+    except:
+        twil.send_message('ERROR')
     finally:
         twil.send_message('Done Evaluating')
