@@ -1152,33 +1152,12 @@ def quick_model_evaluation(f_path):
     df['paths'] = paths
     df['Shard'] = df['Shard'].apply(lambda x: x.split('-')[1].split('.')[0]).astype(int)
 
-    exps = [
-        "1-sessions-Centralized-no-pre-training",
-        "2-sessions-Centralized-pre-training",
-        "1-sessions-Centralized-no-pre-training",
-        "2-sessions-Centralized-pre-training",
-        "1-sessions-Centralized-no-pre-training",
-        "2-sessions-Centralized-pre-training",
-        "0-sessions-Baseline-central-pre-training",
-        "0-sessions-Baseline-central-pre-training",
-        "0-sessions-Baseline-central-pre-training",
-        "10-sessions-Federated-central-pre-training-local-models",
-        "11-sessions-Federated-federated-pre-training-local-models",
-        "3-sessions-Federated-no-pre-training",
-        "4-sessions-Federated-central-pre-training",
-        "5-sessions-Federated-federated-pre-training",
-        "6-sessions-Federated-no-pre-training-personalization",
-        "7-sessions-Federated-central-pre-training-personalization",
-        "8-sessions-Federated-federated-pre-training-personalization"
-    ]
-
-    sds = [
-        '127',
-    ]
+    df = pd.DataFrame([file.split('_') for file in sorted(os.listdir(RESULTS))],
+                      columns=['Date', 'Pain', 'Experiment', 'Seed', 'TEST'])
 
     for seed, df_seed in df.groupby('Seed'):
         for experiment, df_experiment in df_seed.groupby('Experiment'):
-            if experiment in exps and seed in sds:
+            if experiment in df['Experiment'] and seed in df['Seed']:
                 pass
             else:
                 print('Seed:', seed, 'Experiment:', experiment)
@@ -1191,6 +1170,8 @@ def quick_model_evaluation(f_path):
                                               metrics=metrics,
                                               f_path=f_path
                                               )
+            df = pd.DataFrame([file.split('_') for file in sorted(os.listdir(RESULTS))],
+                              columns=['Date', 'Pain', 'Experiment', 'Seed', 'TEST'])
 
 
 def quick_baselines(f_path, learn_type):
