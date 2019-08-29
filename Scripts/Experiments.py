@@ -1199,7 +1199,9 @@ if __name__ == '__main__':
     try:
         quick_model_evaluation(FEDERATED_PAIN_MODELS)
         quick_baselines(FEDERATED_PAIN_MODELS, 'federated')
-    except:
-        twil.send_message('ERROR')
+    except Exception as e:
+        twil.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
+        traceback.print_tb(e.__traceback__)
+        print(e)
     finally:
         twil.send_message('Done Evaluating')
