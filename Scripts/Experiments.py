@@ -1,4 +1,5 @@
 import argparse
+import multiprocessing
 import os
 import sys
 import traceback
@@ -1116,7 +1117,7 @@ def move_files(target_folder, seed):
         os.rename(f_path, os.path.join(target_f_path, new))
 
 
-def quick_model_evaluation(dataset, experiment, df, optimizer, loss, metrics, f_path):
+def quick_model_evaluation_runner(dataset, experiment, df, optimizer, loss, metrics, f_path):
     df_history = pd.DataFrame()
     df_testing = dL.create_pain_df(GROUP_2_PATH, pain_gap=())
 
@@ -1139,15 +1140,15 @@ def quick_model_evaluation(dataset, experiment, df, optimizer, loss, metrics, f_
     df_history.to_csv(os.path.join(RESULTS, f_name))
 
 
-def main_2(f_path):
+def quick_model_evaluation(f_path):
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
     loss = tf.keras.losses.BinaryCrossentropy()
     metrics = ['accuracy', TruePositives(), TrueNegatives(),
                FalsePositives(), FalseNegatives(), Recall(), Precision(), AUC(curve='ROC', name='auc'),
                AUC(curve='PR', name='pr')]
 
-    models = [file.split('_') for file in sorted(os.listdir(f_path))]
-    paths = sorted(os.listdir(f_path))
+    paths = sorted(os.listdir(f_path))[4:]
+    models = [file.split('_') for file in paths]
     df = pd.DataFrame(models, columns=['Date', 'Pain', 'Experiment', 'Seed', 'Shard'])
     df['paths'] = paths
     df['Shard'] = df['Shard'].apply(lambda x: x.split('-')[1].split('.')[0]).astype(int)
@@ -1155,14 +1156,11 @@ def main_2(f_path):
     for seed, df_seed in df.groupby('Seed'):
         for experiment, df_experiment in df_seed.groupby('Experiment'):
             print('Seed:', seed, 'Experiment:', experiment)
-            quick_model_evaluation(dataset="PAIN",
-                                   experiment=experiment + '_' + str(seed),
-                                   df=df_experiment,
-                                   optimizer=optimizer,
-                                   loss=loss,
-                                   metrics=metrics,
-                                   f_path=f_path
-                                   )
+            p = multiprocessing.Process(quick_model_evaluation_runner, args=("PAIN", experiment + '_' + str(seed),
+                                                                             df_experiment, optimizer, loss,
+                                                                             metrics, f_path))
+            p.start()
+            p.join()
 
 
 def quick_baselines(f_path, learn_type):
@@ -1199,7 +1197,7 @@ if __name__ == '__main__':
 
     twil = Twilio()
     try:
-        main_2(FEDERATED_PAIN_MODELS)
+        quick_model_evaluation(FEDERATED_PAIN_MODELS)
         quick_baselines(FEDERATED_PAIN_MODELS, 'federated')
     except:
         twil.send_message('ERROR')
