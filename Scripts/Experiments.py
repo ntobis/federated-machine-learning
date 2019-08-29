@@ -1165,7 +1165,11 @@ def quick_model_evaluation(f_path):
         "10-sessions-Federated-central-pre-training-local-models",
         "11-sessions-Federated-federated-pre-training-local-models",
         "3-sessions-Federated-no-pre-training",
-        "4-sessions-Federated-central-pre-training"
+        "4-sessions-Federated-central-pre-training",
+        "5-sessions-Federated-federated-pre-training",
+        "6-sessions-Federated-no-pre-training-personalization",
+        "7-sessions-Federated-central-pre-training-personalization",
+        "8-sessions-Federated-federated-pre-training-personalization"
     ]
 
     sds = [
@@ -1213,7 +1217,6 @@ def quick_baselines(f_path, learn_type):
                                   )
 
 
-
 if __name__ == '__main__':
     # vm = 1
     # instance = 'federated-' + str(vm) + '-vm'
@@ -1227,5 +1230,3 @@ if __name__ == '__main__':
         quick_baselines(FEDERATED_PAIN_MODELS, 'federated')
     except:
         twil.send_message('ERROR')
-    finally:
-        twil.send_message('Done Evaluating')
