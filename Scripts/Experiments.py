@@ -1208,8 +1208,8 @@ if __name__ == '__main__':
 
     twil = Twilio()
     try:
-        quick_model_evaluation(FEDERATED_PAIN_MODELS)
-        # quick_baselines(CENTRAL_PAIN_MODELS, 'central')
+        # quick_model_evaluation(FEDERATED_PAIN_MODELS)
+        quick_baselines(FEDERATED_PAIN_MODELS, 'federated')
 
     except Exception as e:
         twil.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
