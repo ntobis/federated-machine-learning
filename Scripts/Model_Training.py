@@ -10,9 +10,6 @@ from Scripts import Keras_Custom as kC
 from Scripts import Print_Functions as Output
 from Scripts.Keras_Custom import EarlyStopping
 
-models = tf.keras.models  # like 'from tensorflow.keras import models' (PyCharm import issue workaround)
-# optimizer = tf.keras.optimizers
-
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
 

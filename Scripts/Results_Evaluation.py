@@ -1,7 +1,7 @@
 import os
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 ROOT = os.path.dirname(os.path.dirname(__file__))
 RESULTS = os.path.join(ROOT, 'Results', 'Thesis')
@@ -66,6 +66,7 @@ def mask_df(df, metric, subjects, pivot):
 
 def weighted_mean_SD(df, subjects, metric, sessions, pivot):
     weights = mask_df(session_examples_total(df, subjects, metric), metric, subjects, pivot).drop('Session', axis=1)
+
     columns = ['subject_{}_{}'.format(subject, metric) for subject in subjects]
     df_new = df[columns]
     df_new = df_new.rename(
@@ -129,7 +130,8 @@ def compute_average_metrics(view_by, subjects, pivot):
     return_metrics['accuracy'] = compute_avg_df('accuracy', view_by, subjects, pivot, folders)
     return_metrics['recall'] = compute_avg_df('recall', view_by, subjects, pivot, folders)
     return_metrics['precision'] = compute_avg_df('precision', view_by, subjects, pivot, folders)
-    return_metrics['auc'] = compute_avg_df('auc', view_by, subjects, pivot, folders)
+    return_metrics['roc'] = compute_avg_df('auc', view_by, subjects, pivot, folders)
+    # return_metrics['pr'] = compute_avg_df('pr', view_by, subjects, pivot, folders)
     return_metrics['f1_score'] = 2 * return_metrics['recall'] * \
                                  return_metrics['precision'] / (return_metrics['recall'] + return_metrics['precision'])
     return return_metrics
@@ -138,7 +140,7 @@ def compute_average_metrics(view_by, subjects, pivot):
 def generate_overview_table(return_metrics, exp_names):
     # Concatenate overview table and rename index
     overview_table = pd.concat((prep_col(return_metrics['accuracy']).rename(columns={'Mean + STD': 'ACC'}),
-                                prep_col(return_metrics['auc']).rename(columns={'Mean + STD': 'AUC'}),
+                                # prep_col(return_metrics['pr']).rename(columns={'Mean + STD': 'PR-AUC'}),
                                 prep_col(return_metrics['f1_score']).rename(columns={'Mean + STD': 'F1'})), axis=1)
     overview_table = rename_index(overview_table, exp_names)
 

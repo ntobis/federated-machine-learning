@@ -744,11 +744,3 @@ def create_pivot(path, index, columns, values, pain_level=0, pain_gap=()):
     pivot['Pain %'] = round(pivot['Pain'] / (pivot['Pain'] + pivot['No Pain']), 2)
     pivot[pivot == 0] = ''
     return pivot
-
-
-if __name__ == '__main__':
-    from Scripts import Experiments as eX
-    df = create_pain_df(eX.GROUP_2_PATH)
-    print(len(df[(df['Pain'] == 0) & (df['Session'] > 0)]))
-    print(len(df[(df['Pain'] > 0) & (df['Session'] > 0)]))
-    print(len(df[(df['Pain'] > 0) & (df['Session'] > 0)]) / (len(df[(df['Pain'] > 0) & (df['Session'] > 0)]) + len(df[(df['Pain'] == 0) & (df['Session'] > 0)])))
