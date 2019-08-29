@@ -1085,7 +1085,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
 
                 twilio.send_message("Evaluation Complete")
 
-            move_files('22 - Seed ' + str(seed), seed)
+            move_files('{} - Seed {}'.format(seed, seed), seed)
 
     except Exception as e:
         twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
@@ -1117,9 +1117,10 @@ def move_files(target_folder, seed):
 
 
 if __name__ == '__main__':
-    vm = 1
-    inst = 'federated-' + str(vm) + '-vm'
-    g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance=inst)
-    main(seed=125, unbalanced=False, balanced=False, sessions=True, evaluate=True)
-    move_files('125 - Seed ' + str(125), 125)
-    g_monitor.shutdown()
+    # vm = 1
+    # inst = 'federated-' + str(vm) + '-vm'
+    # g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance=inst)
+    # main(seed=125, unbalanced=False, balanced=False, sessions=True, evaluate=True)
+    # g_monitor.shutdown()
+    seed = 130
+    move_files('{} - Seed {}'.format(seed, seed), seed)
