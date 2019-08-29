@@ -1146,23 +1146,47 @@ def quick_model_evaluation(f_path):
                FalsePositives(), FalseNegatives(), Recall(), Precision(), AUC(curve='ROC', name='auc'),
                AUC(curve='PR', name='pr')]
 
-    paths = sorted(os.listdir(f_path))[4:]
+    paths = sorted(os.listdir(f_path))
     models = [file.split('_') for file in paths]
     df = pd.DataFrame(models, columns=['Date', 'Pain', 'Experiment', 'Seed', 'Shard'])
     df['paths'] = paths
     df['Shard'] = df['Shard'].apply(lambda x: x.split('-')[1].split('.')[0]).astype(int)
 
+    exps = [
+        "1-sessions-Centralized-no-pre-training",
+        "2-sessions-Centralized-pre-training",
+        "1-sessions-Centralized-no-pre-training",
+        "2-sessions-Centralized-pre-training",
+        "1-sessions-Centralized-no-pre-training",
+        "2-sessions-Centralized-pre-training",
+        "0-sessions-Baseline-central-pre-training",
+        "0-sessions-Baseline-central-pre-training",
+        "0-sessions-Baseline-central-pre-training",
+        "10-sessions-Federated-central-pre-training-local-models",
+        "11-sessions-Federated-federated-pre-training-local-models",
+        "3-sessions-Federated-no-pre-training",
+        "4-sessions-Federated-central-pre-training"
+    ]
+
+    sds = [
+        '127',
+    ]
+
     for seed, df_seed in df.groupby('Seed'):
         for experiment, df_experiment in df_seed.groupby('Experiment'):
-            print('Seed:', seed, 'Experiment:', experiment)
-            quick_model_evaluation_runner(dataset="PAIN",
-                                          experiment=experiment + '_' + str(seed),
-                                          df=df_experiment,
-                                          optimizer=optimizer,
-                                          loss=loss,
-                                          metrics=metrics,
-                                          f_path=f_path
-                                          )
+            if experiment in exps and seed in sds:
+                pass
+            else:
+                print('Seed:', seed, 'Experiment:', experiment)
+
+                quick_model_evaluation_runner(dataset="PAIN",
+                                              experiment=experiment + '_' + str(seed),
+                                              df=df_experiment,
+                                              optimizer=optimizer,
+                                              loss=loss,
+                                              metrics=metrics,
+                                              f_path=f_path
+                                              )
 
 
 def quick_baselines(f_path, learn_type):
