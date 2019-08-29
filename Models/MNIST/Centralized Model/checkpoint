@@ -1,2 +1,0 @@
-model_checkpoint_path: "centralized_cp.ckpt"
-all_model_checkpoint_paths: "centralized_cp.ckpt"
