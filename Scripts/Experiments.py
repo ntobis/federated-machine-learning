@@ -1154,7 +1154,7 @@ def quick_model_evaluation(f_path):
 
     df = pd.DataFrame([file.split('_') for file in sorted(os.listdir(RESULTS))],
                       columns=['Date', 'Pain', 'Experiment', 'Seed', 'TEST'])
-
+    print(df)
     for seed, df_seed in df.groupby('Seed'):
         for experiment, df_experiment in df_seed.groupby('Experiment'):
             if experiment in df['Experiment'] and seed in df['Seed']:
