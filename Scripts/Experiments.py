@@ -1087,6 +1087,8 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
 
                 twilio.send_message("Evaluation Complete")
 
+            move_files('22 - Seed ' + str(seed), seed)
+
     except Exception as e:
         twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
         traceback.print_tb(e.__traceback__)
@@ -1120,8 +1122,6 @@ if __name__ == '__main__':
     vm = 1
     g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance='federated-' + str(vm)
                                                                                                 + '-vm')
-    # noinspection PyBroadException
     main(seed=132, unbalanced=False, balanced=False, sessions=True, evaluate=True)
-    move_files('22 - Seed 132', 132)
 
     g_monitor.shutdown()
