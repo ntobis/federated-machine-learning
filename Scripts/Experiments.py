@@ -545,7 +545,8 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
     loss = tf.keras.losses.BinaryCrossentropy()
     metrics = ['accuracy', TruePositives(), TrueNegatives(),
-               FalsePositives(), FalseNegatives(), Recall(), Precision(), AUC()]
+               FalsePositives(), FalseNegatives(), Recall(), Precision(), AUC(curve='ROC', name='auc'),
+               AUC(curve='PR', name='pr')]
 
     model_type = 'CNN'
     pain_gap = ()
