@@ -1164,10 +1164,36 @@ def main_2(f_path):
                                    )
 
 
+def quick_baselines(f_path, learn_type):
+    baselines = sorted([file for file in os.listdir(f_path) if '0.00' in file])
+
+    df = pd.DataFrame([file.split('_') for file in baselines], columns=['Date', 'Pain', 'Experiment', 'Seed', 'Shard'])
+    df['baseline'] = baselines
+
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
+    loss = tf.keras.losses.BinaryCrossentropy()
+    metrics = ['accuracy', TruePositives(), TrueNegatives(),
+               FalsePositives(), FalseNegatives(), Recall(), Precision(), AUC(curve='ROC', name='auc'),
+               AUC(curve='PR', name='pr')]
+
+    for baseline, df_baseline in df.groupby('baseline'):
+        baseline_model_evaluation(dataset="PAIN",
+                                  experiment="0-sessions-Baseline-" + learn_type + "-pre-training" + "_" + str(df_baseline['Seed'].iloc[0]),
+                                  model_path=find_newest_model_path(f_path, baseline),
+                                  optimizer=optimizer,
+                                  loss=loss,
+                                  metrics=metrics,
+                                  model_type='CNN'
+                                  )
+
+
+
 if __name__ == '__main__':
     # vm = 1
     # instance = 'federated-' + str(vm) + '-vm'
     # g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance=instance)
     # main(seed=132, unbalanced=False, balanced=False, sessions=True, evaluate=True)
     # g_monitor.shutdown()
-    main_2(CENTRAL_PAIN_MODELS)
+    # main_2(CENTRAL_PAIN_MODELS)
+
+    quick_baselines(CENTRAL_PAIN_MODELS, 'central')
