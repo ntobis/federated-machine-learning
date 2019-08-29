@@ -1203,12 +1203,13 @@ if __name__ == '__main__':
     # instance = 'federated-' + str(vm) + '-vm'
     # g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance=instance)
     # main(seed=132, unbalanced=False, balanced=False, sessions=True, evaluate=True)
+    # move_files('131 - Seed ' + str(131), 131)
     # g_monitor.shutdown()
 
     twil = Twilio()
     try:
-        # quick_model_evaluation(FEDERATED_PAIN_MODELS)
-        quick_baselines(FEDERATED_PAIN_MODELS, 'federated')
+        quick_model_evaluation(CENTRAL_PAIN_MODELS)
+        # quick_baselines(FEDERATED_PAIN_MODELS, 'federated')
 
     except Exception as e:
         twil.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
