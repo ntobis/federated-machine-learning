@@ -1153,6 +1153,7 @@ def main_2(f_path):
 
     for seed, df_seed in df.groupby('Seed'):
         for experiment, df_experiment in df_seed.groupby('Experiment'):
+            print('Seed:', seed, 'Experiment:', experiment)
             quick_model_evaluation(dataset="PAIN",
                                    experiment=experiment + '_' + str(seed),
                                    df=df_experiment,
