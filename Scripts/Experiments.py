@@ -1130,8 +1130,8 @@ def reorganize_group_1():
 if __name__ == '__main__':
     vm = 2
     print("Reorganize")
-    reorganize_group_1()
+    # reorganize_group_1()
     inst = 'federated-' + str(vm) + '-vm'
-    g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance=inst)
+    # g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance=inst)
     main(seed=123, unbalanced=False, balanced=False, sessions=True, evaluate=True)
     # g_monitor.shutdown()
