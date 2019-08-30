@@ -131,7 +131,7 @@ def compute_average_metrics(view_by, subjects, pivot, path):
     return_metrics['recall'] = compute_avg_df('recall', view_by, subjects, pivot, folders, path)
     return_metrics['precision'] = compute_avg_df('precision', view_by, subjects, pivot, folders, path)
     return_metrics['roc'] = compute_avg_df('auc', view_by, subjects, pivot, folders, path)
-    # return_metrics['pr'] = compute_avg_df('pr', view_by, subjects, pivot, folders, path)
+    return_metrics['pr'] = compute_avg_df('pr', view_by, subjects, pivot, folders, path)
     return_metrics['f1_score'] = 2 * return_metrics['recall'] * \
                                  return_metrics['precision'] / (return_metrics['recall'] + return_metrics['precision'])
     return return_metrics
