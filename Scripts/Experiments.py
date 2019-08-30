@@ -82,18 +82,13 @@ class GoogleCloudMonitor:
 
 
 class Twilio(Client):
-    def __init__(self):
+    def __init__(self, parser):
         """
         Instantiate a Twilio Client that sends text messages when training is complete or an error occurs. Parses login
         credentials from the command line.
         """
 
         # Parse Commandline Arguments
-        parser = argparse.ArgumentParser()
-        parser.add_argument("--sms_acc", help="Enter Twilio Account Here")
-        parser.add_argument("--sms_pw", help="Enter Twilio Password Here")
-        parser.add_argument("--sender", help="Sender Number")
-        parser.add_argument("--receiver", help="Sender Number")
         self.args = parser.parse_args()
         super(Twilio, self).__init__(self.args.sms_acc, self.args.sms_pw)
 
@@ -538,9 +533,10 @@ def experiment_pain(algorithm, dataset, experiment, rounds, shards=None, balance
 # ------------------------------------------------------------------------------------------------------------------ #
 
 
-def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=False):
+def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=False, arguments=None):
     # Setup
-    twilio = Twilio()
+    twilio = Twilio(arguments)
+    twilio.send_message("Seed {}".format(seed))
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
     loss = tf.keras.losses.BinaryCrossentropy()
@@ -1128,10 +1124,19 @@ def reorganize_group_1():
 
 
 if __name__ == '__main__':
-    vm = 1
-    print("Reorganize")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--sms_acc", help="Enter Twilio Account Here")
+    parser.add_argument("--sms_pw", help="Enter Twilio Password Here")
+    parser.add_argument("--sender", help="Sender Number")
+    parser.add_argument("--receiver", help="Sender Number")
+    parser.add_argument("--seed", help="Random Seed")
+    parser.add_argument("--vm", help="Google VM that the program runs on.")
+    args = parser.parse_args()
+
+    # print("Reorganize")
     # reorganize_group_1()
-    inst = 'federated-' + str(vm) + '-vm'
+    inst = 'federated-' + str(args.vm) + '-vm'
     g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance=inst)
-    main(seed=126, unbalanced=False, balanced=False, sessions=True, evaluate=True)
+    main(seed=int(args.seed), unbalanced=False, balanced=False, sessions=True, evaluate=True, arguments=args)
     g_monitor.shutdown()
+
