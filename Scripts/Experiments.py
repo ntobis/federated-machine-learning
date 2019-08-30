@@ -82,14 +82,14 @@ class GoogleCloudMonitor:
 
 
 class Twilio(Client):
-    def __init__(self, parser):
+    def __init__(self, arguments):
         """
         Instantiate a Twilio Client that sends text messages when training is complete or an error occurs. Parses login
         credentials from the command line.
         """
 
         # Parse Commandline Arguments
-        self.args = parser.parse_args()
+        self.args = arguments
         super(Twilio, self).__init__(self.args.sms_acc, self.args.sms_pw)
 
     def send_message(self, msg=None):
