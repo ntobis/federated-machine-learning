@@ -7,8 +7,6 @@ import pandas as pd
 from tensorflow.python.keras.metrics import TruePositives, TrueNegatives, FalsePositives, FalseNegatives, Recall, \
     Precision, AUC
 
-from Scripts.Quick_Eval_Funcs import reorganize_group_1
-
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import time
@@ -1118,6 +1116,15 @@ def move_files(target_folder, seed):
         f_path = os.path.join(target_f_path, elem)
         new = elem.replace("_" + str(seed), '')
         os.rename(f_path, os.path.join(target_f_path, new))
+
+
+def reorganize_group_1():
+    df = dL.create_pain_df(os.path.join(DATA, 'raw'))
+    df = df[df['Person'] != 101]
+    for path in df['img_path'].values:
+        split = path.split('raw/')
+        new_path = os.path.join(split[0], 'group_1', split[1])
+        os.rename(path, new_path)
 
 
 if __name__ == '__main__':
