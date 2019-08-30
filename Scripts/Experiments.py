@@ -1117,8 +1117,8 @@ def move_files(target_folder, seed):
 
 
 if __name__ == '__main__':
-    vm = 2
+    vm = 1
     inst = 'federated-' + str(vm) + '-vm'
     g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance=inst)
-    main(seed=124, unbalanced=False, balanced=False, sessions=True, evaluate=True)
+    main(seed=123, unbalanced=False, balanced=False, sessions=True, evaluate=True)
     g_monitor.shutdown()
