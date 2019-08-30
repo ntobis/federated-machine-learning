@@ -35,8 +35,8 @@ CENTRAL_PAIN_MODELS = os.path.join(MODELS, "Pain", "Centralized")
 FEDERATED_PAIN_MODELS = os.path.join(MODELS, "Pain", "Federated")
 
 DATA = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
-GROUP_1_PATH = os.path.join(DATA, "group_2")
-GROUP_2_PATH = os.path.join(DATA, "group_1")
+GROUP_1_PATH = os.path.join(DATA, "group_1")
+GROUP_2_PATH = os.path.join(DATA, "group_2")
 
 
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
@@ -280,8 +280,8 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
 
         # Prepare labels for training and evaluation
         df = dL.create_pain_df(GROUP_1_PATH, pain_gap=pain_gap)
-        df_train, _ = split_and_balance_df(df, ratio=1, balance_test=False)
-        train_data, train_labels, _, _ = load_and_prepare_data(df_train['img_path'].values,
+        # df, _ = split_and_balance_df(df, ratio=1, balance_test=False)
+        train_data, train_labels, _, _ = load_and_prepare_data(df['img_path'].values,
                                                                person=0,
                                                                pain=4,
                                                                model_type=model_type)
@@ -298,7 +298,7 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
 
         # Load data
         df = dL.create_pain_df(GROUP_1_PATH, pain_gap=pain_gap)
-        df, _ = split_and_balance_df(df, ratio=1, balance_test=False)
+        # df, _ = split_and_balance_df(df, ratio=1, balance_test=False)
         data, labels, people, all_labels = load_and_prepare_data(df['img_path'].values,
                                                                  person=0,
                                                                  pain=4, model_type=model_type)
@@ -1087,7 +1087,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
 
                 twilio.send_message("Evaluation Complete")
 
-            move_files('{} - Seed {} Reversed'.format(seed, seed), seed)
+            move_files('{} - Seed {}'.format(seed, seed), seed)
 
     except Exception as e:
         twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
@@ -1128,10 +1128,10 @@ def reorganize_group_1():
 
 
 if __name__ == '__main__':
-    vm = 2
+    vm = 1
     print("Reorganize")
     # reorganize_group_1()
     inst = 'federated-' + str(vm) + '-vm'
     g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance=inst)
-    main(seed=123, unbalanced=False, balanced=False, sessions=True, evaluate=True)
+    main(seed=126, unbalanced=False, balanced=False, sessions=True, evaluate=True)
     g_monitor.shutdown()

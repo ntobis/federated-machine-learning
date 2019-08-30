@@ -85,10 +85,10 @@ def weighted_mean_SD(df, subjects, metric, sessions, pivot):
     return pd.DataFrame(weighted_avg).T
 
 
-def compute_avg_df(metric, view_by, subjects, pivot, folders):
+def compute_avg_df(metric, view_by, subjects, pivot, folders, path):
     res = {}
     for folder in folders:
-        experiment_path = os.path.join(RESULTS, folder)
+        experiment_path = os.path.join(path, folder)
         res[folder] = results_table(experiment_path, metric, view_by, subjects, pivot)
     df_sum = pd.DataFrame()
     seeds = 0
@@ -124,14 +124,14 @@ def prepare_top_experiments(df, exp_names, top_exp):
     return df.reset_index()
 
 
-def compute_average_metrics(view_by, subjects, pivot):
+def compute_average_metrics(view_by, subjects, pivot, path):
     return_metrics = {}
-    folders = [folder for folder in os.listdir(RESULTS) if 'Seed' in folder]
-    return_metrics['accuracy'] = compute_avg_df('accuracy', view_by, subjects, pivot, folders)
-    return_metrics['recall'] = compute_avg_df('recall', view_by, subjects, pivot, folders)
-    return_metrics['precision'] = compute_avg_df('precision', view_by, subjects, pivot, folders)
-    return_metrics['roc'] = compute_avg_df('auc', view_by, subjects, pivot, folders)
-    # return_metrics['pr'] = compute_avg_df('pr', view_by, subjects, pivot, folders)
+    folders = [folder for folder in os.listdir(path) if 'Seed' in folder]
+    return_metrics['accuracy'] = compute_avg_df('accuracy', view_by, subjects, pivot, folders, path)
+    return_metrics['recall'] = compute_avg_df('recall', view_by, subjects, pivot, folders, path)
+    return_metrics['precision'] = compute_avg_df('precision', view_by, subjects, pivot, folders, path)
+    return_metrics['roc'] = compute_avg_df('auc', view_by, subjects, pivot, folders, path)
+    # return_metrics['pr'] = compute_avg_df('pr', view_by, subjects, pivot, folders, path)
     return_metrics['f1_score'] = 2 * return_metrics['recall'] * \
                                  return_metrics['precision'] / (return_metrics['recall'] + return_metrics['precision'])
     return return_metrics
@@ -140,7 +140,7 @@ def compute_average_metrics(view_by, subjects, pivot):
 def generate_overview_table(return_metrics, exp_names):
     # Concatenate overview table and rename index
     overview_table = pd.concat((prep_col(return_metrics['accuracy']).rename(columns={'Mean + STD': 'ACC'}),
-                                # prep_col(return_metrics['pr']).rename(columns={'Mean + STD': 'PR-AUC'}),
+                                prep_col(return_metrics['pr']).rename(columns={'Mean + STD': 'PR-AUC'}),
                                 prep_col(return_metrics['f1_score']).rename(columns={'Mean + STD': 'F1'})), axis=1)
     overview_table = rename_index(overview_table, exp_names)
 
