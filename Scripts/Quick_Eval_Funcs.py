@@ -7,8 +7,13 @@ from tensorflow.python.keras.metrics import TruePositives, TrueNegatives, FalseP
     Precision, AUC
 
 from Scripts import Data_Loader_Functions as dL, Model_Architectures as mA, Print_Functions as pF
+from Scripts.Data_Loader_Functions import create_pain_df
 from Scripts.Experiments import GROUP_2_PATH, find_newest_model_path, evaluate_session, RESULTS, \
     baseline_model_evaluation
+
+
+ROOT = os.path.dirname(os.path.dirname(__file__))
+DATA = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
 
 
 def quick_model_evaluation_runner(dataset, experiment, df, optimizer, loss, metrics, f_path):
@@ -93,3 +98,12 @@ def quick_baselines(f_path, learn_type):
                                   metrics=metrics,
                                   model_type='CNN'
                                   )
+
+
+def reorganize_group_1():
+    df = create_pain_df(os.path.join(DATA, 'raw'))
+    df = df[df['Person'] != 101]
+    for path in df['img_path'].values:
+        split = path.split('raw/')
+        new_path = os.path.join(split[0], 'group_1', split[1])
+        os.rename(path, new_path)

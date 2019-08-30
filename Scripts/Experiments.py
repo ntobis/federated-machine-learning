@@ -7,6 +7,8 @@ import pandas as pd
 from tensorflow.python.keras.metrics import TruePositives, TrueNegatives, FalsePositives, FalseNegatives, Recall, \
     Precision, AUC
 
+from Scripts.Quick_Eval_Funcs import reorganize_group_1
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import time
@@ -35,10 +37,8 @@ CENTRAL_PAIN_MODELS = os.path.join(MODELS, "Pain", "Centralized")
 FEDERATED_PAIN_MODELS = os.path.join(MODELS, "Pain", "Federated")
 
 DATA = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
-GROUP_1_TRAIN_PATH = os.path.join(DATA, "group_1")
-GROUP_2_PATH = os.path.join(DATA, "group_2")
-GROUP_2_TRAIN_PATH = os.path.join(DATA, "group_2_train")
-GROUP_2_TEST_PATH = os.path.join(DATA, "group_2_test")
+GROUP_1_PATH = os.path.join(DATA, "group_2")
+GROUP_2_PATH = os.path.join(DATA, "group_1")
 
 
 # ---------------------------------------------------- End Paths --------------------------------------------------- #
@@ -281,11 +281,13 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
         model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
         # Prepare labels for training and evaluation
-        df = dL.create_pain_df(GROUP_1_TRAIN_PATH, pain_gap=pain_gap)
-        train_data, train_labels, train_people, raw_labels = load_and_prepare_data(df['img_path'].values,
-                                                                                   person=0,
-                                                                                   pain=4,
-                                                                                   model_type=model_type)
+        df = dL.create_pain_df(GROUP_1_PATH, pain_gap=pain_gap)
+        df_train, _ = split_and_balance_df(df, ratio=1, balance_test=False)
+        train_data, train_labels, _, _ = load_and_prepare_data(df_train['img_path'].values,
+                                                               person=0,
+                                                               pain=4,
+                                                               model_type=model_type)
+
         # Train
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", model=model, rounds=rounds,
                              train_data=train_data, train_labels=train_labels, individual_validation=False)
@@ -297,7 +299,8 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
         weights_accountant = WeightsAccountant(model)
 
         # Load data
-        df = dL.create_pain_df(GROUP_1_TRAIN_PATH, pain_gap=pain_gap)
+        df = dL.create_pain_df(GROUP_1_PATH, pain_gap=pain_gap)
+        df, _ = split_and_balance_df(df, ratio=1, balance_test=False)
         data, labels, people, all_labels = load_and_prepare_data(df['img_path'].values,
                                                                  person=0,
                                                                  pain=4, model_type=model_type)
@@ -335,12 +338,13 @@ def train_test_split(test_ratio, *args):
 
 
 def split_and_balance_df(df, ratio, balance_test=False):
-    # Split Original data into ratio
+    # Split Original data into ratio (for each person)
     df_original = df[(df['Trans_1'] == 'original') & (df['Trans_2'] == 'straight')]
     df_train = df_original.sample(frac=1).groupby('Person', group_keys=False).apply(lambda x: x.sample(frac=ratio))
     df_test = df_original.drop(df_train.index)
 
-    # Balance the training data set
+    # Balance the training data set (1. get all permutations, 2. get all pain instances of  the permutations,
+    # 3. down-sample no-pain to pain number
     df_train = df[df['temp_id'].isin(df_train['temp_id'])]
     df_pain = df_train[df_train['Pain'] > 0]
     df_train = pd.concat((df_pain, df_train[df_train['Pain'] == 0].sample(len(df_pain))), ignore_index=True)
@@ -1085,7 +1089,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
 
                 twilio.send_message("Evaluation Complete")
 
-            move_files('{} - Seed {}'.format(seed, seed), seed)
+            move_files('{} - Seed {} Reversed'.format(seed, seed), seed)
 
     except Exception as e:
         twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
@@ -1117,8 +1121,10 @@ def move_files(target_folder, seed):
 
 
 if __name__ == '__main__':
-    vm = 1
-    inst = 'federated-' + str(vm) + '-vm'
-    g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance=inst)
+    vm = 2
+    reorganize_group_1()
+    # inst = 'federated-' + str(vm) + '-vm'
+    # g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance=inst)
     main(seed=123, unbalanced=False, balanced=False, sessions=True, evaluate=True)
-    g_monitor.shutdown()
+    # g_monitor.shutdown()
+    # 41416
