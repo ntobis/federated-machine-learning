@@ -323,11 +323,11 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
                              ' as arguments. "{}" was given.'.format(local_operation))
 
         # Early stopping
-        # if early_stopping(weights_accountant.get_client_weights(), history.get('val_loss')[-1]):
-        #     print("Early Stopping, Communication round {}".format(comm_round))
-        #     weights = early_stopping.return_best_weights()
-        #     weights_accountant.set_client_weights(weights)
-        #     break
+        if early_stopping(weights_accountant.get_client_weights(), history.get('val_loss')[-1]):
+            print("Early Stopping, Communication round {}".format(comm_round))
+            weights = early_stopping.return_best_weights()
+            weights_accountant.set_client_weights(weights)
+            break
 
         weights_accountant.print_client_update()
 
@@ -363,7 +363,7 @@ def train_cnn(algorithm, model, epochs, train_data, train_labels, val_data, val_
     validation_split = 0.2 if val_data is None and algorithm == 'centralized' else None
 
     history = model.fit(train_data, train_labels, epochs=epochs, batch_size=32, use_multiprocessing=True,
-                        validation_split=validation_split, validation_data=validation_data, callbacks=None)
+                        validation_split=validation_split, validation_data=validation_data, callbacks=callbacks)
 
     return model, history_cb.history if history_cb is not None else history.history
 
