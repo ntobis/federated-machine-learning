@@ -275,7 +275,7 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
 
         # Prepare labels for training and evaluation
         df = dL.create_pain_df(GROUP_1_PATH, pain_gap=pain_gap)
-        # df, _ = split_and_balance_df(df, ratio=1, balance_test=False)
+        df, _ = split_and_balance_df(df, ratio=1, balance_test=False)
         train_data, train_labels, _, _ = load_and_prepare_data(df['img_path'].values,
                                                                person=0,
                                                                pain=4,
@@ -293,7 +293,7 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
 
         # Load data
         df = dL.create_pain_df(GROUP_1_PATH, pain_gap=pain_gap)
-        # df, _ = split_and_balance_df(df, ratio=1, balance_test=False)
+        df, _ = split_and_balance_df(df, ratio=1, balance_test=False)
         data, labels, people, all_labels = load_and_prepare_data(df['img_path'].values,
                                                                  person=0,
                                                                  pain=4, model_type=model_type)
