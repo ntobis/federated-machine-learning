@@ -658,7 +658,7 @@ def prepare_pain_images(root_path, distribution='unbalanced'):
             1))))
 
 
-def create_pain_df(path, pain_gap=()):
+def create_pain_df(path, pain_gap=(), binarize=True):
     img_paths = np.array(get_image_paths(path))
     labels = np.array(get_labels(img_paths))
     df = pd.DataFrame(labels, columns=['Person', 'Session', 'Culture', 'Frame', 'Pain', 'Trans_1', 'Trans_2'])
@@ -670,7 +670,8 @@ def create_pain_df(path, pain_gap=()):
                         ascending=[True, True, True, False, False]).reset_index(drop=True)
     df['temp_id'] = df['Person'].astype(str) + df['Session'].astype(str) + df['Frame'].astype(str)
     df = df[~df['Pain'].isin(pain_gap)]
-    df['Pain'] = np.minimum(df['Pain'], 1)
+    if binarize:
+        df['Pain'] = np.minimum(df['Pain'], 1)
     return df
 
 

@@ -1134,9 +1134,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # print("Reorganize")
-    # reorganize_group_1()
+    reorganize_group_1()
     # inst = 'federated-' + str(args.vm) + '-vm'
     # g_monitor = GoogleCloudMonitor(project='inbound-column-251110', zone='us-west1-b', instance=inst)
-    main(seed=int(args.seed), unbalanced=False, balanced=False, sessions=True, evaluate=True, arguments=args)
+    # main(seed=int(args.seed), unbalanced=False, balanced=False, sessions=True, evaluate=True, arguments=args)
     # g_monitor.shutdown()
 
