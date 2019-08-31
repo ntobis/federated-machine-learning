@@ -350,9 +350,8 @@ def train_cnn(algorithm, model, epochs, train_data, train_labels, val_data, val_
 
     # Create callbacks
     history_cb = None
-    early_stopping = None
-    # early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
-    #                                                   baseline=None, restore_best_weights=True)
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
+                                                      baseline=None, restore_best_weights=True)
     callbacks = [early_stopping]
     # Create validation sets
     validation_data = (val_data, val_labels) if val_data is not None and algorithm is not 'federated' else None
@@ -364,7 +363,7 @@ def train_cnn(algorithm, model, epochs, train_data, train_labels, val_data, val_
     validation_split = 0.2 if val_data is None and algorithm == 'centralized' else None
 
     history = model.fit(train_data, train_labels, epochs=epochs, batch_size=32, use_multiprocessing=True,
-                        validation_split=validation_split, validation_data=validation_data, callbacks=callbacks)
+                        validation_split=validation_split, validation_data=validation_data, callbacks=None)
 
     return model, history_cb.history if history_cb is not None else history.history
 
