@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
+from Scripts.Experiments import DATA
+
 
 def unison_shuffled_copies(a, b):
     """
@@ -745,3 +747,12 @@ def create_pivot(path, index, columns, values, pain_level=0, pain_gap=()):
     pivot['Pain %'] = round(pivot['Pain'] / (pivot['Pain'] + pivot['No Pain']), 2)
     pivot[pivot == 0] = ''
     return pivot
+
+
+def reorganize_group_1():
+    df = dL.create_pain_df(os.path.join(DATA, 'raw'))
+    df = df[df['Person'] != 101]
+    for path in df['img_path'].values:
+        split = path.split('raw/')
+        new_path = os.path.join(split[0], 'group_1', split[1])
+        os.rename(path, new_path)

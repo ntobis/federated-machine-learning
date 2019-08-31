@@ -323,11 +323,11 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
                              ' as arguments. "{}" was given.'.format(local_operation))
 
         # Early stopping
-        if early_stopping(weights_accountant.get_client_weights(), history.get('val_loss')[-1]):
-            print("Early Stopping, Communication round {}".format(comm_round))
-            weights = early_stopping.return_best_weights()
-            weights_accountant.set_client_weights(weights)
-            break
+        # if early_stopping(weights_accountant.get_client_weights(), history.get('val_loss')[-1]):
+        #     print("Early Stopping, Communication round {}".format(comm_round))
+        #     weights = early_stopping.return_best_weights()
+        #     weights_accountant.set_client_weights(weights)
+        #     break
 
         weights_accountant.print_client_update()
 
@@ -350,8 +350,9 @@ def train_cnn(algorithm, model, epochs, train_data, train_labels, val_data, val_
 
     # Create callbacks
     history_cb = None
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
-                                                      baseline=None, restore_best_weights=True)
+    early_stopping = None
+    # early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto',
+    #                                                   baseline=None, restore_best_weights=True)
     callbacks = [early_stopping]
     # Create validation sets
     validation_data = (val_data, val_labels) if val_data is not None and algorithm is not 'federated' else None
