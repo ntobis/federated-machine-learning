@@ -1083,7 +1083,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
 
                 twilio.send_message("Evaluation Complete")
 
-            move_files('{} - Seed {}'.format(seed, seed), seed)
+            move_files('{} - Seed {} No ES'.format(seed, seed), seed)
 
     except Exception as e:
         twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
