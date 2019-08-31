@@ -1124,14 +1124,14 @@ def reorganize_group_1():
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--sms_acc", help="Enter Twilio Account Here")
-    parser.add_argument("--sms_pw", help="Enter Twilio Password Here")
-    parser.add_argument("--sender", help="Sender Number")
-    parser.add_argument("--receiver", help="Sender Number")
-    parser.add_argument("--seed", help="Random Seed")
-    parser.add_argument("--vm", help="Google VM that the program runs on.")
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("--sms_acc", help="Enter Twilio Account Here")
+    # parser.add_argument("--sms_pw", help="Enter Twilio Password Here")
+    # parser.add_argument("--sender", help="Sender Number")
+    # parser.add_argument("--receiver", help="Sender Number")
+    # parser.add_argument("--seed", help="Random Seed", default=123)
+    # parser.add_argument("--vm", help="Google VM that the program runs on.", default=1)
+    # args = parser.parse_args()
 
     # print("Reorganize")
     reorganize_group_1()
