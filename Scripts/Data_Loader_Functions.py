@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
+from Scripts.Experiments import DATA
+
 
 def unison_shuffled_copies(a, b):
     """
@@ -658,7 +660,7 @@ def prepare_pain_images(root_path, distribution='unbalanced'):
             1))))
 
 
-def create_pain_df(path, pain_gap=()):
+def create_pain_df(path, pain_gap=(), binarize=True):
     img_paths = np.array(get_image_paths(path))
     labels = np.array(get_labels(img_paths))
     df = pd.DataFrame(labels, columns=['Person', 'Session', 'Culture', 'Frame', 'Pain', 'Trans_1', 'Trans_2'])
@@ -670,7 +672,8 @@ def create_pain_df(path, pain_gap=()):
                         ascending=[True, True, True, False, False]).reset_index(drop=True)
     df['temp_id'] = df['Person'].astype(str) + df['Session'].astype(str) + df['Frame'].astype(str)
     df = df[~df['Pain'].isin(pain_gap)]
-    df['Pain'] = np.minimum(df['Pain'], 1)
+    if binarize:
+        df['Pain'] = np.minimum(df['Pain'], 1)
     return df
 
 
@@ -744,3 +747,12 @@ def create_pivot(path, index, columns, values, pain_level=0, pain_gap=()):
     pivot['Pain %'] = round(pivot['Pain'] / (pivot['Pain'] + pivot['No Pain']), 2)
     pivot[pivot == 0] = ''
     return pivot
+
+
+def reorganize_group_1():
+    df = dL.create_pain_df(os.path.join(DATA, 'raw'))
+    df = df[df['Person'] != 101]
+    for path in df['img_path'].values:
+        split = path.split('raw/')
+        new_path = os.path.join(split[0], 'group_1', split[1])
+        os.rename(path, new_path)

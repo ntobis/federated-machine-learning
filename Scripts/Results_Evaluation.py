@@ -117,10 +117,12 @@ def rename_index(df, exp_names):
 def prepare_top_experiments(df, exp_names, top_exp):
     df = rename_index(df, exp_names)
     df = df[df.index.isin(top_exp)]
-    df = (df[[col for col in df if type(col) is int]] * 100)
-    df = df.fillna('NA')
+    df = (df[[col for col in df]] * 100)
+    df = df.fillna('NA').drop(['Mean', 'SD'], axis=1)
     cols = [col for col in df.columns if np.issubdtype(df[col].dtype, np.number)]
     df[cols] = df[cols].astype(int)
+    df['wt. Mean ± SD'] = df['Weighted Mean'].astype(str) + ' ± ' + df['Weighted SD'].astype(str)
+    df = df.drop(['Weighted Mean', 'Weighted SD'], axis=1)
     return df.reset_index()
 
 
@@ -131,10 +133,21 @@ def compute_average_metrics(view_by, subjects, pivot, path):
     return_metrics['recall'] = compute_avg_df('recall', view_by, subjects, pivot, folders, path)
     return_metrics['precision'] = compute_avg_df('precision', view_by, subjects, pivot, folders, path)
     return_metrics['roc'] = compute_avg_df('auc', view_by, subjects, pivot, folders, path)
+    return_metrics['TP'] = compute_avg_df('true_positives', view_by, subjects, pivot, folders, path)
+    return_metrics['TN'] = compute_avg_df('true_negatives', view_by, subjects, pivot, folders, path)
+    return_metrics['FP'] = compute_avg_df('false_positives', view_by, subjects, pivot, folders, path)
+    return_metrics['FN'] = compute_avg_df('false_negatives', view_by, subjects, pivot, folders, path)
+    return_metrics['MCC'] = mcc(return_metrics)
     return_metrics['pr'] = compute_avg_df('pr', view_by, subjects, pivot, folders, path)
     return_metrics['f1_score'] = 2 * return_metrics['recall'] * \
                                  return_metrics['precision'] / (return_metrics['recall'] + return_metrics['precision'])
     return return_metrics
+
+
+def mcc(return_metrics):
+    return (return_metrics['TP'] * return_metrics['TN'] - return_metrics['FP'] * return_metrics['FN']) / np.sqrt(
+        (return_metrics['TP'] + return_metrics['FP']) * (return_metrics['TP'] + return_metrics['FN']) * (
+                    return_metrics['TN'] + return_metrics['FP']) * (return_metrics['TN'] + return_metrics['FN']))
 
 
 def generate_overview_table(return_metrics, exp_names):
