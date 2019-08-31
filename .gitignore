@@ -108,5 +108,5 @@ venv.bak/
 .DS_Store
 .idea/
 Data/
-Models/
+*.h5
 Credentials/
