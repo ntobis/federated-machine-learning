@@ -901,7 +901,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
                             optimizer=optimizer,
                             loss=loss,
                             metrics=metrics,
-                            local_epochs=5,
+                            local_epochs=1,
                             model_type=model_type,
                             pain_gap=pain_gap,
                             individual_validation=False,
@@ -967,7 +967,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
                             optimizer=optimizer,
                             loss=loss,
                             metrics=metrics,
-                            local_epochs=5,
+                            local_epochs=1,
                             model_type=model_type,
                             pain_gap=pain_gap,
                             individual_validation=False,
@@ -1033,7 +1033,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
                             optimizer=optimizer,
                             loss=loss,
                             metrics=metrics,
-                            local_epochs=5,
+                            local_epochs=1,
                             model_type=model_type,
                             pain_gap=pain_gap,
                             individual_validation=False,
@@ -1083,7 +1083,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
 
                 twilio.send_message("Evaluation Complete")
 
-            move_files('{} - Seed {} No ES'.format(seed, seed), seed)
+            move_files('{} - Seed {} LE_1'.format(seed, seed), seed)
 
     except Exception as e:
         twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
