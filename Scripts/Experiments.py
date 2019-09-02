@@ -1080,6 +1080,15 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
                                           model_type=model_type
                                           )
 
+                baseline_model_evaluation(dataset="PAIN",
+                                          experiment="0-sessions-centralized-pre-training" + "_" + str(seed),
+                                          model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "_shard-0.00.h5"),
+                                          optimizer=optimizer,
+                                          loss=loss,
+                                          metrics=metrics,
+                                          model_type=model_type
+                                          )
+
                 # baseline_model_evaluation(dataset="PAIN",
                 #                           experiment="0-sessions-Baseline-federated-pre-training" + "_" + str(seed),
                 #                           model_path=find_newest_model_path(FEDERATED_PAIN_MODELS, "_shard-0.00.h5"),
