@@ -7,13 +7,16 @@ def weighted_loss(y_true, y_pred):
     return tf.nn.weighted_cross_entropy_with_logits(y_true, y_pred, weights)
 
 
-def focal_loss(gamma=2.0, alpha=0.25):
-    def focal_loss_function(y_true, y_pred):
+class FocalLoss:
+    def __init__(self, gamma=2.0, alpha=0.25):
+        self.gamma = gamma
+        self.alpha = alpha
+
+    def __call__(self, y_true, y_pred):
         pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
         pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
-        return -K.sum(alpha * K.pow(1. - pt_1, gamma) * K.log(pt_1)) - K.sum(
-            (1 - alpha) * K.pow(pt_0, gamma) * K.log(1. - pt_0))
-    return focal_loss_function
+        return -K.sum(self.alpha * K.pow(1. - pt_1, self.gamma) * K.log(pt_1)) - K.sum(
+            (1 - self.alpha) * K.pow(pt_0, self.gamma) * K.log(1. - pt_0))
 
 
 class EarlyStopping:

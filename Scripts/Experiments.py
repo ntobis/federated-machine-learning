@@ -23,7 +23,7 @@ from Scripts import Data_Loader_Functions as dL
 from Scripts import Model_Training as mT
 from Scripts import Model_Architectures as mA
 from Scripts.Weights_Accountant import WeightsAccountant
-from Scripts.Keras_Custom import focal_loss
+from Scripts.Keras_Custom import FocalLoss
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
@@ -545,7 +545,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
     # loss = tf.keras.losses.BinaryCrossentropy()
-    loss = focal_loss()
+    loss = FocalLoss()
 
     metrics = ['accuracy', TruePositives(), TrueNegatives(),
                FalsePositives(), FalseNegatives(), Recall(), Precision(), AUC(curve='ROC', name='auc'),
@@ -852,26 +852,26 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
             # twilio.send_message("Experiment 11 Complete")
 
             # Experiment 12 - Sessions: Centralized with pre-training
-            training_setup(seed)
-            pF.print_experiment("12 - Sessions: Centralized with pre-training")
-            experiment_pain(algorithm='centralized',
-                            dataset='PAIN',
-                            experiment='2-sessions-Centralized-pre-training' + "_" + str(seed),
-                            rounds=30,
-                            shards=None,
-                            model_path=None,
-                            pretraining='centralized',
-                            cumulative=True,
-                            optimizer=optimizer,
-                            loss=loss,
-                            metrics=metrics,
-                            model_type=model_type,
-                            pain_gap=pain_gap,
-                            individual_validation=False,
-                            local_operation='global_averaging'
-                            )
-            twilio.send_message("Experiment 12 Complete")
-
+            # training_setup(seed)
+            # pF.print_experiment("12 - Sessions: Centralized with pre-training")
+            # experiment_pain(algorithm='centralized',
+            #                 dataset='PAIN',
+            #                 experiment='2-sessions-Centralized-pre-training' + "_" + str(seed),
+            #                 rounds=30,
+            #                 shards=None,
+            #                 model_path=None,
+            #                 pretraining='centralized',
+            #                 cumulative=True,
+            #                 optimizer=optimizer,
+            #                 loss=loss,
+            #                 metrics=metrics,
+            #                 model_type=model_type,
+            #                 pain_gap=pain_gap,
+            #                 individual_validation=False,
+            #                 local_operation='global_averaging'
+            #                 )
+            # twilio.send_message("Experiment 12 Complete")
+            #
             # # Experiment 13 - Sessions: Federated without pre-training
             # training_setup(seed)
             # pF.print_experiment("13 - Sessions: Federated without pre-training")
