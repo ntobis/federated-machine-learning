@@ -247,7 +247,7 @@ def baseline_model_evaluation(dataset, experiment, model_path, optimizer, loss, 
     if model_path is None:
         model = mA.build_model((215, 215, 1), model_type)
     else:
-        model = tf.keras.models.load_model(model_path)
+        model = tf.keras.models.load_model(model_path, custom_objects={'focal_loss_function': FocalLoss()})
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     for session in df_testing['Session'].unique():
@@ -271,7 +271,7 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
                     pretraining, rounds, pain_gap):
     if model_path is not None:
         print("Loading pre-trained model: {}".format(os.path.basename(model_path)))
-        model = tf.keras.models.load_model(model_path, custom_objects={'focal_loss_function': focal_loss()})
+        model = tf.keras.models.load_model(model_path, custom_objects={'focal_loss_function': FocalLoss()})
         model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     elif pretraining is 'centralized':
