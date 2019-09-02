@@ -166,6 +166,8 @@ def generate_overview_table(return_metrics, exp_names):
 
 
 def concat_validation_metrics(experiment_folder):
+    if not os.path.isdir(os.path.join(experiment_folder, 'Plotting')):
+        os.mkdir(os.path.join(experiment_folder, 'Plotting'))
     for folder in sorted(os.listdir(experiment_folder)):
         if folder != 'Plotting' and os.path.isdir(os.path.join(experiment_folder, folder)):
             folder_path = os.path.join(experiment_folder, folder)
