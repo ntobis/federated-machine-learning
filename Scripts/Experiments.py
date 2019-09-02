@@ -13,6 +13,7 @@ import time
 
 import numpy as np
 import tensorflow as tf
+
 from twilio.rest import Client
 
 from googleapiclient import discovery
@@ -24,6 +25,8 @@ from Scripts import Model_Training as mT
 from Scripts import Model_Architectures as mA
 from Scripts.Weights_Accountant import WeightsAccountant
 from Scripts.Keras_Custom import FocalLoss
+
+tf.python.keras.losses.custom_loss = FocalLoss
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
