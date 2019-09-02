@@ -545,7 +545,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
     # loss = tf.keras.losses.BinaryCrossentropy()
-    loss = focal_loss
+    loss = focal_loss()
 
     metrics = ['accuracy', TruePositives(), TrueNegatives(),
                FalsePositives(), FalseNegatives(), Recall(), Precision(), AUC(curve='ROC', name='auc'),
@@ -1133,4 +1133,4 @@ if __name__ == '__main__':
     inst = 'tensorflow-' + str(arguments.vm) + '-vm'
     g_monitor = GoogleCloudMonitor(project='centered-flash-251417', zone='us-west1-b', instance=inst)
     main(seed=int(arguments.seed), unbalanced=False, balanced=False, sessions=True, evaluate=True, args=arguments)
-    g_monitor.shutdown()
+    # g_monitor.shutdown()
