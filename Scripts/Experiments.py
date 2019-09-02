@@ -24,9 +24,9 @@ from Scripts import Data_Loader_Functions as dL
 from Scripts import Model_Training as mT
 from Scripts import Model_Architectures as mA
 from Scripts.Weights_Accountant import WeightsAccountant
-from Scripts.Keras_Custom import FocalLoss
+from Scripts.Keras_Custom import FocalLoss, focal_loss
 
-tf.python.keras.losses.custom_loss = FocalLoss
+tf.python.keras.losses.custom_loss = focal_loss()
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
@@ -548,7 +548,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
     # loss = tf.keras.losses.BinaryCrossentropy()
-    loss = FocalLoss()
+    loss = focal_loss()
 
     metrics = ['accuracy', TruePositives(), TrueNegatives(),
                FalsePositives(), FalseNegatives(), Recall(), Precision(), AUC(curve='ROC', name='auc'),
