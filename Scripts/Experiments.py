@@ -1133,4 +1133,4 @@ if __name__ == '__main__':
     inst = 'tensorflow-' + str(arguments.vm) + '-vm'
     g_monitor = GoogleCloudMonitor(project='centered-flash-251417', zone='us-west1-b', instance=inst)
     main(seed=int(arguments.seed), unbalanced=False, balanced=False, sessions=True, evaluate=True, args=arguments)
-    # g_monitor.shutdown()
+    g_monitor.shutdown()
