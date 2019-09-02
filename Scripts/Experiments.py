@@ -26,7 +26,8 @@ from Scripts import Model_Architectures as mA
 from Scripts.Weights_Accountant import WeightsAccountant
 from Scripts.Keras_Custom import FocalLoss, focal_loss, focal_loss_function
 
-tf.keras.losses.custom_loss = focal_loss_function
+import keras.losses
+keras.losses.custom_loss = focal_loss_function
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
