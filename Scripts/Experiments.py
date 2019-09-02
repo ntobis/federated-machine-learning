@@ -23,6 +23,7 @@ from Scripts import Data_Loader_Functions as dL
 from Scripts import Model_Training as mT
 from Scripts import Model_Architectures as mA
 from Scripts.Weights_Accountant import WeightsAccountant
+from Scripts.Keras_Custom import focal_loss
 
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
@@ -543,7 +544,9 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
     twilio.send_message("Seed {}".format(seed))
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
-    loss = tf.keras.losses.BinaryCrossentropy()
+    # loss = tf.keras.losses.BinaryCrossentropy()
+    loss = focal_loss
+
     metrics = ['accuracy', TruePositives(), TrueNegatives(),
                FalsePositives(), FalseNegatives(), Recall(), Precision(), AUC(curve='ROC', name='auc'),
                AUC(curve='PR', name='pr')]
@@ -849,25 +852,25 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
             # twilio.send_message("Experiment 11 Complete")
 
             # Experiment 12 - Sessions: Centralized with pre-training
-            # training_setup(seed)
-            # pF.print_experiment("12 - Sessions: Centralized with pre-training")
-            # experiment_pain(algorithm='centralized',
-            #                 dataset='PAIN',
-            #                 experiment='2-sessions-Centralized-pre-training' + "_" + str(seed),
-            #                 rounds=30,
-            #                 shards=None,
-            #                 model_path=None,
-            #                 pretraining='centralized',
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 model_type=model_type,
-            #                 pain_gap=pain_gap,
-            #                 individual_validation=False,
-            #                 local_operation='global_averaging'
-            #                 )
-            # twilio.send_message("Experiment 12 Complete")
+            training_setup(seed)
+            pF.print_experiment("12 - Sessions: Centralized with pre-training")
+            experiment_pain(algorithm='centralized',
+                            dataset='PAIN',
+                            experiment='2-sessions-Centralized-pre-training' + "_" + str(seed),
+                            rounds=30,
+                            shards=None,
+                            model_path=None,
+                            pretraining='centralized',
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False,
+                            local_operation='global_averaging'
+                            )
+            twilio.send_message("Experiment 12 Complete")
 
             # # Experiment 13 - Sessions: Federated without pre-training
             # training_setup(seed)
@@ -892,26 +895,26 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
             # twilio.send_message("Experiment 13 Complete")
 
             # Experiment 14 - Sessions: Federated with centralized pretraining
-            # training_setup(seed)
-            # pF.print_experiment("14 - Sessions: Federated with centralized pretraining")
-            # experiment_pain(algorithm="federated",
-            #                 dataset='PAIN',
-            #                 experiment='4-sessions-Federated-central-pre-training' + "_" + str(seed),
-            #                 rounds=30,
-            #                 shards=None,
-            #                 model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
-            #                 pretraining='centralized',
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 local_epochs=1,
-            #                 model_type=model_type,
-            #                 pain_gap=pain_gap,
-            #                 individual_validation=False,
-            #                 local_operation='global_averaging'
-            #                 )
-            # twilio.send_message("Experiment 14 Complete")
+            training_setup(seed)
+            pF.print_experiment("14 - Sessions: Federated with centralized pretraining")
+            experiment_pain(algorithm="federated",
+                            dataset='PAIN',
+                            experiment='4-sessions-Federated-central-pre-training' + "_" + str(seed),
+                            rounds=30,
+                            shards=None,
+                            model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
+                            pretraining='centralized',
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            local_epochs=1,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False,
+                            local_operation='global_averaging'
+                            )
+            twilio.send_message("Experiment 14 Complete")
 
             # # Experiment 15 - Sessions: Federated with federated pretraining
             # training_setup(seed)
@@ -1087,7 +1090,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
 
                 twilio.send_message("Evaluation Complete")
 
-            # move_files('133 - Random Baseline', seed)
+            move_files('{} - Sd {} focal', seed)
 
     except Exception as e:
         twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
@@ -1119,17 +1122,15 @@ def move_files(target_folder, seed):
 
 
 if __name__ == '__main__':
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("--sms_acc", help="Enter Twilio Account Here")
-    # parser.add_argument("--sms_pw", help="Enter Twilio Password Here")
-    # parser.add_argument("--sender", help="Sender Number")
-    # parser.add_argument("--receiver", help="Sender Number")
-    # parser.add_argument("--seed", help="Random Seed", default=123)
-    # parser.add_argument("--vm", help="Google VM that the program runs on.", default=1)
-    # arguments = parser.parse_args()
-    # inst = 'tensorflow-' + str(arguments.vm) + '-vm'
-    # g_monitor = GoogleCloudMonitor(project='centered-flash-251417', zone='us-west1-b', instance=inst)
-    # main(seed=int(arguments.seed), unbalanced=False, balanced=False, sessions=True, evaluate=True, args=arguments)
-    # # g_monitor.shutdown()
-    seed = 132
-    move_files('{} - Seed {}'.format(seed, seed), seed)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--sms_acc", help="Enter Twilio Account Here")
+    parser.add_argument("--sms_pw", help="Enter Twilio Password Here")
+    parser.add_argument("--sender", help="Sender Number")
+    parser.add_argument("--receiver", help="Sender Number")
+    parser.add_argument("--seed", help="Random Seed", default=123)
+    parser.add_argument("--vm", help="Google VM that the program runs on.", default=1)
+    arguments = parser.parse_args()
+    inst = 'tensorflow-' + str(arguments.vm) + '-vm'
+    g_monitor = GoogleCloudMonitor(project='centered-flash-251417', zone='us-west1-b', instance=inst)
+    main(seed=int(arguments.seed), unbalanced=False, balanced=False, sessions=True, evaluate=True, args=arguments)
+    # g_monitor.shutdown()

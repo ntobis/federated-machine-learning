@@ -101,7 +101,7 @@ def compute_avg_df(metric, view_by, subjects, pivot, folders, path):
 
 def prep_col(df):
     pd.options.display.float_format = '{:,.1f}'.format
-    df_str = (df[['Weighted Mean', 'Weighted SD']] * 100).astype(int)
+    df_str = (df[['Weighted Mean', 'Weighted SD']] * 100).round(0).astype(int)
     df_str['Mean + STD'] = df_str['Weighted Mean'].astype(str) + ' ± ' + df_str['Weighted SD'].astype(str)
     return df_str[['Mean + STD']]
 
@@ -120,7 +120,7 @@ def prepare_top_experiments(df, exp_names, top_exp):
     df = (df[[col for col in df]] * 100)
     df = df.fillna('NA').drop(['Mean', 'SD'], axis=1)
     cols = [col for col in df.columns if np.issubdtype(df[col].dtype, np.number)]
-    df[cols] = df[cols].astype(int)
+    df[cols] = df[cols].round(0).astype(int)
     df['wt. Mean ± SD'] = df['Weighted Mean'].astype(str) + ' ± ' + df['Weighted SD'].astype(str)
     df = df.drop(['Weighted Mean', 'Weighted SD'], axis=1)
     return df.reset_index()
