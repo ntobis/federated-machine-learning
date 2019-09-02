@@ -26,9 +26,6 @@ from Scripts import Model_Architectures as mA
 from Scripts.Weights_Accountant import WeightsAccountant
 from Scripts.Keras_Custom import FocalLoss, focal_loss, focal_loss_function
 
-import keras.losses
-keras.losses.custom_loss = focal_loss_function
-
 # ------------------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------------------ Paths ----------------------------------------------------- #
 
@@ -274,7 +271,7 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
                     pretraining, rounds, pain_gap):
     if model_path is not None:
         print("Loading pre-trained model: {}".format(os.path.basename(model_path)))
-        model = tf.keras.models.load_model(model_path)
+        model = tf.keras.models.load_model(model_path, custom_objects={'focal_loss_function': focal_loss()})
         model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     elif pretraining is 'centralized':
@@ -549,7 +546,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
     # loss = tf.keras.losses.BinaryCrossentropy()
-    loss = focal_loss_function
+    loss = focal_loss()
 
     metrics = ['accuracy', TruePositives(), TrueNegatives(),
                FalsePositives(), FalseNegatives(), Recall(), Precision(), AUC(curve='ROC', name='auc'),
