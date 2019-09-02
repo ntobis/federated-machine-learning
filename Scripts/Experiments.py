@@ -1119,15 +1119,17 @@ def move_files(target_folder, seed):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--sms_acc", help="Enter Twilio Account Here")
-    parser.add_argument("--sms_pw", help="Enter Twilio Password Here")
-    parser.add_argument("--sender", help="Sender Number")
-    parser.add_argument("--receiver", help="Sender Number")
-    parser.add_argument("--seed", help="Random Seed", default=123)
-    parser.add_argument("--vm", help="Google VM that the program runs on.", default=1)
-    arguments = parser.parse_args()
-    inst = 'tensorflow-' + str(arguments.vm) + '-vm'
-    g_monitor = GoogleCloudMonitor(project='centered-flash-251417', zone='us-west1-b', instance=inst)
-    main(seed=int(arguments.seed), unbalanced=False, balanced=False, sessions=True, evaluate=True, args=arguments)
-    # g_monitor.shutdown()
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("--sms_acc", help="Enter Twilio Account Here")
+    # parser.add_argument("--sms_pw", help="Enter Twilio Password Here")
+    # parser.add_argument("--sender", help="Sender Number")
+    # parser.add_argument("--receiver", help="Sender Number")
+    # parser.add_argument("--seed", help="Random Seed", default=123)
+    # parser.add_argument("--vm", help="Google VM that the program runs on.", default=1)
+    # arguments = parser.parse_args()
+    # inst = 'tensorflow-' + str(arguments.vm) + '-vm'
+    # g_monitor = GoogleCloudMonitor(project='centered-flash-251417', zone='us-west1-b', instance=inst)
+    # main(seed=int(arguments.seed), unbalanced=False, balanced=False, sessions=True, evaluate=True, args=arguments)
+    # # g_monitor.shutdown()
+    seed = 132
+    move_files('{} - Seed {}'.format(seed, seed), seed)
