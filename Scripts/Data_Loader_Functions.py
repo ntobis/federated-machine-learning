@@ -383,11 +383,6 @@ def move_train_test_data(df, origin_path, train_path, test_path):
             os.rename(path, os.path.join(test_path, file))
 
 
-def train_test_split(train_split, *args):
-    train_split = int(len(args[0]) * train_split)
-    return [(elem[:train_split], elem[train_split:]) for elem in args]
-
-
 def split_data_into_shards(split=None, cumulative=True, array=None):
     """
     Utility function, splitting data into specified subsets of shards. Scales the split array to 100%.
@@ -773,3 +768,41 @@ def load_and_prepare_pain_data(path, person, pain, model_type):
     labels_binary = reduce_pain_label_categories(labels_ord, max_pain=1)
     train_labels_people = labels[:, person].astype(np.int)
     return data, labels_binary, train_labels_people, labels
+
+
+def train_test_split(test_ratio, *args):
+    split = int(len(args[0]) * test_ratio)
+    return [(elem[:split], elem[split:]) for elem in args]
+
+
+def split_and_balance_df(df, ratio, balance_test=False):
+    """
+    Utility function splitting a data frame into train and test file paths. The train data is balanced, while balancing
+    the test data is optional. If ratio == 1, serves to just balance a data frame, without splitting the data.
+
+    :param df:                  Pandas DataFrame, cols: [Person, Session, Culture, Frame, Pain, Trans_1, Trans_2,
+                                                         img_path]
+    :param ratio:               float, ratio of train data
+    :param balance_test:        bool, whether to balance the test data
+
+    :return:
+        Tuple of two Pandas DataFrames, one with train img_paths, one with test img_paths
+    """
+    # Split Original data into ratio (for each person)
+    df_original = df[(df['Trans_1'] == 'original') & (df['Trans_2'] == 'straight')]
+    df_train = df_original.sample(frac=1).groupby('Person', group_keys=False).apply(lambda x: x.sample(frac=ratio))
+    df_test = df_original.drop(df_train.index)
+
+    # Balance the training data set (1. get all permutations, 2. get all pain instances of  the permutations,
+    # 3. down-sample no-pain to pain number
+    df_train = df[df['temp_id'].isin(df_train['temp_id'])]
+    df_pain = df_train[df_train['Pain'] > 0]
+    df_train = pd.concat((df_pain, df_train[df_train['Pain'] == 0].sample(len(df_pain))), ignore_index=True)
+
+    if balance_test:
+        df_test = df[df['temp_id'].isin(df_test['temp_id'])]
+        df_pain = df_test[df_test['Pain'] > 0]
+        df_test = pd.concat((df_pain, df_test[df_test['Pain'] == 0].sample(len(df_pain))), ignore_index=True)
+
+    # Return shuffled dfs
+    return df_train.sample(frac=1), df_test.sample(frac=1)
