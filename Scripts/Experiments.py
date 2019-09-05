@@ -36,7 +36,7 @@ MODELS = os.path.join(ROOT, 'Models')
 CENTRAL_PAIN_MODELS = os.path.join(MODELS, "Pain", "Centralized")
 FEDERATED_PAIN_MODELS = os.path.join(MODELS, "Pain", "Federated")
 
-DATA = os.path.join(ROOT, "Data", "Augmented Data", "Flexible Augmentation")
+DATA = os.path.join(ROOT, "Data", "Augmented Data")
 GROUP_1_PATH = os.path.join(DATA, "group_1")
 GROUP_2_PATH = os.path.join(DATA, "group_2")
 
