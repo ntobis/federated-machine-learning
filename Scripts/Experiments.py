@@ -545,8 +545,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
     twilio.send_message("Seed {}".format(seed))
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
-    # loss = tf.keras.losses.BinaryCrossentropy()
-    loss = focal_loss()
+    loss = tf.keras.losses.BinaryCrossentropy()
 
     metrics = ['accuracy', TruePositives(), TrueNegatives(),
                FalsePositives(), FalseNegatives(), Recall(), Precision(), AUC(curve='ROC', name='auc'),
@@ -568,7 +567,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
             experiment_pain(algorithm='centralized',
                             dataset='PAIN',
                             experiment='1-unbalanced-Centralized-no-pre-training' + "_" + str(seed),
-                            rounds=30,
+                            rounds=10,
                             shards=test_shards,
                             balance_test_set=False,
                             model_path=None,
@@ -590,7 +589,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
             experiment_pain(algorithm='centralized',
                             dataset='PAIN',
                             experiment='2-unbalanced-Centralized-pre-training' + "_" + str(seed),
-                            rounds=30,
+                            rounds=10,
                             shards=test_shards,
                             balance_test_set=False,
                             model_path=None,
@@ -611,7 +610,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
                             experiment='3-unbalanced-Federated-no-pre-training' + "_" + str(seed),
-                            rounds=30,
+                            rounds=10,
                             shards=test_shards,
                             balance_test_set=False,
                             model_path=None,
@@ -634,7 +633,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
                             experiment='4-unbalanced-Federated-central-pre-training' + "_" + str(seed),
-                            rounds=30,
+                            rounds=10,
                             shards=test_shards,
                             balance_test_set=False,
                             model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
@@ -657,7 +656,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
                             experiment='5-unbalanced-Federated-federated-pre-training' + "_" + str(seed),
-                            rounds=30,
+                            rounds=10,
                             shards=test_shards,
                             balance_test_set=False,
                             model_path=None,
@@ -680,7 +679,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
                             experiment='6-unbalanced-Federated-no-pre-training-personalization' + "_" + str(seed),
-                            rounds=30,
+                            rounds=10,
                             shards=test_shards,
                             balance_test_set=False,
                             model_path=None,
@@ -703,7 +702,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
                             experiment='7-unbalanced-Federated-central-pre-training-personalization' + "_" + str(seed),
-                            rounds=30,
+                            rounds=10,
                             shards=test_shards,
                             balance_test_set=False,
                             model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
@@ -726,7 +725,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
                             experiment='8-unbalanced-Federated-federated-pre-training-personalization' + "_" + str(seed),
-                            rounds=30,
+                            rounds=10,
                             shards=test_shards,
                             balance_test_set=False,
                             model_path=find_newest_model_path(FEDERATED_PAIN_MODELS, "shard-0.00.h5"),
@@ -749,7 +748,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
                             experiment='9-unbalanced-Federated-no-pre-training-local-models' + "_" + str(seed),
-                            rounds=30,
+                            rounds=10,
                             shards=test_shards,
                             balance_test_set=False,
                             model_path=None,
@@ -772,7 +771,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
                             experiment='10-unbalanced-Federated-central-pre-training-local-models' + "_" + str(seed),
-                            rounds=30,
+                            rounds=10,
                             shards=test_shards,
                             balance_test_set=False,
                             model_path=find_newest_model_path(CENTRAL_PAIN_MODELS, "shard-0.00.h5"),
@@ -795,7 +794,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
                             experiment='11-unbalanced-Federated-federated-pre-training-local-models' + "_" + str(seed),
-                            rounds=30,
+                            rounds=10,
                             shards=test_shards,
                             balance_test_set=False,
                             model_path=find_newest_model_path(FEDERATED_PAIN_MODELS, "shard-0.00.h5"),
@@ -1237,7 +1236,7 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
 
                 twilio.send_message("Evaluation Complete")
 
-            dL.move_files('123 - Sd 123 - Focal_10_E', seed)
+        dL.move_files('{} - Sd {} - Unbalanced', seed)
 
     except Exception as e:
         twilio.send_message("Attention, an error occurred:\n{}".format(e)[:1000])
