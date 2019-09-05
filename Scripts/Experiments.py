@@ -543,48 +543,48 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
         # --------------------------------------- UNBALANCED ---------------------------------------#
         if unbalanced:
 
-            # # Experiment 1 - Unbalanced: Centralized without pre-training
-            # training_setup(seed)
-            # pF.print_experiment("1 - Unbalanced: Centralized without pre-training")
-            # experiment_pain(algorithm='centralized',
-            #                 dataset='PAIN',
-            #                 experiment='1-unbalanced-Centralized-no-pre-training' + "_" + str(seed),
-            #                 rounds=10,
-            #                 shards=test_shards,
-            #                 balance_test_set=False,
-            #                 model_path=None,
-            #                 pretraining=None,
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 model_type=model_type,
-            #                 pain_gap=pain_gap,
-            #                 individual_validation=False,
-            #                 local_operation='global_averaging'
-            #                 )
-            # twilio.send_message("Experiment 1 Complete")
-            #
-            # # Experiment 2 - Unbalanced: Centralized with pre-training
-            # training_setup(seed)
-            # pF.print_experiment("2 - Unbalanced: Centralized with pre-training")
-            # experiment_pain(algorithm='centralized',
-            #                 dataset='PAIN',
-            #                 experiment='2-unbalanced-Centralized-pre-training' + "_" + str(seed),
-            #                 rounds=10,
-            #                 shards=test_shards,
-            #                 balance_test_set=False,
-            #                 model_path=None,
-            #                 pretraining='centralized',
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 model_type=model_type,
-            #                 pain_gap=pain_gap,
-            #                 individual_validation=False
-            #                 )
-            # twilio.send_message("Experiment 2 Complete")
+            # Experiment 1 - Unbalanced: Centralized without pre-training
+            training_setup(seed)
+            pF.print_experiment("1 - Unbalanced: Centralized without pre-training")
+            experiment_pain(algorithm='centralized',
+                            dataset='PAIN',
+                            experiment='1-unbalanced-Centralized-no-pre-training' + "_" + str(seed),
+                            rounds=10,
+                            shards=test_shards,
+                            balance_test_set=False,
+                            model_path=None,
+                            pretraining=None,
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False,
+                            local_operation='global_averaging'
+                            )
+            twilio.send_message("Experiment 1 Complete")
+
+            # Experiment 2 - Unbalanced: Centralized with pre-training
+            training_setup(seed)
+            pF.print_experiment("2 - Unbalanced: Centralized with pre-training")
+            experiment_pain(algorithm='centralized',
+                            dataset='PAIN',
+                            experiment='2-unbalanced-Centralized-pre-training' + "_" + str(seed),
+                            rounds=10,
+                            shards=test_shards,
+                            balance_test_set=False,
+                            model_path=None,
+                            pretraining='centralized',
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False
+                            )
+            twilio.send_message("Experiment 2 Complete")
 
             # Experiment 3 - Unbalanced: Federated without pre-training
             training_setup(seed)
