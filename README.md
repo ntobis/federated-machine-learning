@@ -121,4 +121,13 @@ metrics for clients with custom callbacks.
 #### Weights_Accountant.py
 Finally, the `WeightsAccountant` tracks the weights of all clients in a federated setting. It performs the 
 Federated Averaging algorithm as well as the Federated Personalization algorithm. It also tracks all weights 
-in the Local Model experimental setting.    
+in the Local Model experimental setting.
+
+## Evaluation
+Two notebooks are helpful for results evaluation. 
+
+The Notebook "Table Preparation" serves to quickly generate an overview of the results achieved by the experiments 
+stored in the folder "Results".
+
+The Notebook "MSc Thesis Visualizations" generates the majority of tables and figures seen in the thesis.
+   
