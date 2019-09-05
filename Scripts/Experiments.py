@@ -169,32 +169,6 @@ def save_results(dataset, experiment, history, model, folder):
     history.to_csv(os.path.join(folder, f_name))
 
 
-def load_and_prepare_data(path, person, pain, model_type):
-    """
-    Utility function loading pain image data into memory, and preparing the labels for training.
-    Note, this function expects the image files to have the following naming convention:
-    "43_0_0_0_2_original_straight.jpg", to be converted into the following label array:
-    [person, session, culture, frame, pain_level, transformation_1, transformation_2]
-
-    :param path:                    string, root path to all images to be loaded
-    :param person:                  int, index where 'person' appears in the file name converted to an array.
-    :param pain:                    int, index where 'pain_level' appears in the file name converted to an array.
-    :param model_type:              string, specifying the model_type (CNN, or ResNet)
-    :return:
-        data:                       4D numpy array, images as numpy array in shape (N, 215, 215, 1)
-        labels_binary:              2D numpy array, one-hot encoded labels [no pain, pain] (N, 2)
-        train_labels_people:        2D numpy array, only including the "person" label [person] (N, 1)
-        labels:                     2D numpy array, all labels as described above (N, 7)
-    """
-
-    color = 0 if model_type == 'CNN' else 1
-    data, labels = dL.load_pain_data(path, color=color)
-    labels_ord = labels[:, pain].astype(np.int)
-    labels_binary = dL.reduce_pain_label_categories(labels_ord, max_pain=1)
-    train_labels_people = labels[:, person].astype(np.int)
-    return data, labels_binary, train_labels_people, labels
-
-
 def evaluate_model(model, test_data, test_labels, test_people, test_all_labels, split_type, split,
                    weights_accountant):
     # Prepare data
@@ -227,7 +201,7 @@ def evaluate_model(model, test_data, test_labels, test_people, test_all_labels, 
 def evaluate_session(df_history, df_testing, model, model_type, session, weights_accountant=None):
     # Get test data
     df_test = df_testing[df_testing['Session'] == session]
-    test_data, test_labels, test_people, test_all_labels = load_and_prepare_data(
+    test_data, test_labels, test_people, test_all_labels = dL.load_and_prepare_pain_data(
         df_test['img_path'].values,
         person=0,
         pain=4,
@@ -282,10 +256,10 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
         # Prepare labels for training and evaluation
         df = dL.create_pain_df(GROUP_1_PATH, pain_gap=pain_gap)
         df, _ = split_and_balance_df(df, ratio=1, balance_test=False)
-        train_data, train_labels, _, _ = load_and_prepare_data(df['img_path'].values,
-                                                               person=0,
-                                                               pain=4,
-                                                               model_type=model_type)
+        train_data, train_labels, _, _ = dL.load_and_prepare_pain_data(df['img_path'].values,
+                                                                       person=0,
+                                                                       pain=4,
+                                                                       model_type=model_type)
 
         # Train
         model = model_runner(pretraining, dataset, experiment + "_shard-0.00", model=model, rounds=rounds,
@@ -300,9 +274,9 @@ def run_pretraining(dataset, experiment, local_epochs, loss, metrics, model_path
         # Load data
         df = dL.create_pain_df(GROUP_1_PATH, pain_gap=pain_gap)
         df, _ = split_and_balance_df(df, ratio=1, balance_test=False)
-        data, labels, people, all_labels = load_and_prepare_data(df['img_path'].values,
-                                                                 person=0,
-                                                                 pain=4, model_type=model_type)
+        data, labels, people, all_labels = dL.load_and_prepare_pain_data(df['img_path'].values,
+                                                                         person=0,
+                                                                         pain=4, model_type=model_type)
 
         # Split data into train and validation
         data, labels, people, all_labels = train_test_split(0.2, data, labels, people, all_labels)
@@ -368,18 +342,20 @@ def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, model, 
     df_history = pd.DataFrame()
 
     # Load test data
-    test_data, test_labels, test_people, test_all_labels = load_and_prepare_data(df_test['img_path'].values, person=0,
-                                                                                 pain=4, model_type=model_type)
+    test_data, test_labels, test_people, test_all_labels = dL.load_and_prepare_pain_data(df_test['img_path'].values,
+                                                                                         person=0,
+                                                                                         pain=4, model_type=model_type)
     # Load group 2 training data
-    train_data, train_labels, train_people, train_all_labels = load_and_prepare_data(df_train['img_path'].values,
-                                                                                     person=0,
-                                                                                     pain=4, model_type=model_type)
+    train_data, train_labels, train_people, train_all_labels = dL.load_and_prepare_pain_data(
+        df_train['img_path'].values,
+        person=0,
+        pain=4, model_type=model_type)
     # Split group 2 training data into shards
     split_train_data, split_train_labels, split_train_people, split_train_all_labels = dL.split_data_into_shards(
         array=[train_data, train_labels, train_people, train_all_labels], split=shards, cumulative=cumulative)
 
     # Train on group 2 shards and evaluate performance
-    for percentage, train_data, train_labels, train_people, train_all_labels in \
+    for percentage, data, labels, people, all_labels in \
             zip(shards, split_train_data, split_train_labels, split_train_people, split_train_all_labels):
         pF.print_shard(percentage)
         experiment_current = experiment + "_shard-{}".format(percentage)
@@ -387,9 +363,15 @@ def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, model, 
         # Define clients
         clients = np.unique(train_people)
 
+        # Split data into train and validation
+        (train_data, val_data), (train_labels, val_labels), (train_people, val_people), (train_all_labels,
+                                                                                         val_all_labels) = \
+            dL.train_test_split(0.8, data, labels, people, all_labels)
+
         # Train
         model = model_runner(algorithm, dataset, experiment_current, model, rounds, train_data, train_labels,
-                             train_people, clients=clients, local_epochs=local_epochs,
+                             train_people, val_data=val_data, val_labels=val_labels, val_people=val_people,
+                             val_all_labels=val_all_labels, clients=clients, local_epochs=local_epochs,
                              individual_validation=individual_validation, local_operation=local_operation,
                              weights_accountant=weights_accountant)
 
@@ -426,7 +408,7 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, model, model_type
 
             # Get validation data
             df_val = df_training_validating[df_training_validating['Session'] == session]
-            val_data, val_labels, val_people, val_all_labels = load_and_prepare_data(
+            val_data, val_labels, val_people, val_all_labels = dL.load_and_prepare_pain_data(
                 df_val['img_path'].values,
                 person=0,
                 pain=4,
@@ -443,7 +425,7 @@ def run_sessions(algorithm, dataset, experiment, local_epochs, model, model_type
         # Get Train Data for the next session
         df_train = df_training_validating[df_training_validating['Session'] <= session]
         df_train = dL.balance_data(df_train, threshold=200)
-        train_data, train_labels, train_people, train_all_labels = load_and_prepare_data(
+        train_data, train_labels, train_people, train_all_labels = dL.load_and_prepare_pain_data(
             df_train['img_path'].values,
             person=0, pain=4, model_type=model_type)
 
@@ -724,7 +706,8 @@ def main(seed=123, unbalanced=False, balanced=False, sessions=False, evaluate=Fa
             pF.print_experiment("8 - Sessions: Federated with federated pretraining")
             experiment_pain(algorithm="federated",
                             dataset='PAIN',
-                            experiment='8-unbalanced-Federated-federated-pre-training-personalization' + "_" + str(seed),
+                            experiment='8-unbalanced-Federated-federated-pre-training-personalization' + "_" + str(
+                                seed),
                             rounds=10,
                             shards=test_shards,
                             balance_test_set=False,

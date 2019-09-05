@@ -186,20 +186,6 @@ def merge_clients(categories_per_client, *args):
                             for idx in range(0, len(arg), categories_per_client)]) for arg in args])
 
 
-def tf_load_image(path):
-    """
-    Load an image into a Tensor.
-
-    :param path:                         string, filepath
-    :return:
-    Tensor                               Tensorflow Tensor containing image data
-    """
-
-    image = tf.io.read_file(path)
-    image = tf.image.decode_jpeg(image, channels=0)
-    return tf.image.convert_image_dtype(image, tf.float32)
-
-
 def get_image_paths(root_path, ext='.jpg'):
     """
     Utility function returning all image paths in a directory adn its sub-directories.
@@ -252,28 +238,6 @@ def get_labels(image_paths, label_type=None, ext='.jpg'):
 
             labels.append(label)
     return labels
-
-
-def prepare_dataset_for_training(ds, batch_size, ds_size):
-    """
-    Utility function preparing a Tensorflow Dataset for training.
-
-    :param ds:                  Tensorflow Dataset
-    :param batch_size:          int
-    :param ds_size:             int, setting the number of images to be cached
-
-    :return:
-        ds                      Tensorflow Dataset
-    """
-    # Setting a shuffle buffer size as large as the dataset ensures that the data is
-    # completely shuffled.
-    ds = ds.cache()
-    ds = ds.shuffle(buffer_size=ds_size)
-    ds = ds.repeat()
-    ds = ds.batch(batch_size)
-    # `prefetch` lets the dataset fetch batches, in the background while the model is training.
-    ds = ds.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
-    return ds
 
 
 def load_image_data(path, color=0, label_type=None):
@@ -418,6 +382,12 @@ def move_train_test_data(df, origin_path, train_path, test_path):
         for path in test['img_path']:
             file = os.path.basename(path)
             os.rename(path, os.path.join(test_path, file))
+
+
+def train_test_split(train_split, *args):
+    train_split = int(len(args[0] * train_split))
+    return [(elem[:train_split], elem[train_split:]) for elem in args]
+
 
 
 def split_data_into_shards(split=None, cumulative=True, array=None):
@@ -779,3 +749,29 @@ def move_files(target_folder, seed):
         f_path = os.path.join(target_f_path, elem)
         new = elem.replace("_" + str(seed), '')
         os.rename(f_path, os.path.join(target_f_path, new))
+
+
+def load_and_prepare_pain_data(path, person, pain, model_type):
+    """
+    Utility function loading pain image data into memory, and preparing the labels for training.
+    Note, this function expects the image files to have the following naming convention:
+    "43_0_0_0_2_original_straight.jpg", to be converted into the following label array:
+    [person, session, culture, frame, pain_level, transformation_1, transformation_2]
+
+    :param path:                    string, root path to all images to be loaded
+    :param person:                  int, index where 'person' appears in the file name converted to an array.
+    :param pain:                    int, index where 'pain_level' appears in the file name converted to an array.
+    :param model_type:              string, specifying the model_type (CNN, or ResNet)
+    :return:
+        data:                       4D numpy array, images as numpy array in shape (N, 215, 215, 1)
+        labels_binary:              2D numpy array, one-hot encoded labels [no pain, pain] (N, 2)
+        train_labels_people:        2D numpy array, only including the "person" label [person] (N, 1)
+        labels:                     2D numpy array, all labels as described above (N, 7)
+    """
+
+    color = 0 if model_type == 'CNN' else 1
+    data, labels = dL.load_pain_data(path, color=color)
+    labels_ord = labels[:, pain].astype(np.int)
+    labels_binary = dL.reduce_pain_label_categories(labels_ord, max_pain=1)
+    train_labels_people = labels[:, person].astype(np.int)
+    return data, labels_binary, train_labels_people, labels
