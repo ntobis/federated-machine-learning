@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from Scripts.Experiments import DATA
+from Scripts.Experiments import DATA, RESULTS
 
 
 def unison_shuffled_copies(a, b):
@@ -756,3 +756,26 @@ def reorganize_group_1():
         split = path.split('raw/')
         new_path = os.path.join(split[0], 'group_1', split[1])
         os.rename(path, new_path)
+
+
+def move_files(target_folder, seed):
+    # Create folder structure
+    target_f_path = os.path.join(RESULTS, 'Thesis', target_folder)
+    if not os.path.isdir(target_f_path):
+        os.mkdir(target_f_path)
+
+    if not os.path.isdir(os.path.join(target_f_path, 'Plotting')):
+        os.mkdir(os.path.join(target_f_path, 'Plotting'))
+
+    # Move files and folders
+    elements = [elem for elem in os.listdir(RESULTS) if str(seed) in elem]
+    for elem in elements:
+        f_path = os.path.join(RESULTS, elem)
+        os.rename(f_path, os.path.join(target_f_path, elem))
+
+    # Delete Seed number from file and folder names
+    elements = [elem for elem in os.listdir(target_f_path) if "_" + str(seed) in elem]
+    for elem in elements:
+        f_path = os.path.join(target_f_path, elem)
+        new = elem.replace("_" + str(seed), '')
+        os.rename(f_path, os.path.join(target_f_path, new))
