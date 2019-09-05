@@ -368,7 +368,6 @@ def run_shards(algorithm, cumulative, dataset, experiment, local_epochs, model, 
                                                                                          val_all_labels) = \
             dL.train_test_split(0.8, data, labels, people, all_labels)
 
-        print(val_data)
         # Train
         model = model_runner(algorithm, dataset, experiment_current, model, rounds, train_data, train_labels,
                              train_people, val_data=val_data, val_labels=val_labels, val_people=val_people,
