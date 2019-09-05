@@ -3,7 +3,6 @@ import os
 import cv2
 import numpy as np
 import pandas as pd
-import tensorflow as tf
 
 from Scripts.Experiments import DATA, RESULTS
 
@@ -389,7 +388,6 @@ def train_test_split(train_split, *args):
     return [(elem[:train_split], elem[train_split:]) for elem in args]
 
 
-
 def split_data_into_shards(split=None, cumulative=True, array=None):
     """
     Utility function, splitting data into specified subsets of shards. Scales the split array to 100%.
@@ -720,7 +718,7 @@ def create_pivot(path, index, columns, values, pain_level=0, pain_gap=()):
 
 
 def reorganize_group_1():
-    df = dL.create_pain_df(os.path.join(DATA, 'raw'))
+    df = create_pain_df(os.path.join(DATA, 'raw'))
     df = df[df['Person'] != 101]
     for path in df['img_path'].values:
         split = path.split('raw/')
@@ -770,8 +768,8 @@ def load_and_prepare_pain_data(path, person, pain, model_type):
     """
 
     color = 0 if model_type == 'CNN' else 1
-    data, labels = dL.load_pain_data(path, color=color)
+    data, labels = load_pain_data(path, color=color)
     labels_ord = labels[:, pain].astype(np.int)
-    labels_binary = dL.reduce_pain_label_categories(labels_ord, max_pain=1)
+    labels_binary = reduce_pain_label_categories(labels_ord, max_pain=1)
     train_labels_people = labels[:, person].astype(np.int)
     return data, labels_binary, train_labels_people, labels
