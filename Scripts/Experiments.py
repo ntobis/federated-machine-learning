@@ -1238,6 +1238,6 @@ if __name__ == '__main__':
     parser.add_argument("--vm", help="Google VM that the program runs on.", default=1)
     arguments = parser.parse_args()
     inst = 'tensorflow-' + str(arguments.vm) + '-vm'
-    g_monitor = GoogleCloudMonitor(project='centered-flash-251417', zone='us-west1-b', instance=inst)
+    # g_monitor = GoogleCloudMonitor(project='centered-flash-251417', zone='us-west1-b', instance=inst)
     main(seed=int(arguments.seed), unbalanced=True, balanced=False, sessions=False, evaluate=True, args=arguments)
     # g_monitor.shutdown()

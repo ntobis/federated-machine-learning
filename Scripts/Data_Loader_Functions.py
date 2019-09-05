@@ -384,7 +384,7 @@ def move_train_test_data(df, origin_path, train_path, test_path):
 
 
 def train_test_split(train_split, *args):
-    train_split = int(len(args[0] * train_split))
+    train_split = int(len(args[0]) * train_split)
     return [(elem[:train_split], elem[train_split:]) for elem in args]
 
 
