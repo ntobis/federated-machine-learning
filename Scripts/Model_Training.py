@@ -283,6 +283,8 @@ def federated_learning(model, global_epochs, train_data, train_labels, train_peo
             split_train_data, split_train_labels = dL.split_data_into_clients_dict(train_people, train_data,
                                                                                    train_labels)
             split_val_data, split_val_labels = dL.split_data_into_clients_dict(val_people, val_data, val_labels)
+            print(val_data)
+            print(val_labels)
 
             train_history = {}
             val_history = {}
