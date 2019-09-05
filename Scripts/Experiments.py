@@ -1255,5 +1255,5 @@ if __name__ == '__main__':
     arguments = parser.parse_args()
     inst = 'tensorflow-' + str(arguments.vm) + '-vm'
     g_monitor = GoogleCloudMonitor(project='centered-flash-251417', zone='us-west1-b', instance=inst)
-    main(seed=int(arguments.seed), unbalanced=False, balanced=False, sessions=True, evaluate=True, args=arguments)
+    main(seed=int(arguments.seed), unbalanced=True, balanced=False, sessions=False, evaluate=True, args=arguments)
     # g_monitor.shutdown()
