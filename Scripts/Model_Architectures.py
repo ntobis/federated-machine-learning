@@ -23,12 +23,10 @@ def build_CNN(input_shape):
                             name='conv2d_0_global'))
     model.add(layers.BatchNormalization(name='batch_norm_0_global'))
     model.add(layers.ReLU(name='relu_0_global'))
-    # model.add(layers.MaxPooling2D(name='max_pool_0_global'))
 
     model.add(layers.Conv2D(filters=64, kernel_size=(5, 5), padding='same', strides=(2, 2), name='conv2d_1_global'))
     model.add(layers.BatchNormalization(name='batch_norm_1_global'))
     model.add(layers.ReLU(name='relu_1_global'))
-    # model.add(layers.MaxPooling2D(name='max_pool_1_global'))
 
     model.add(layers.Conv2D(filters=128, kernel_size=(5, 5), padding='same', strides=(2, 2), name='conv2d_2_global'))
     model.add(layers.BatchNormalization(name='batch_norm_2_global'))
@@ -74,12 +72,15 @@ def build_ResNet(input_shape):
 
 
 def build_model(input_shape, model_type):
+    """
+    Utility function building either a simple CNN architecture or ResNet
+
+    :param input_shape:             image input shape (tuple), e.g. (28, 28, 3)
+    :param model_type:              string, either 'CNN' or "ResNet"
+    :return:
+        Tensorflow Graph
+    """
     model_type = model_type.lower()
     model_types = {'cnn': build_CNN,
                    'resnet': build_ResNet}
     return model_types[model_type](input_shape=input_shape)
-
-
-if __name__ == '__main__':
-    model_test = build_model((215, 215, 1), 'CNN')
-    model_test.summary(line_length=100)

@@ -41,6 +41,17 @@ def bulk_process_images(inputpath, outputpath, extension):
 
 
 def bulk_augment_images(input_path, output_path, extension, augmentation, label_type, label_threshold=-1):
+    """
+    Utility function augmenting all images in an input path, copying them into an output path
+
+    :param input_path:              string, input path
+    :param output_path:             string, output path
+    :param extension:               string, extension of the images
+    :param augmentation:            string, type of augmentation, takes 'flip', 'original', 'rotate_crop'
+    :param label_type:              int, specify if images of a certain label type should not be augmented
+    :param label_threshold:         int, specify if images of a certain label type should not be augmented
+    :return:
+    """
     for dir_path, dir_names, filenames in os.walk(input_path):
         structure = os.path.join(output_path, dir_path[len(input_path) + 1:])
         for file in filenames:
@@ -68,6 +79,15 @@ def bulk_augment_images(input_path, output_path, extension, augmentation, label_
 
 
 def bulk_rename_files(input_path, output_path, suffix, new_suffix):
+    """
+    Utility function renaming files in a given folder. Can also move files.
+
+    :param input_path:              string, input path
+    :param output_path:             string, output path
+    :param suffix:                  string, suffix that should be looked for
+    :param new_suffix:              string, new suffix that the old one should be changed to
+    :return:
+    """
     for dir_path, dir_names, filenames in os.walk(input_path):
         structure = os.path.join(output_path, dir_path[len(input_path) + 1:])
         for file in filenames:
@@ -80,6 +100,15 @@ def bulk_rename_files(input_path, output_path, suffix, new_suffix):
 
 
 def bulk_crop_images(input_path, output_path, dims, extension):
+    """
+    Utility function cropping images to a specified size
+
+    :param input_path:              string, input path
+    :param output_path:             string, output path
+    :param dims:                    tuple, tuple of ints specifying the image dimensions
+    :param extension:               string, extension of the images
+    :return:
+    """
     for dir_path, dir_names, filenames in os.walk(input_path):
         structure = os.path.join(output_path, dir_path[len(input_path) + 1:])
         for file in filenames:
@@ -214,6 +243,14 @@ def crop_around_center(image, width, height):
 
 
 def rotate_and_crop_image(img, degrees):
+    """
+    Utility function rotating and cropping an image.
+
+    :param img:             numpy array
+    :param degrees:         int
+    :return:
+        Cropped image
+    """
     image_rotated = rotate_image(img, degrees)
     return crop_around_center(
         image_rotated,
