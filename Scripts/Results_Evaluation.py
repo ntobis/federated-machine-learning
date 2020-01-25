@@ -118,11 +118,14 @@ def prepare_top_experiments(df, exp_names, top_exp):
     df = rename_index(df, exp_names)
     df = df[df.index.isin(top_exp)]
     df = (df[[col for col in df]] * 100)
-    df = df.fillna('NA').drop(['Mean', 'SD'], axis=1)
+    # df = df.fillna('NA').drop(['Mean', 'SD'], axis=1)
+    df = df.fillna('NA').drop(['Weighted Mean', 'Weighted SD'], axis=1)
     cols = [col for col in df.columns if np.issubdtype(df[col].dtype, np.number)]
     df[cols] = df[cols].round(0).astype(int)
-    df['wt. Mean ± SD'] = df['Weighted Mean'].astype(str) + ' ± ' + df['Weighted SD'].astype(str)
-    df = df.drop(['Weighted Mean', 'Weighted SD'], axis=1)
+    # df['wt. Mean ± SD'] = df['Weighted Mean'].astype(str) + ' ± ' + df['Weighted SD'].astype(str)
+    # df = df.drop(['Weighted Mean', 'Weighted SD'], axis=1)
+    df['Mean ± SD'] = df['Mean'].astype(str) + ' ± ' + df['SD'].astype(str)
+    df = df.drop(['Mean', 'SD'], axis=1)
     return df.reset_index()
 
 
@@ -180,3 +183,38 @@ def concat_validation_metrics(experiment_folder):
                     df_concat = pd.concat((df_concat, df), ignore_index=True, sort=False)
             df_concat = df_concat.rename(columns={'Unnamed: 0': 'Epoch'})
             df_concat.to_excel(os.path.join(experiment_folder, 'Plotting', folder + '.xlsx'))
+
+
+def create_detailed_metric_table(results_path, subjects, metric):
+    folder_paths = [os.path.join(results_path, folder) for folder in os.listdir(results_path) if 'Seed' in folder]
+
+    count = 0
+    for folder_path in folder_paths:
+
+        # Sort according to name not timestamp
+        list_dir = os.listdir(folder_path)
+        f_paths = [file.split("PAIN_")[1] for file in list_dir if 'PAIN' in file]
+        list_dir = [file for file in list_dir if 'PAIN' in file]
+        folders = [x for _, x in sorted(zip(f_paths, list_dir))]
+
+        df_concat = pd.DataFrame()
+        for file in folders:
+            if os.path.isfile(os.path.join(folder_path, file)):
+
+                # Read in df
+                df = pd.read_csv(os.path.join(folder_path, file))
+
+                # Create table
+                columns = ['subject_{}_{}'.format(subject, metric) for subject in subjects]
+                df_new = df[columns]
+                df_new = df_new.rename(columns={col: int(col.split('_')[1].split('_')[0]) for col in df_new.columns if 'subject' in col})
+                df_new['Experiment'] = file.split('PAIN_')[1].split('_TEST')[0]
+                df_concat = pd.concat((df_concat, df_new))
+
+        if count > 0:
+            df_add[subjects] = df_add[subjects].add(df_concat[subjects])
+        else:
+            df_add = df_concat.copy()
+
+        count += 1
+    return df_add[subjects].divide(count)
