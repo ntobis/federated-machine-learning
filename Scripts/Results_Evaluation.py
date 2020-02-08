@@ -118,14 +118,14 @@ def prepare_top_experiments(df, exp_names, top_exp):
     df = rename_index(df, exp_names)
     df = df[df.index.isin(top_exp)]
     df = (df[[col for col in df]] * 100)
-    # df = df.fillna('NA').drop(['Mean', 'SD'], axis=1)
+    df = df.fillna('NA').drop(['Mean', 'SD'], axis=1)
     df = df.fillna('NA').drop(['Weighted Mean', 'Weighted SD'], axis=1)
     cols = [col for col in df.columns if np.issubdtype(df[col].dtype, np.number)]
     df[cols] = df[cols].round(0).astype(int)
-    # df['wt. Mean ± SD'] = df['Weighted Mean'].astype(str) + ' ± ' + df['Weighted SD'].astype(str)
-    # df = df.drop(['Weighted Mean', 'Weighted SD'], axis=1)
-    df['Mean ± SD'] = df['Mean'].astype(str) + ' ± ' + df['SD'].astype(str)
-    df = df.drop(['Mean', 'SD'], axis=1)
+    df['wt. Mean ± SD'] = df['Weighted Mean'].astype(str) + ' ± ' + df['Weighted SD'].astype(str)
+    df = df.drop(['Weighted Mean', 'Weighted SD'], axis=1)
+#     df['Mean ± SD'] = df['Mean'].astype(str) + ' ± ' + df['SD'].astype(str)
+#     df = df.drop(['Mean', 'SD'], axis=1)
     return df.reset_index()
 
 
