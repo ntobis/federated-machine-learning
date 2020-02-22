@@ -55,33 +55,74 @@ def session_examples_total(df, subjects, metric):
 
 
 def mask_df(df, metric, subjects, pivot):
+    # Get column names for each subject of the format "subject_43_accuracy"
     columns = ['subject_{}_{}'.format(subject, metric) for subject in subjects]
+
+    # Filter DataFrame for the columns specified
     df = df[columns].reset_index()
+
+    # Change Zero-Based Session Indexing to 1-Based indexing
     df['index'] += 1
+
+    # Rename Index Column to Session Column
     df = df.rename(columns={'index': 'Session'})
+
+    # Rename columns to only include subject number, e.g. '43' or '59'
     df = df.rename(columns={col: int(col.split('_')[1].split('_')[0]) for col in df.columns if 'subject' in col})
+
+    # 1. Reset index of pivot to have 1-dimensional index
+    # 2. Filter Pivot table to only include same columns as df ['Session', 43, 48, 52, 59, ..., 120]
+    # 3. Drop Session '0'
+    # 4. Reset index to be zero-based
     pivot = pivot.reset_index()[df.columns].drop(0).reset_index(drop=True)
+
+    # Return a df, where:
+    # - Rows are sessions (starting with '1')
+    # - Columns are ['Session', 43, 48, 52, 59, ..., 120]
+    # - Values are "TOTAL FP/FN/TN/TP", or NULL, when no positive examples exist
     return df.where(pivot != '')
 
 
 def weighted_mean_SD(df, subjects, metric, sessions, pivot):
-    weights = mask_df(session_examples_total(df, subjects, metric), metric, subjects, pivot).drop('Session', axis=1)
+    # Compute Sum of all TP, TN, FP, FN
+    df_total = session_examples_total(df, subjects, metric)
 
+    # Drop 'Session' column
+    weights = mask_df(df_total, metric, subjects, pivot).drop('Session', axis=1)
+
+    # Get column names for each subject of the format "subject_43_accuracy"
     columns = ['subject_{}_{}'.format(subject, metric) for subject in subjects]
+
+    # Filter df down to those columns, e.g. for accuracy, the new df will have accuracy per subject, per session
     df_new = df[columns]
+
+    # Change column names to [43, 48, 52, 59, ..., 120]
     df_new = df_new.rename(
         columns={col: int(col.split('_')[1].split('_')[0]) for col in df_new.columns if 'subject' in col})
+
+    # If sessions, simply transpose the data frames
     if sessions:
         weights = weights.T
         df_new = df_new.T
 
+    # Calculate average (e.g. accuracy) accross subjects OR sessions
+    # Weighted by number of observations:
+    # E.g. ACC [1.0, 0.5] & Obs. [10, 5] == weighted AVG 12.5 / 15 == 0.833
+    # Returns np.array of weighted AVG for all subjects OR sessions
     weighted_avg = (df_new * weights).sum() / weights.sum()
-    variance = ((df_new - weighted_avg) ** 2 * weights).sum().sum() / weights.sum().sum()
-    std = np.sqrt(variance)
+
     if sessions:
         weighted_avg.index += 1
+
+    # Compute Mean of subjects OR sessions, weighted by number of observations across subject OR session
     weighted_avg['Weighted Mean'] = (df_new * weights).sum().sum() / weights.sum().sum()
-    weighted_avg['Weighted SD'] = std
+
+    # Compute standard deviation between subjects OR session, weighted by number of observations in that session
+    variance = ((df_new - weighted_avg) ** 2 * weights).sum().sum() / weights.sum().sum()
+    weighted_avg['Weighted SD'] = np.sqrt(variance)
+
+    # Returns weighted mean performance for each subject OR session, and mean/std performance of entire model
+    # DF columns: [43, 48, 52, 59, 64, 80, 92, 96, 107, 109, 115, 120, 'Weighted Mean', 'Weighted SD']
     return pd.DataFrame(weighted_avg).T
 
 
