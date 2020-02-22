@@ -1278,26 +1278,26 @@ def main(seed=123, shards_unbalanced=False, shards_balanced=False, sessions=Fals
             # twilio.send_message("Experiment 1 Complete")
             #
             # Experiment 2 - Sessions: Centralized with pre-training
-            # training_setup(seed)
-            # pF.print_experiment("2 - Sessions: Centralized with pre-training")
-            # experiment_pain(algorithm='centralized',
-            #                 dataset='PAIN',
-            #                 experiment='2-sessions-Centralized-pre-training' + "_" + str(seed),
-            #                 setting='sessions',
-            #                 rounds=30,
-            #                 shards=None,
-            #                 model_path=None,
-            #                 pretraining='centralized',
-            #                 cumulative=True,
-            #                 optimizer=optimizer,
-            #                 loss=loss,
-            #                 metrics=metrics,
-            #                 model_type=model_type,
-            #                 pain_gap=pain_gap,
-            #                 individual_validation=False,
-            #                 local_operation='global_averaging'
-            #                 )
-            # twilio.send_message("Experiment 2 Complete")
+            training_setup(seed)
+            pF.print_experiment("2 - Sessions: Centralized with pre-training")
+            experiment_pain(algorithm='centralized',
+                            dataset='PAIN',
+                            experiment='2-sessions-Centralized-pre-training' + "_" + str(seed),
+                            setting='sessions',
+                            rounds=30,
+                            shards=None,
+                            model_path=None,
+                            pretraining='centralized',
+                            cumulative=True,
+                            optimizer=optimizer,
+                            loss=loss,
+                            metrics=metrics,
+                            model_type=model_type,
+                            pain_gap=pain_gap,
+                            individual_validation=False,
+                            local_operation='global_averaging'
+                            )
+            twilio.send_message("Experiment 2 Complete")
 
             # # Experiment 3 - Sessions: Federated without pre-training
             # training_setup(seed)
