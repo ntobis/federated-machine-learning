@@ -44,6 +44,31 @@ def results_table(experiment_path, metric, view_by, subjects, pivot):
     return df_concat
 
 
+def filter_granular_results(df, subjects, pivot):
+    # Add columns to df [TP, TN, FP, FN]
+    df['label'] = np.minimum(df['True Label'], 1)
+    df['prediction'] = df['BCDL'].round()
+    df['TP'] = (df['label'] == 1) & (df['prediction'] == 1)
+    df['TN'] = (df['label'] == 0) & (df['prediction'] == 0)
+    df['FP'] = (df['label'] == 0) & (df['prediction'] == 1)
+    df['FN'] = (df['label'] == 1) & (df['prediction'] == 0)
+
+    # Prepare pivot to be merged with df
+    columns = np.insert(subjects.astype(object), 0, 'Session')
+    pivot = pivot.reset_index()[columns].drop(0).reset_index(drop=True)
+    pivot_has_positive = pivot[pivot.columns[1:]] != ''
+    pivot_has_positive['Session'] = pivot['Session']
+    pivot_has_positive = pivot_has_positive.drop(9)
+    unpivot_has_positive = pivot_has_positive.melt(id_vars=['Session'])
+    unpivot_has_positive = unpivot_has_positive.rename(columns={'Person': 'Subject ID', 'value': 'has_positive'})
+
+    # Merge pivot and df to indicate, which subjects have positive examples in a given session
+    df_merge = df.merge(unpivot_has_positive)
+
+    # Return only those session/subject combinations that have positive examples
+    return df_merge[df_merge['has_positive']]
+
+
 def session_examples_total(df, subjects, metric):
     df_subjects = pd.DataFrame()
     for subject in subjects:
@@ -165,8 +190,8 @@ def prepare_top_experiments(df, exp_names, top_exp):
     df[cols] = df[cols].round(0).astype(int)
     df['wt. Mean ± SD'] = df['Weighted Mean'].astype(str) + ' ± ' + df['Weighted SD'].astype(str)
     df = df.drop(['Weighted Mean', 'Weighted SD'], axis=1)
-#     df['Mean ± SD'] = df['Mean'].astype(str) + ' ± ' + df['SD'].astype(str)
-#     df = df.drop(['Mean', 'SD'], axis=1)
+    #     df['Mean ± SD'] = df['Mean'].astype(str) + ' ± ' + df['SD'].astype(str)
+    #     df = df.drop(['Mean', 'SD'], axis=1)
     return df.reset_index()
 
 
@@ -191,7 +216,7 @@ def compute_average_metrics(view_by, subjects, pivot, path):
 def mcc(return_metrics):
     return (return_metrics['TP'] * return_metrics['TN'] - return_metrics['FP'] * return_metrics['FN']) / np.sqrt(
         (return_metrics['TP'] + return_metrics['FP']) * (return_metrics['TP'] + return_metrics['FN']) * (
-                    return_metrics['TN'] + return_metrics['FP']) * (return_metrics['TN'] + return_metrics['FN']))
+                return_metrics['TN'] + return_metrics['FP']) * (return_metrics['TN'] + return_metrics['FN']))
 
 
 def generate_overview_table(return_metrics, exp_names):
@@ -241,14 +266,14 @@ def create_detailed_metric_table(results_path, subjects, metric):
         df_concat = pd.DataFrame()
         for file in folders:
             if os.path.isfile(os.path.join(folder_path, file)):
-
                 # Read in df
                 df = pd.read_csv(os.path.join(folder_path, file))
 
                 # Create table
                 columns = ['subject_{}_{}'.format(subject, metric) for subject in subjects]
                 df_new = df[columns]
-                df_new = df_new.rename(columns={col: int(col.split('_')[1].split('_')[0]) for col in df_new.columns if 'subject' in col})
+                df_new = df_new.rename(
+                    columns={col: int(col.split('_')[1].split('_')[0]) for col in df_new.columns if 'subject' in col})
                 df_new['Experiment'] = file.split('PAIN_')[1].split('_TEST')[0]
                 df_concat = pd.concat((df_concat, df_new))
 
