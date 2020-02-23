@@ -85,7 +85,7 @@ def bulk_rename_files(input_path, output_path, suffix, new_suffix):
     :param input_path:              string, input path
     :param output_path:             string, output path
     :param suffix:                  string, suffix that should be looked for
-    :param new_suffix:              string, new suffix that the old one should be changed to
+    :param new_suffix:              string, new suffix that the _old one should be changed to
     :return:
     """
     for dir_path, dir_names, filenames in os.walk(input_path):
