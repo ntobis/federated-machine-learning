@@ -34,6 +34,19 @@ mkdir Augmented\ Data
 mv -r [folder where UNBC database is on your computer] Raw\ Data/
 ```
 
+## Citations
+If you use this code for your own research, please reference it using the following citation format:
+```
+@misc{rudovic2021personalized,
+      title={Personalized Federated Deep Learning for Pain Estimation From Face Images}, 
+      author={Ognjen Rudovic and Nicolas Tobis and Sebastian Kaltwang and Björn Schuller and Daniel Rueckert and Jeffrey F. Cohn and Rosalind W. Picard},
+      year={2021},
+      eprint={2101.04800},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```
+
 ## How to run this code
 ### Data Pre-Processing
 First, you will need to pre-process the image data.
