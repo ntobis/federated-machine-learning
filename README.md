@@ -1,5 +1,25 @@
 # federated-machine-learning
 Multiple experimental settings for Federated Machine Learning using CNNs.
+
+- [federated-machine-learning](#federated-machine-learning)
+  * [Installation](#installation)
+  * [Citations](#citations)
+  * [How to run this code](#how-to-run-this-code)
+    + [Data Pre-Processing](#data-pre-processing)
+    + [Running Experiments](#running-experiments)
+      - [Shell scripts](#shell-scripts)
+      - [Experiments.py](#experimentspy)
+        * [main(seed=123, shards_unbalanced=False, shards_balanced=False, sessions=False, evaluate=False, dest_folder_name='', args=None)](#main-seed-123--shards-unbalanced-false--shards-balanced-false--sessions-false--evaluate-false--dest-folder-name-----args-none-)
+        * [experiment_pain(algorithm='centralized', dataset='PAIN', experiment='placeholder', setting=None, rounds=30, shards=None, balance_test_set=False, model_path=None, pretraining=None, cumulative=True, optimizer=None, loss=None, metrics=None, local_epochs=1, model_type='CNN', pain_gap=(), individual_validation=True, local_operation='global_averaging')](#experiment-pain-algorithm--centralized---dataset--pain---experiment--placeholder---setting-none--rounds-30--shards-none--balance-test-set-false--model-path-none--pretraining-none--cumulative-true--optimizer-none--loss-none--metrics-none--local-epochs-1--model-type--cnn---pain-gap-----individual-validation-true--local-operation--global-averaging--)
+        * [run_pretraining(dataset, experiment, local_epochs, optimizer, loss, metrics, model_path, model_type, pretraining, rounds, pain_gap)](#run-pretraining-dataset--experiment--local-epochs--optimizer--loss--metrics--model-path--model-type--pretraining--rounds--pain-gap-)
+        * [run_shards(algorithm, cumulative, dataset, experiment, local_epochs, model, model_type, rounds, shards, pain_gap, individual_validation, local_operation, balance_test)](#run-shards-algorithm--cumulative--dataset--experiment--local-epochs--model--model-type--rounds--shards--pain-gap--individual-validation--local-operation--balance-test-)
+        * [run_sessions(algorithm, dataset, experiment, local_epochs, model, model_type, rounds, pain_gap, individual_validation, local_operation)](#run-sessions-algorithm--dataset--experiment--local-epochs--model--model-type--rounds--pain-gap--individual-validation--local-operation-)
+      - [Model_Training.py](#model-trainingpy)
+        * [federated_learning(model, global_epochs, train_data, train_labels, train_people, val_data, val_labels, val_people, val_all_labels, clients, local_epochs, individual_validation, local_operation, weights_accountant)](#federated-learning-model--global-epochs--train-data--train-labels--train-people--val-data--val-labels--val-people--val-all-labels--clients--local-epochs--individual-validation--local-operation--weights-accountant-)
+        * [train_cnn(algorithm, model, epochs, train_data, train_labels, val_data, val_labels, val_people, val_all_labels, individual_validation)](#train-cnn-algorithm--model--epochs--train-data--train-labels--val-data--val-labels--val-people--val-all-labels--individual-validation-)
+      - [Weights_Accountant.py](#weights-accountantpy)
+
+
 ## Installation
 Clone this project from:
 ```bash
